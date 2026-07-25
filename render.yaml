@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: highland-park-lanes
+    runtime: docker
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ALLEY_TIMEZONE
+        value: America/New_York
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: hpl-data
+      mountPath: /data
+      sizeGB: 1

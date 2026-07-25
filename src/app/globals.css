@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+:root {
+  --lane-deep: #1a1008;
+  --lane-mid: #2c1a0c;
+  --wood: #5c3a1e;
+  --wood-light: #8b5a2b;
+  --amber: #e8a317;
+  --amber-soft: #f0c14b;
+  --cream: #f6e8c8;
+  --pin: #fff8ee;
+  --muted: #c4a882;
+  --danger: #c45c3a;
+  --ok: #3d8b5e;
+  --background: var(--lane-deep);
+  --foreground: var(--cream);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-lane-deep: var(--lane-deep);
+  --color-lane-mid: var(--lane-mid);
+  --color-wood: var(--wood);
+  --color-wood-light: var(--wood-light);
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+  --color-cream: var(--cream);
+  --color-pin: var(--pin);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.lane-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(232, 163, 23, 0.18), transparent 55%),
+    linear-gradient(180deg, #2a1608 0%, #1a1008 40%, #120b05 100%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 48px,
+      rgba(139, 90, 43, 0.08) 48px,
+      rgba(139, 90, 43, 0.08) 50px
+    );
+}
+
+.hero-glow {
+  animation: lanePulse 6s ease-in-out infinite;
+}
+
+@keyframes lanePulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.brand-rise {
+  animation: brandRise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cta-rise {
+  animation: brandRise 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+
+@keyframes brandRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.coupon-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.coupon-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 248, 238, 0.12) 45%,
+    transparent 60%
+  );
+  transform: translateX(-120%);
+  animation: sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  0%,
+  60% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+input,
+button {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
