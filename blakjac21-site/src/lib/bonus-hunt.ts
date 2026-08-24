@@ -351,6 +351,8 @@ export function clearBonuses(): BonusHuntState {
   return state;
 }
 
+const MAX_SLOT_REQUESTS_PER_USER = 3;
+
 export function addSlotRequest(
   username: string,
   slotName: string,
@@ -379,23 +381,38 @@ export function addSlotRequest(
     };
   }
 
-  const existing = state.slotRequests.find((req) => req.username === normalized);
-  if (existing) {
-    existing.slotName = slot;
-    existing.createdAt = new Date().toISOString();
+  const userRequests = state.slotRequests.filter(
+    (req) => req.username === normalized,
+  );
+  const slotKey = slot.toLowerCase();
+  const existingSame = userRequests.find(
+    (req) => req.slotName.toLowerCase() === slotKey,
+  );
+
+  if (existingSame) {
+    existingSame.slotName = slot;
+    existingSame.createdAt = new Date().toISOString();
     state.updatedAt = new Date().toISOString();
     return { accepted: true, state };
   }
 
+  if (userRequests.length >= MAX_SLOT_REQUESTS_PER_USER) {
+    return {
+      accepted: false,
+      reason: `Max ${MAX_SLOT_REQUESTS_PER_USER} slot requests per username`,
+      state,
+    };
+  }
+
   state.slotRequests.push({
-    id: `${Date.now()}-${normalized}`,
+    id: `${Date.now()}-${normalized}-${userRequests.length + 1}`,
     username: normalized,
     slotName: slot,
     createdAt: new Date().toISOString(),
   });
 
-  if (state.slotRequests.length > 100) {
-    state.slotRequests = state.slotRequests.slice(-100);
+  if (state.slotRequests.length > 200) {
+    state.slotRequests = state.slotRequests.slice(-200);
   }
 
   state.updatedAt = new Date().toISOString();
