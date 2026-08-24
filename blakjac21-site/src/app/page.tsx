@@ -1,3 +1,4 @@
+import { FeatureTabs } from "@/components/FeatureTabs";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
@@ -40,6 +41,7 @@ export default function Home() {
                 Open on Kick
               </a>
             </div>
+            <FeatureTabs />
           </div>
 
           <div id="watch" className={styles.playerBleed}>
