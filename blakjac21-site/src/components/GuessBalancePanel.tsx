@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { GuessBalanceState } from "@/lib/guess-balance";
-import { formatUsd } from "@/lib/guess-balance";
+import {
+  formatUsd,
+  getClosestGuesses,
+  parseBalanceGuess,
+} from "@/lib/guess-balance";
 import { isBalanceGuessMessage, useKickChat } from "@/hooks/useKickChat";
 import styles from "./GuessBalancePanel.module.css";
 
@@ -23,6 +27,15 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
   const [showAdmin, setShowAdmin] = useState(fullPage);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [actualBalanceInput, setActualBalanceInput] = useState("");
+  const [showClosest, setShowClosest] = useState(false);
+
+  const actualBalance = parseBalanceGuess(actualBalanceInput);
+  const canRevealClosest = actualBalance !== null && (state?.guesses.length ?? 0) > 0;
+  const closestGuesses =
+    actualBalance !== null && showClosest
+      ? getClosestGuesses(state?.guesses ?? [], actualBalance, 3)
+      : [];
 
   const entriesOpen = state?.entriesOpen ?? false;
   const chatConnected = Boolean(entriesOpen && chatroomId);
@@ -138,7 +151,16 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
   }
 
   async function clearGuesses() {
-    await adminRequest("/api/guess/balance/clear", "POST");
+    const cleared = await adminRequest("/api/guess/balance/clear", "POST");
+    if (cleared) {
+      setActualBalanceInput("");
+      setShowClosest(false);
+    }
+  }
+
+  function handleActualBalanceChange(value: string) {
+    setActualBalanceInput(value);
+    setShowClosest(false);
   }
 
   const guesses = [...(state?.guesses ?? [])]
@@ -167,6 +189,61 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
         <code>1234</code>, <code>$1,234.50</code>, or <code>!guess 500</code>.
         One guess per username — resubmitting updates your entry.
       </p>
+
+      <div className={styles.reveal}>
+        <p className={styles.revealHeading}>Reveal winner</p>
+        <label className={styles.label}>
+          Actual balance
+          <input
+            className={styles.input}
+            type="text"
+            inputMode="decimal"
+            value={actualBalanceInput}
+            onChange={(e) => handleActualBalanceChange(e.target.value)}
+            placeholder="e.g. 1234 or $1,234.50"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        {canRevealClosest ? (
+          <button
+            type="button"
+            className={styles.revealBtn}
+            onClick={() => setShowClosest(true)}
+          >
+            Show 3 closest guesses
+          </button>
+        ) : null}
+        {actualBalanceInput.trim() && actualBalance === null ? (
+          <p className={styles.revealHint}>Enter a valid balance amount.</p>
+        ) : null}
+      </div>
+
+      {showClosest && actualBalance !== null ? (
+        <div className={styles.closestList} aria-live="polite">
+          <p className={styles.guessHeading}>
+            Closest to {formatUsd(actualBalance)}
+          </p>
+          {closestGuesses.length === 0 ? (
+            <p className={styles.empty}>No guesses to compare.</p>
+          ) : (
+            <ul className={`${styles.guessItems} ${fullPage ? styles.guessItemsPage : ""}`}>
+              {closestGuesses.map((guess, index) => (
+                <li key={guess.id} className={`${styles.guessItem} ${styles.closestItem}`}>
+                  <span className={styles.guessRank}>{index + 1}</span>
+                  <span className={styles.guessUser}>{guess.username}</span>
+                  <span className={styles.closestMeta}>
+                    <span className={styles.guessAmount}>{formatUsd(guess.amount)}</span>
+                    <span className={styles.guessDiff}>
+                      off by {formatUsd(guess.difference)}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
 
       <div className={styles.guessList} aria-live="polite">
         <p className={styles.guessHeading}>

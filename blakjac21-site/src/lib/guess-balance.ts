@@ -113,3 +113,23 @@ export function formatUsd(amount: number): string {
     maximumFractionDigits: 2,
   }).format(amount);
 }
+
+export type ClosestGuess = BalanceGuess & { difference: number };
+
+export function getClosestGuesses(
+  guesses: BalanceGuess[],
+  actualBalance: number,
+  limit = 3,
+): ClosestGuess[] {
+  return [...guesses]
+    .map((guess) => ({
+      ...guess,
+      difference: Math.abs(guess.amount - actualBalance),
+    }))
+    .sort(
+      (a, b) =>
+        a.difference - b.difference ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
+    .slice(0, limit);
+}

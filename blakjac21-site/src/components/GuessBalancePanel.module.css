@@ -52,6 +52,76 @@
   color: var(--accent);
 }
 
+.reveal {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--gold) 6%, transparent);
+}
+
+.revealHeading {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--gold);
+}
+
+.revealBtn {
+  justify-self: start;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gold) 90%, white) 0%,
+    var(--gold) 100%
+  );
+  color: #1a1408;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.revealBtn:hover,
+.revealBtn:focus-visible {
+  filter: brightness(1.05);
+}
+
+.revealHint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--live);
+}
+
+.closestList {
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  padding: 0.85rem 1rem;
+}
+
+.closestItem {
+  border-bottom-color: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.closestMeta {
+  display: grid;
+  justify-items: end;
+  gap: 0.15rem;
+}
+
+.guessDiff {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
 .guessList {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
