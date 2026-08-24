@@ -45,10 +45,10 @@ const GROUPS: StakeGroupConfig[] = [
   },
 ];
 
-/** Full catalog crawl cadence (admin-equivalent refresh) */
-const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+/** Full catalog crawl cadence */
+const REFRESH_INTERVAL_MS = 10_000;
 /** How often to refresh group gameCount metadata */
-const META_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+const META_REFRESH_INTERVAL_MS = 10_000;
 /** Negative live-lookup cache (invalid names) */
 const NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 /** Positive live-lookup cache */
@@ -79,7 +79,7 @@ let refreshPromise: Promise<void> | null = null;
 let metaPromise: Promise<void> | null = null;
 /** Prevent hammering Stake when a crawl fails */
 let lastCrawlAttemptAt = 0;
-const CRAWL_RETRY_MS = 15 * 60 * 1000;
+const CRAWL_RETRY_MS = 10_000;
 
 export function normalizeSlotKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -328,8 +328,8 @@ export async function refreshStakeSlotMeta(): Promise<void> {
 
 /**
  * Full prefix crawl of both Stake groups (Only on Stake + New Releases).
- * Runs automatically once per day when the catalog is stale, and on-demand
- * via admin `GET /api/bonus-hunt/slots?refresh=1`.
+ * Runs automatically every 10 seconds when the previous crawl has finished,
+ * and on-demand via admin `GET /api/bonus-hunt/slots?refresh=1`.
  */
 export async function refreshStakeSlotCatalog(
   force = false,
@@ -371,9 +371,8 @@ export async function refreshStakeSlotCatalog(
 
 /**
  * Keep Stake data warm:
- * - group metadata every ~30 minutes
- * - full slot catalog crawl once per day (same as admin refresh)
- * Live !s lookups still verify against Stake so new titles work before the crawl.
+ * - full slot catalog crawl every 10 seconds when stale
+ * Live !s lookups still verify against Stake between crawls.
  */
 export function ensureStakeSlotCatalog(): void {
   if (canAttemptCrawl()) {
@@ -533,7 +532,7 @@ export function getStakeSlotCatalogSummary() {
     expectedCounts: catalog.expectedCounts,
     updatedAt: catalog.updatedAt,
     nextRefreshAt: getCatalogNextRefreshAt(),
-    refreshIntervalHours: REFRESH_INTERVAL_MS / (60 * 60 * 1000),
+    refreshIntervalSeconds: REFRESH_INTERVAL_MS / 1000,
     refreshing: catalog.refreshing,
     lastError: catalog.lastError,
     sources: [

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     }
     await refreshStakeSlotCatalog(true);
   } else {
-    // Auto daily full crawl when stale; otherwise just warm metadata
+    // Auto full crawl every 10s when stale; otherwise just warm metadata
     ensureStakeSlotCatalog();
   }
 

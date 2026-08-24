@@ -20,7 +20,7 @@ type SlotCatalogSummary = {
   expectedCounts: { "only-on-stake": number; "new-releases": number };
   updatedAt: string | null;
   nextRefreshAt: string | null;
-  refreshIntervalHours: number;
+  refreshIntervalSeconds: number;
   refreshing: boolean;
   lastError: string | null;
 };
@@ -118,7 +118,7 @@ export function ActiveHuntPanel() {
     }
 
     loadSlots();
-    const timer = setInterval(loadSlots, 60_000);
+    const timer = setInterval(loadSlots, 10_000);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -556,7 +556,7 @@ export function ActiveHuntPanel() {
           >
             New Releases
           </a>
-          . Catalog auto-refreshes daily
+          . Catalog auto-refreshes every 10 seconds
           {slotCatalog?.counts.total
             ? ` (${slotCatalog.counts.total.toLocaleString()} names cached)`
             : ""}
@@ -722,7 +722,7 @@ export function ActiveHuntPanel() {
                   : " · not crawled yet"}
                 {slotCatalog.nextRefreshAt
                   ? ` · next auto ${new Date(slotCatalog.nextRefreshAt).toLocaleString()}`
-                  : " · auto daily when stale"}
+                  : " · auto every 10s when stale"}
                 {slotCatalog.lastError
                   ? ` · error: ${slotCatalog.lastError}`
                   : ""}
