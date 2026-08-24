@@ -1,23 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { GuessBalancePanel } from "@/components/GuessBalancePanel";
 import styles from "./FeatureTabs.module.css";
 
-type TabId = "balance" | "bonusHunts" | "leaderboard" | "rewards";
+type PanelTabId = "balance" | "leaderboard" | "rewards";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "balance", label: "Guess the Balance" },
-  { id: "bonusHunts", label: "Bonus Hunts" },
-  { id: "leaderboard", label: "Leaderboard" },
-  { id: "rewards", label: "Rewards" },
+type TabConfig =
+  | { id: PanelTabId; label: string; kind: "panel" }
+  | { id: "bonusHunts"; label: string; kind: "link"; href: string };
+
+const TABS: TabConfig[] = [
+  { id: "balance", label: "Guess the Balance", kind: "panel" },
+  { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
+  { id: "leaderboard", label: "Leaderboard", kind: "panel" },
+  { id: "rewards", label: "Rewards", kind: "panel" },
 ];
 
-const PANEL_COPY: Record<Exclude<TabId, "balance">, { title: string; body: string }> = {
-  bonusHunts: {
-    title: "Bonus Hunts",
-    body: "Track active and past bonus hunts from stream. Live hunt stats and results will show here during bonus hunt streams.",
-  },
+const PANEL_COPY: Record<Exclude<PanelTabId, "balance">, { title: string; body: string }> = {
   leaderboard: {
     title: "Leaderboard",
     body: "Top viewers and streak holders will show up here. Rankings reset each stream week.",
@@ -30,10 +31,10 @@ const PANEL_COPY: Record<Exclude<TabId, "balance">, { title: string; body: strin
 
 export function FeatureTabs() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openTab, setOpenTab] = useState<TabId | null>("balance");
+  const [openTab, setOpenTab] = useState<PanelTabId | null>("balance");
   const rootRef = useRef<HTMLElement>(null);
 
-  function toggleTab(id: TabId) {
+  function toggleTab(id: PanelTabId) {
     setOpenTab((current) => (current === id ? null : id));
   }
 
@@ -79,6 +80,21 @@ export function FeatureTabs() {
       >
         <ul className={styles.list}>
           {TABS.map((tab) => {
+            if (tab.kind === "link") {
+              return (
+                <li key={tab.id} className={styles.item}>
+                  <Link
+                    className={styles.linkTrigger}
+                    href={tab.href}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={styles.linkArrow} aria-hidden />
+                  </Link>
+                </li>
+              );
+            }
+
             const isOpen = openTab === tab.id;
             const panel = tab.id === "balance" ? null : PANEL_COPY[tab.id];
 
