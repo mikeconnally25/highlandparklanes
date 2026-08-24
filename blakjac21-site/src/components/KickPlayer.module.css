@@ -166,8 +166,8 @@
 .playIcon {
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
   background: color-mix(in srgb, var(--accent) 88%, #000);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -186,7 +186,7 @@
   font-family: var(--font-display);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: clamp(0.85rem, 2vw, 1rem);
+  font-size: clamp(0.72rem, 2vw, 0.85rem);
   color: #f4f7f2;
 }
 
@@ -215,7 +215,7 @@
 
 @media (max-width: 720px) {
   .playIcon {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
