@@ -7,6 +7,8 @@ export async function GET() {
     {
       user,
       kickConfigured: kick.configured,
+      kickMissing: kick.missing,
+      kickRedirectUri: kick.redirectUri || null,
     },
     { headers: { "Cache-Control": "no-store" } },
   );

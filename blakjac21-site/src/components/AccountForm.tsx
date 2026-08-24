@@ -5,21 +5,43 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import styles from "./AccountForm.module.css";
 
+type SessionKickInfo = {
+  kickConfigured?: boolean;
+  kickMissing?: string[];
+  kickRedirectUri?: string | null;
+};
+
 function AccountFormInner() {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") === "login" ? "login" : "register";
   const queryError = searchParams.get("error");
   const [kickConfigured, setKickConfigured] = useState<boolean | null>(null);
+  const [kickMissing, setKickMissing] = useState<string[]>([]);
+  const [callbackHint, setCallbackHint] = useState(
+    "https://YOUR_DOMAIN/api/account/kick/callback",
+  );
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
         const res = await fetch("/api/account/session", { cache: "no-store" });
-        const data = (await res.json()) as { kickConfigured?: boolean };
-        if (!cancelled) setKickConfigured(Boolean(data.kickConfigured));
+        const data = (await res.json()) as SessionKickInfo;
+        if (cancelled) return;
+        setKickConfigured(Boolean(data.kickConfigured));
+        setKickMissing(Array.isArray(data.kickMissing) ? data.kickMissing : []);
+        setCallbackHint(
+          data.kickRedirectUri ||
+            `${window.location.origin}/api/account/kick/callback`,
+        );
       } catch {
-        if (!cancelled) setKickConfigured(false);
+        if (!cancelled) {
+          setKickConfigured(false);
+          setKickMissing(["KICK_CLIENT_ID", "KICK_CLIENT_SECRET"]);
+          setCallbackHint(
+            `${window.location.origin}/api/account/kick/callback`,
+          );
+        }
       }
     }
     load();
@@ -45,13 +67,69 @@ function AccountFormInner() {
       ) : null}
 
       {kickConfigured === false ? (
-        <p className={styles.error} role="alert">
-          Kick login is not configured yet. Add{" "}
-          <code>KICK_CLIENT_ID</code>, <code>KICK_CLIENT_SECRET</code>, and{" "}
-          <code>KICK_REDIRECT_URI</code> (or <code>NEXT_PUBLIC_SITE_URL</code>)
-          in the server environment, then register the callback URL in the Kick
-          Developer Portal.
-        </p>
+        <div className={styles.setup} role="alert">
+          <p className={styles.setupTitle}>Streamer setup required</p>
+          <p className={styles.setupLead}>
+            Viewers cannot sign in until you connect a Kick developer app.
+            Takes a few minutes:
+          </p>
+          <ol className={styles.setupList}>
+            <li>
+              Open{" "}
+              <a
+                className={styles.setupLink}
+                href="https://kick.com/settings/developer"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                kick.com/settings/developer
+              </a>{" "}
+              while logged into your Kick account.
+            </li>
+            <li>
+              Create an app. Add this exact Redirect URL:{" "}
+              <code className={styles.setupCode}>{callbackHint}</code>
+            </li>
+            <li>
+              Request scope <code className={styles.setupCode}>user:read</code>.
+              Copy the Client ID and Client Secret.
+            </li>
+            <li>
+              Put them in the host environment (local:{" "}
+              <code className={styles.setupCode}>.env.local</code>; production:
+              Railway Variables), then restart:
+              {kickMissing.length > 0 ? (
+                <ul className={styles.missingList}>
+                  {kickMissing.map((name) => (
+                    <li key={name}>
+                      <code className={styles.setupCode}>{name}</code>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className={styles.missingList}>
+                  <li>
+                    <code className={styles.setupCode}>KICK_CLIENT_ID</code>
+                  </li>
+                  <li>
+                    <code className={styles.setupCode}>KICK_CLIENT_SECRET</code>
+                  </li>
+                  <li>
+                    <code className={styles.setupCode}>KICK_REDIRECT_URI</code>{" "}
+                    (same URL as step 2)
+                  </li>
+                  <li>
+                    <code className={styles.setupCode}>NEXT_PUBLIC_SITE_URL</code>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li>
+              Reload this page — <strong>Continue with Kick</strong> will unlock
+              for viewers.
+            </li>
+          </ol>
+        </div>
       ) : null}
 
       <a
