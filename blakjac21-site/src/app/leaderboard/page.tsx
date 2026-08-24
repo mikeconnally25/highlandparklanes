@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AccountHeader } from "@/components/AccountHeader";
 import { BrandLogo } from "@/components/BrandLogo";
 import { WageredLeaderboard } from "@/components/WageredLeaderboard";
-import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -21,14 +21,7 @@ export default function LeaderboardPage() {
             ← Back home
           </Link>
         </div>
-        <a
-          className={styles.kickLink}
-          href={KICK_CHANNEL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          kick.com/Blakjac21
-        </a>
+        <AccountHeader />
       </header>
 
       <main className={styles.main}>

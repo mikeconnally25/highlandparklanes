@@ -1,3 +1,4 @@
+import { AccountHeader } from "@/components/AccountHeader";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FeatureTabs } from "@/components/FeatureTabs";
 import { KickPlayer } from "@/components/KickPlayer";
@@ -15,14 +16,7 @@ export default function Home() {
       <div className={styles.shell}>
         <header className={styles.top}>
           <BrandLogo size="md" showWordmark priority />
-          <a
-            className={styles.kickLink}
-            href={KICK_CHANNEL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            kick.com/Blakjac21
-          </a>
+          <AccountHeader />
         </header>
 
         <main className={styles.hero}>
