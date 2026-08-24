@@ -49,8 +49,8 @@ const PANEL_COPY: Record<
       },
       {
         label: "X / Twitter",
-        href: "https://x.com/Blakjac21",
-        handle: "@Blakjac21",
+        href: "https://x.com/21Blakjac",
+        handle: "@21Blakjac",
       },
       {
         label: "Instagram",
