@@ -84,18 +84,35 @@ export function FeatureTabs() {
             );
           }
 
-          const isOpen = openTab === tab.id;
-          const panel = PANEL_COPY[tab.id];
+          if (tab.kind === "external") {
+            return (
+              <li key={tab.id} className={styles.item}>
+                <a
+                  className={styles.linkTrigger}
+                  href={tab.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>{tab.label}</span>
+                  <span className={styles.linkArrow} aria-hidden />
+                </a>
+              </li>
+            );
+          }
+
+          const panelId = tab.id;
+          const isOpen = openTab === panelId;
+          const panel = PANEL_COPY[panelId];
 
           return (
-            <li key={tab.id} className={styles.item}>
+            <li key={panelId} className={styles.item}>
               <button
                 type="button"
-                id={`tab-${tab.id}`}
+                id={`tab-${panelId}`}
                 className={styles.trigger}
                 aria-expanded={isOpen}
-                aria-controls={`panel-${tab.id}`}
-                onClick={() => toggleTab(tab.id)}
+                aria-controls={`panel-${panelId}`}
+                onClick={() => toggleTab(panelId)}
               >
                 <span>{tab.label}</span>
                 <span
@@ -105,11 +122,11 @@ export function FeatureTabs() {
                 />
               </button>
               <div
-                id={`panel-${tab.id}`}
+                id={`panel-${panelId}`}
                 className={styles.panel}
                 data-open={isOpen || undefined}
                 role="region"
-                aria-labelledby={`tab-${tab.id}`}
+                aria-labelledby={`tab-${panelId}`}
                 aria-hidden={!isOpen}
               >
                 <p className={styles.panelTitle}>{panel.title}</p>
