@@ -9,6 +9,7 @@ export type WageredLeaderboardData = {
   entries: WageredLeaderboardEntry[];
   periodStart: string | null;
   periodEnd: string | null;
+  periodLabel: string | null;
   updatedAt: string;
 };
 
@@ -30,21 +31,48 @@ const MONTHS: Record<string, number> = {
   Dec: 11,
 };
 
-function parsePeriodDate(value: string): number {
-  const match = value.trim().match(/^(\d{2})-([A-Za-z]{3})-(\d{2})/);
-  if (!match) return 0;
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
-  const day = Number(match[1]);
-  const month = MONTHS[match[2]] ?? 0;
-  const year = 2000 + Number(match[3]);
-  return new Date(year, month, day).getTime();
+function parsePeriodParts(value: string): { month: number; year: number } | null {
+  const match = value.trim().match(/^(\d{2})-([A-Za-z]{3})-(\d{2})/);
+  if (!match) return null;
+
+  return {
+    month: MONTHS[match[2]] ?? -1,
+    year: 2000 + Number(match[3]),
+  };
 }
 
-function getLatestPeriodKey(
+function parsePeriodDate(value: string): number {
+  const parts = parsePeriodParts(value);
+  if (!parts) return 0;
+
+  const dayMatch = value.trim().match(/^(\d{2})-/);
+  const day = dayMatch ? Number(dayMatch[1]) : 1;
+  return new Date(parts.year, parts.month, day).getTime();
+}
+
+function getCurrentMonthPeriodKey(
   rows: string[][],
   startIndex: number,
   endIndex: number,
+  now = new Date(),
 ): string | null {
+  const currentMonth = now.getUTCMonth();
+  const currentYear = now.getUTCFullYear();
   let latestEnd = 0;
   let latestKey: string | null = null;
 
@@ -52,6 +80,15 @@ function getLatestPeriodKey(
     const start = startIndex >= 0 ? row[startIndex]?.trim() ?? "" : "";
     const end = endIndex >= 0 ? row[endIndex]?.trim() ?? "" : "";
     if (!start || !end) continue;
+
+    const startParts = parsePeriodParts(start);
+    if (
+      !startParts ||
+      startParts.month !== currentMonth ||
+      startParts.year !== currentYear
+    ) {
+      continue;
+    }
 
     const endTime = parsePeriodDate(end);
     const key = `${start}|${end}`;
@@ -62,6 +99,12 @@ function getLatestPeriodKey(
   }
 
   return latestKey;
+}
+
+function formatMonthYear(value: string): string | null {
+  const parts = parsePeriodParts(value);
+  if (!parts || parts.month < 0) return null;
+  return `${MONTH_NAMES[parts.month]} ${parts.year}`;
 }
 
 function getSheetUrl(): string {
@@ -150,6 +193,7 @@ export async function fetchWageredLeaderboard(
       entries: [],
       periodStart: null,
       periodEnd: null,
+      periodLabel: null,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -165,15 +209,15 @@ export async function fetchWageredLeaderboard(
     throw new Error("Sheet is missing user_name or wagered columns");
   }
 
-  const latestPeriodKey = getLatestPeriodKey(rows, startIndex, endIndex);
+  const currentMonthPeriodKey = getCurrentMonthPeriodKey(rows, startIndex, endIndex);
 
   const parsed = rows
     .slice(1)
     .filter((row) => {
-      if (!latestPeriodKey) return true;
+      if (!currentMonthPeriodKey) return false;
       const start = startIndex >= 0 ? row[startIndex]?.trim() ?? "" : "";
       const end = endIndex >= 0 ? row[endIndex]?.trim() ?? "" : "";
-      return `${start}|${end}` === latestPeriodKey;
+      return `${start}|${end}` === currentMonthPeriodKey;
     })
     .map((row) => {
       const userName = row[userNameIndex]?.trim() ?? "";
@@ -206,16 +250,21 @@ export async function fetchWageredLeaderboard(
   const periodRow = rows
     .slice(1)
     .find((row) => {
-      if (!latestPeriodKey) return true;
+      if (!currentMonthPeriodKey) return false;
       const start = startIndex >= 0 ? row[startIndex]?.trim() ?? "" : "";
       const end = endIndex >= 0 ? row[endIndex]?.trim() ?? "" : "";
-      return `${start}|${end}` === latestPeriodKey;
-    }) ?? rows[1];
+      return `${start}|${end}` === currentMonthPeriodKey;
+    });
+
+  const periodStart =
+    periodRow && startIndex >= 0 ? periodRow[startIndex]?.trim() || null : null;
 
   return {
     entries: parsed,
-    periodStart: startIndex >= 0 ? periodRow[startIndex]?.trim() || null : null,
-    periodEnd: endIndex >= 0 ? periodRow[endIndex]?.trim() || null : null,
+    periodStart,
+    periodEnd:
+      periodRow && endIndex >= 0 ? periodRow[endIndex]?.trim() || null : null,
+    periodLabel: periodStart ? formatMonthYear(periodStart) : null,
     updatedAt: new Date().toISOString(),
   };
 }

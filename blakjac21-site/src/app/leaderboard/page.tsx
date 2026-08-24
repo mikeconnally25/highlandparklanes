@@ -31,13 +31,14 @@ export default function LeaderboardPage() {
         <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Leaderboard</h1>
         <p className={styles.lead}>
-          Top wagered players under the Blakjac21 code. Rankings pull live from
-          the affiliate sheet and refresh automatically as it updates.
+          Top wagered players under the Blakjac21 code for the current month.
+          Rankings pull live from the affiliate sheet and refresh automatically
+          as it updates.
         </p>
 
         <section className={styles.section} aria-labelledby="wagered-board">
           <h2 id="wagered-board" className={styles.sectionTitle}>
-            Top wagered
+            Top wagered — current month
           </h2>
           <div className={styles.card}>
             <WageredLeaderboard />

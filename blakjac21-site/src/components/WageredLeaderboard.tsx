@@ -34,16 +34,21 @@ export function WageredLeaderboard() {
   if (!data || data.entries.length === 0) {
     return (
       <div className={styles.wrap}>
-        <p className={styles.status}>No wagered leaderboard data yet.</p>
+        <p className={styles.status}>
+          No wagered leaderboard data for the current month yet.
+        </p>
       </div>
     );
   }
 
   return (
     <div className={styles.wrap}>
-      {data.periodStart && data.periodEnd ? (
+      {data.periodLabel ? (
         <p className={styles.period}>
-          Period: {data.periodStart} – {data.periodEnd}
+          Current month: {data.periodLabel}
+          {data.periodStart && data.periodEnd
+            ? ` (${data.periodStart} – ${data.periodEnd})`
+            : ""}
         </p>
       ) : null}
 
@@ -62,7 +67,7 @@ export function WageredLeaderboard() {
       </ol>
 
       <p className={styles.meta}>
-        Top 10 by wagered amount · auto-refreshes every minute
+        Top 10 wagered this month · auto-refreshes every minute
         {data.updatedAt ? ` · Updated ${formatUpdatedAt(data.updatedAt)}` : ""}
       </p>
 
