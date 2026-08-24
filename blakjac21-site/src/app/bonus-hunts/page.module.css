@@ -79,7 +79,9 @@
 
 .main {
   flex: 1;
-  max-width: 52rem;
+  max-width: 72rem;
+  width: 100%;
+  margin-inline: auto;
   padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2rem) 2rem;
 }
 
@@ -118,6 +120,38 @@
 
 .section {
   margin-top: 2rem;
+}
+
+.huntLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.75fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.widgetColumn {
+  position: sticky;
+  top: 1rem;
+}
+
+.widgetLabel {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+@media (max-width: 960px) {
+  .huntLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .widgetColumn {
+    position: static;
+  }
 }
 
 .sectionTitle {

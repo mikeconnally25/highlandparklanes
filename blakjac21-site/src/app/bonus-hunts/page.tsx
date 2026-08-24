@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
+import { BonusOverlayWidget } from "@/components/BonusOverlayWidget";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
 
@@ -34,16 +36,23 @@ export default function BonusHuntsPage() {
         <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Bonus Hunts</h1>
         <p className={styles.lead}>
-          Build the live bonus list, tag Super/Epic hits, and take slot requests
-          from Kick chat with !r.
+          Build the live bonus table on the left. The OBS-style widget on the
+          right rolls in each bonus as you add it — use the overlay URL in OBS.
         </p>
 
         <section className={styles.section} aria-labelledby="active-hunt">
           <h2 id="active-hunt" className={styles.sectionTitle}>
             Active hunt
           </h2>
-          <div className={styles.card}>
-            <ActiveHuntPanel />
+          <div className={styles.huntLayout}>
+            <div className={styles.card}>
+              <ActiveHuntPanel />
+            </div>
+            <aside className={styles.widgetColumn} aria-label="OBS bonus widget preview">
+              <p className={styles.widgetLabel}>OBS widget preview</p>
+              <BonusOverlayWidget mode="preview" />
+              <ObsOverlayLink />
+            </aside>
           </div>
         </section>
 
