@@ -4,15 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { GuessBalancePanel } from "@/components/GuessBalancePanel";
 import styles from "./FeatureTabs.module.css";
 
-type TabId = "balance" | "leaderboard" | "rewards";
+type TabId = "balance" | "bonusHunts" | "leaderboard" | "rewards";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "balance", label: "Guess the Balance" },
+  { id: "bonusHunts", label: "Bonus Hunts" },
   { id: "leaderboard", label: "Leaderboard" },
   { id: "rewards", label: "Rewards" },
 ];
 
 const PANEL_COPY: Record<Exclude<TabId, "balance">, { title: string; body: string }> = {
+  bonusHunts: {
+    title: "Bonus Hunts",
+    body: "Track active and past bonus hunts from stream. Live hunt stats and results will show here during bonus hunt streams.",
+  },
   leaderboard: {
     title: "Leaderboard",
     body: "Top viewers and streak holders will show up here. Rankings reset each stream week.",

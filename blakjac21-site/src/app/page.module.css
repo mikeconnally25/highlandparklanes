@@ -135,8 +135,8 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(3.8rem, 14vw, 7.5rem);
-  line-height: 0.92;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  line-height: 0.95;
   letter-spacing: -0.03em;
   background: linear-gradient(180deg, #ffffff 0%, #dfffe8 45%, #53fc18 100%);
   -webkit-background-clip: text;
@@ -159,6 +159,10 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.communitySlot {
+  margin-top: 0.85rem;
 }
 
 .ctaSecondary {
@@ -288,7 +292,7 @@
   }
 
   .brand {
-    font-size: clamp(3rem, 16vw, 4.8rem);
+    font-size: clamp(2.2rem, 11vw, 3.4rem);
   }
 
   .ctas {

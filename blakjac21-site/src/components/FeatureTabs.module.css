@@ -1,6 +1,7 @@
 .wrap {
   position: relative;
   z-index: 20;
+  margin-top: 0.85rem;
 }
 
 .menuTrigger {
