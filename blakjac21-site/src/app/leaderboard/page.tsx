@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { WageredLeaderboard } from "@/components/WageredLeaderboard";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Leaderboard | Blakjac21",
   description:
-    "Top viewers, streak holders, and community rankings from Blakjac21 streams on Kick.",
+    "Top wagered players and community rankings from Blakjac21 streams on Kick.",
 };
 
 export default function LeaderboardPage() {
@@ -30,47 +31,17 @@ export default function LeaderboardPage() {
         <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Leaderboard</h1>
         <p className={styles.lead}>
-          Top viewers and streak holders from Blakjac21 streams. Rankings reset
-          each stream week — show up live to climb the board.
+          Top wagered players under the Blakjac21 code. Rankings pull live from
+          the affiliate sheet and refresh automatically as it updates.
         </p>
 
-        <section className={styles.section} aria-labelledby="weekly-board">
-          <h2 id="weekly-board" className={styles.sectionTitle}>
-            This week
+        <section className={styles.section} aria-labelledby="wagered-board">
+          <h2 id="wagered-board" className={styles.sectionTitle}>
+            Top wagered
           </h2>
           <div className={styles.card}>
-            <p className={styles.cardStatus}>Rankings coming soon</p>
-            <p className={styles.cardBody}>
-              Weekly top chatters, guess-the-balance wins, and watch-time leaders
-              will appear here once tracking is wired up.
-            </p>
-            <a
-              className={styles.cardLink}
-              href={KICK_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Watch on Kick
-            </a>
+            <WageredLeaderboard />
           </div>
-        </section>
-
-        <section className={styles.section} aria-labelledby="all-time">
-          <h2 id="all-time" className={styles.sectionTitle}>
-            All-time
-          </h2>
-          <ul className={styles.list}>
-            <li className={styles.card}>
-              <p className={styles.cardLabel}>Hall of fame</p>
-              <p className={styles.cardTitle}>
-                Longest streaks and repeat winners will show up here
-              </p>
-              <p className={styles.cardBody}>
-                Past week winners and community milestones — tied to stream
-                events and chat activity.
-              </p>
-            </li>
-          </ul>
         </section>
       </main>
 
