@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GuessBalancePanel } from "@/components/GuessBalancePanel";
 import styles from "./FeatureTabs.module.css";
 
 type TabId = "balance" | "leaderboard" | "rewards";
@@ -11,11 +12,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "rewards", label: "Rewards" },
 ];
 
-const PANEL_COPY: Record<TabId, { title: string; body: string }> = {
-  balance: {
-    title: "Guess the Balance",
-    body: "Tune in live and call the balance before the reveal. Closest guess wins bragging rights — full game coming soon.",
-  },
+const PANEL_COPY: Record<Exclude<TabId, "balance">, { title: string; body: string }> = {
   leaderboard: {
     title: "Leaderboard",
     body: "Top viewers and streak holders will show up here. Rankings reset each stream week.",
@@ -39,7 +36,7 @@ export function FeatureTabs() {
       <ul className={styles.list}>
         {TABS.map((tab) => {
           const isOpen = openTab === tab.id;
-          const panel = PANEL_COPY[tab.id];
+          const panel = tab.id === "balance" ? null : PANEL_COPY[tab.id];
 
           return (
             <li key={tab.id} className={styles.item}>
@@ -56,14 +53,20 @@ export function FeatureTabs() {
               </button>
               <div
                 id={`panel-${tab.id}`}
-                className={styles.panel}
+                className={`${styles.panel} ${tab.id === "balance" ? styles.panelWide : ""}`}
                 data-open={isOpen || undefined}
                 role="region"
                 aria-labelledby={`tab-${tab.id}`}
                 aria-hidden={!isOpen}
               >
-                <p className={styles.panelTitle}>{panel.title}</p>
-                <p className={styles.panelBody}>{panel.body}</p>
+                {tab.id === "balance" ? (
+                  <GuessBalancePanel />
+                ) : panel ? (
+                  <>
+                    <p className={styles.panelTitle}>{panel.title}</p>
+                    <p className={styles.panelBody}>{panel.body}</p>
+                  </>
+                ) : null}
               </div>
             </li>
           );

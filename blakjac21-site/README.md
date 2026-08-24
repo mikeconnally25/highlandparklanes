@@ -26,3 +26,16 @@ Server routes:
 - `GET /api/kick/vod/[uuid]` — VOD playback source for HLS
 
 Channel slug: `Blakjac21`
+
+## Guess the Balance
+
+Set an admin token to control entries during stream:
+
+```bash
+cp .env.example .env.local
+# edit GUESS_ADMIN_TOKEN in .env.local
+```
+
+In **Streamer controls** under Guess the Balance, paste the same token to open/close entries and clear guesses.
+
+When entries are open, the site listens to Kick chat and records messages like `1234`, `$1,234.50`, or `!guess 500` (one guess per username).
