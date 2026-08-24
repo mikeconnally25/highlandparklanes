@@ -54,8 +54,8 @@ const PANEL_COPY: Record<
       },
       {
         label: "Discord",
-        href: "https://discord.gg/",
-        handle: "Coming soon",
+        href: "https://discord.gg/YZhPQKwV6",
+        handle: "discord.gg/YZhPQKwV6",
       },
     ],
   },
