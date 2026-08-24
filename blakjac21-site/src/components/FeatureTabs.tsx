@@ -15,7 +15,10 @@ type SocialLink = {
 
 type TabConfig =
   | { id: string; label: string; kind: "link"; href: string }
+  | { id: string; label: string; kind: "external"; href: string }
   | { id: PanelTabId; label: string; kind: "panel" };
+
+const STAKE_URL = "https://stake.com/?offer=blakjac21&c=c52feb0e28";
 
 const TABS: TabConfig[] = [
   {
@@ -27,6 +30,7 @@ const TABS: TabConfig[] = [
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
   { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
   { id: "rewards", label: "Rewards", kind: "link", href: "/rewards" },
+  { id: "stake", label: "Stake", kind: "external", href: STAKE_URL },
   { id: "social", label: "Social Media", kind: "panel" },
 ];
 
