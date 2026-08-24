@@ -71,6 +71,7 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  border-radius: 0.35rem;
   background:
     radial-gradient(
       ellipse at 50% 40%,
@@ -78,11 +79,10 @@
       transparent 60%
     ),
     #050806;
-  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--gold) 8%, transparent),
-    0 24px 60px rgba(0, 0, 0, 0.45);
+    0 16px 40px rgba(0, 0, 0, 0.4);
 }
 
 .frame,
@@ -166,8 +166,8 @@
 .playIcon {
   display: grid;
   place-items: center;
-  width: 4.25rem;
-  height: 4.25rem;
+  width: 3.25rem;
+  height: 3.25rem;
   border-radius: 50%;
   background: color-mix(in srgb, var(--accent) 88%, #000);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
@@ -215,7 +215,7 @@
 
 @media (max-width: 720px) {
   .playIcon {
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
   }
 }
