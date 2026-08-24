@@ -154,7 +154,7 @@
 
 .playerBleed {
   width: 100%;
-  max-width: 28rem;
+  max-width: 10rem;
   margin: 0.25rem auto 0;
   padding: 0 clamp(1rem, 3vw, 2rem);
 }
