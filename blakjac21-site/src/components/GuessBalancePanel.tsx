@@ -20,7 +20,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
     if (typeof window === "undefined") return "";
     return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
   });
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(fullPage);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -208,11 +208,12 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
               Admin token
               <input
                 className={styles.input}
-                type="password"
+                type="text"
                 value={adminToken}
                 onChange={(e) => setAdminToken(e.target.value)}
-                placeholder="Set GUESS_ADMIN_TOKEN"
+                placeholder="Paste GUESS_ADMIN_TOKEN from .env.local"
                 autoComplete="off"
+                spellCheck={false}
               />
             </label>
 
