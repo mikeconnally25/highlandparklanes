@@ -13,11 +13,13 @@
 .statusBadge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.55rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-pill);
   font-family: var(--font-display);
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   border: 1px solid transparent;
 }
 
@@ -51,9 +53,10 @@
 }
 
 .guessList {
-  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  background: color-mix(in srgb, var(--bg-0) 55%, transparent);
-  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.75rem 0.85rem;
 }
 
 .guessHeading {
@@ -163,9 +166,10 @@
 
 .input {
   width: 100%;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
-  background: color-mix(in srgb, var(--bg-0) 80%, transparent);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
   font: inherit;
 }
@@ -183,17 +187,19 @@
 
 .adminBtnPrimary,
 .adminBtnSecondary {
-  padding: 0.45rem 0.7rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-pill);
   border: 1px solid transparent;
   font-family: var(--font-display);
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   cursor: pointer;
 }
 
 .adminBtnPrimary {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
   color: #041006;
 }
 
@@ -203,9 +209,9 @@
 }
 
 .adminBtnSecondary {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
-  border-color: color-mix(in srgb, var(--text) 22%, transparent);
+  border-color: var(--glass-border);
 }
 
 .adminBtnSecondary:disabled {

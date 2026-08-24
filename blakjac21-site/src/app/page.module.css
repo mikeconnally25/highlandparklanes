@@ -7,61 +7,87 @@
 }
 
 .top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.1rem clamp(1rem, 3vw, 2rem);
+  margin: 0.85rem clamp(1rem, 3vw, 2rem) 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-soft);
 }
 
 .logoSlot {
   display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
-  min-height: 2.5rem;
-  padding: 0.25rem 0.55rem 0.25rem 0.25rem;
-  border: 1px dashed color-mix(in srgb, var(--gold) 35%, transparent);
-  background: color-mix(in srgb, var(--bg-0) 50%, transparent);
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-highlight);
 }
 
 .logoMark {
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
-  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 0.95rem;
   color: #041006;
-  background: linear-gradient(145deg, var(--accent), #2db80f);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+  box-shadow: 0 0 24px rgba(83, 252, 24, 0.35);
 }
 
 .logoHint {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
-  padding-right: 0.35rem;
 }
 
 .kickLink {
-  font-size: 0.85rem;
-  letter-spacing: 0.06em;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .kickLink:hover,
 .kickLink:focus-visible {
   color: var(--accent);
-  border-bottom-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 0 20px rgba(83, 252, 24, 0.12);
 }
 
 .hero {
   flex: 1;
-  padding-bottom: 2.5rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0 2.5rem;
 }
 
 .heroGrid {
@@ -69,43 +95,53 @@
   grid-template-columns: minmax(0, 1fr) min(24rem, 38vw);
   grid-template-areas: "brand player";
   align-items: start;
-  gap: clamp(1rem, 3vw, 2rem);
+  gap: clamp(1.25rem, 3vw, 2.5rem);
   padding: 0 clamp(1rem, 3vw, 2rem);
 }
 
 .brandBlock {
   grid-area: brand;
-  padding-top: 0.25rem;
+  padding-top: 0.5rem;
   max-width: 52rem;
   animation: brandIn 0.8s ease both;
 }
 
 .eyebrow {
-  margin: 0 0 0.35rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
 }
 
 .brand {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(4.2rem, 16vw, 8.5rem);
-  line-height: 0.9;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  text-shadow:
-    0 0 40px color-mix(in srgb, var(--accent) 25%, transparent),
-    0 2px 0 color-mix(in srgb, var(--felt) 80%, #000);
+  font-weight: 800;
+  font-size: clamp(3.8rem, 14vw, 7.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #ffffff 0%, #dfffe8 45%, #53fc18 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 12px 32px rgba(83, 252, 24, 0.18));
 }
 
 .tagline {
-  margin: 0.85rem 0 0;
-  max-width: 28rem;
-  font-size: clamp(1rem, 2.2vw, 1.15rem);
-  line-height: 1.45;
+  margin: 1rem 0 0;
+  max-width: 30rem;
+  font-size: clamp(1rem, 2vw, 1.12rem);
+  font-weight: 400;
+  line-height: 1.6;
   color: var(--text-muted);
 }
 
@@ -113,49 +149,41 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 1.35rem;
+  margin-top: 1.5rem;
 }
 
-.ctaPrimary,
 .ctaSecondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.85rem;
-  padding: 0.65rem 1.25rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.35rem;
+  border-radius: var(--radius-pill);
   text-decoration: none;
   font-family: var(--font-display);
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 1rem;
+  font-size: 0.92rem;
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
   transition:
     transform 0.2s ease,
-    background 0.2s ease,
     border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.ctaPrimary {
-  background: var(--accent);
-  color: #041006;
-}
-
-.ctaPrimary:hover,
-.ctaPrimary:focus-visible {
-  transform: translateY(-1px);
-  background: #6dff3a;
-}
-
-.ctaSecondary {
-  border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
-  color: var(--text);
-  background: transparent;
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .ctaSecondary:hover,
 .ctaSecondary:focus-visible {
-  border-color: var(--gold);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
   color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
 }
 
 .playerBleed {
@@ -165,36 +193,45 @@
   width: 100%;
   max-width: 24rem;
   margin: 0;
-  padding: 0;
+  padding: 0.85rem;
+  border-radius: calc(var(--radius-lg) + 0.15rem);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-soft), var(--shadow-glow);
 }
 
 .footer {
-  margin-top: auto;
+  margin: 0 clamp(1rem, 3vw, 2rem) 1.25rem;
   display: grid;
-  gap: 0.65rem;
-  padding: 2rem clamp(1rem, 3vw, 2rem) 2.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  gap: 0.75rem;
+  padding: 1.35rem 1.25rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
 }
 
 .footerBrand {
   font-family: var(--font-display);
-  letter-spacing: 0.1em;
-  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 1.05rem;
 }
 
 .disclaimer {
   max-width: 36rem;
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.84rem;
+  line-height: 1.55;
   color: var(--text-dim);
 }
 
 .footerLink {
   width: fit-content;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 600;
   color: var(--accent);
   text-decoration: none;
-  letter-spacing: 0.04em;
 }
 
 .footerLink:hover,
@@ -205,7 +242,7 @@
 @keyframes brandIn {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -214,6 +251,10 @@
 }
 
 @media (max-width: 720px) {
+  .top {
+    margin-top: 0.65rem;
+  }
+
   .heroGrid {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -223,12 +264,12 @@
   }
 
   .playerBleed {
-    justify-self: end;
-    max-width: min(24rem, 100%);
+    justify-self: stretch;
+    max-width: none;
   }
 
   .brand {
-    font-size: clamp(3.4rem, 18vw, 5.5rem);
+    font-size: clamp(3rem, 16vw, 4.8rem);
   }
 
   .ctas {
@@ -242,6 +283,6 @@
 
 @media (min-width: 960px) {
   .hero {
-    min-height: calc(100vh - 4.5rem);
+    min-height: calc(100vh - 5.5rem);
   }
 }

@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Manrope } from "next/font/google";
+import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
 
-const display = Bebas_Neue({
-  weight: "400",
+const display = Syne({
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
   variable: "--font-display",
 });
 
-const body = Manrope({
+const body = DM_Sans({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-body",
 });
 

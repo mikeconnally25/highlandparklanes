@@ -3,36 +3,42 @@
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
-  min-height: 2.85rem;
-  padding: 0.65rem 1.25rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.35rem;
+  border-radius: var(--radius-pill);
   text-decoration: none;
   font-family: var(--font-display);
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 1rem;
-  background: var(--accent);
+  font-size: 0.92rem;
   color: #041006;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+  box-shadow: 0 10px 30px rgba(83, 252, 24, 0.22);
   transition:
     transform 0.2s ease,
-    background 0.2s ease;
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
 .cta:hover,
 .cta:focus-visible {
   transform: translateY(-1px);
-  background: #6dff3a;
+  filter: brightness(1.05);
+  box-shadow: 0 14px 36px rgba(83, 252, 24, 0.28);
 }
 
 .cta[data-live] {
-  background: #0f140f;
   color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid color-mix(in srgb, var(--live) 45%, transparent);
-  box-shadow: 0 0 18px color-mix(in srgb, var(--live) 18%, transparent);
+  box-shadow: 0 0 24px rgba(255, 77, 90, 0.16);
 }
 
 .cta[data-live]:hover,
 .cta[data-live]:focus-visible {
-  background: color-mix(in srgb, var(--live) 12%, #0f140f);
+  background: color-mix(in srgb, var(--live) 10%, rgba(255, 255, 255, 0.04));
+  box-shadow: 0 0 28px rgba(255, 77, 90, 0.22);
 }
 
 .liveDot {

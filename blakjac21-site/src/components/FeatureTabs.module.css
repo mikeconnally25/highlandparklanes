@@ -1,14 +1,20 @@
 .wrap {
-  margin-top: 1.75rem;
+  margin-top: 1.85rem;
   max-width: 22rem;
+  padding: 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(14px);
 }
 
 .heading {
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.75rem;
   font-family: var(--font-display);
-  letter-spacing: 0.14em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--gold);
 }
 
@@ -17,12 +23,14 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .item {
-  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
-  background: color-mix(in srgb, var(--bg-0) 65%, transparent);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .trigger {
@@ -31,14 +39,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 0.9rem;
+  padding: 0.85rem 1rem;
   border: 0;
   background: transparent;
   color: var(--text);
   font-family: var(--font-display);
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  font-size: 0.92rem;
+  font-size: 0.84rem;
   text-align: left;
   cursor: pointer;
   transition:
@@ -53,9 +62,8 @@
 }
 
 .trigger[aria-expanded="true"] {
-  background: color-mix(in srgb, var(--felt) 35%, transparent);
+  background: color-mix(in srgb, var(--felt) 28%, transparent);
   color: var(--accent);
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .chevron {
@@ -73,7 +81,7 @@
 }
 
 .panel {
-  padding: 0 0.9rem;
+  padding: 0 1rem;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -86,7 +94,7 @@
 .panel[data-open] {
   max-height: 28rem;
   opacity: 1;
-  padding: 0.75rem 0.9rem 0.9rem;
+  padding: 0 1rem 1rem;
 }
 
 .panelWide[data-open] {
@@ -96,15 +104,16 @@
 .panelTitle {
   margin: 0 0 0.35rem;
   font-size: 0.82rem;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text);
 }
 
 .panelBody {
   margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: 0.84rem;
+  line-height: 1.55;
   color: var(--text-muted);
 }
 

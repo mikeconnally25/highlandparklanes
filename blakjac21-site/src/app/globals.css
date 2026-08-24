@@ -1,15 +1,25 @@
 :root {
-  --bg-0: #050806;
-  --bg-1: #0b140f;
-  --felt: #0f3d28;
+  --bg-0: #030504;
+  --bg-1: #080c0a;
+  --bg-elevated: rgba(12, 18, 14, 0.72);
+  --felt: #0d4a32;
   --accent: #53fc18;
-  --live: #ff3b4a;
-  --gold: #d4b15f;
-  --text: #f2f6ef;
-  --text-muted: #b7c4b4;
-  --text-dim: #7f8f80;
-  --font-display: "Bebas Neue", Impact, sans-serif;
-  --font-body: "Manrope", "Segoe UI", sans-serif;
+  --accent-soft: #3de012;
+  --live: #ff4d5a;
+  --gold: #e8c56a;
+  --text: #f4f7f2;
+  --text-muted: #a8b5a9;
+  --text-dim: #6b776c;
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --radius-sm: 0.65rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 40px rgba(83, 252, 24, 0.12);
+  --font-display: "Syne", "Segoe UI", sans-serif;
+  --font-body: "DM Sans", "Segoe UI", sans-serif;
 }
 
 * {
@@ -33,23 +43,12 @@ body {
   min-height: 100%;
   color: var(--text);
   background:
-    radial-gradient(
-      ellipse 90% 60% at 50% -10%,
-      color-mix(in srgb, var(--felt) 55%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 100% 20%,
-      color-mix(in srgb, var(--gold) 10%, transparent),
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse 40% 35% at 0% 80%,
-      color-mix(in srgb, var(--accent) 8%, transparent),
-      transparent 45%
-    ),
+    radial-gradient(circle at 15% 10%, rgba(83, 252, 24, 0.08), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(232, 197, 106, 0.06), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(13, 74, 50, 0.22), transparent 40%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
   font-family: var(--font-body);
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -59,7 +58,21 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.08;
+  opacity: 0.35;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 20%, black, transparent 75%);
+  z-index: 0;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   z-index: 0;
 }
