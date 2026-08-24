@@ -15,6 +15,16 @@ import styles from "./ActiveHuntPanel.module.css";
 
 const ADMIN_TOKEN_KEY = "blakjac21-guess-admin-token";
 
+type SlotCatalogSummary = {
+  counts: { total: number; onlyOnStake: number; newReleases: number };
+  expectedCounts: { "only-on-stake": number; "new-releases": number };
+  updatedAt: string | null;
+  nextRefreshAt: string | null;
+  refreshIntervalHours: number;
+  refreshing: boolean;
+  lastError: string | null;
+};
+
 async function fetchState(): Promise<BonusHuntState> {
   const res = await fetch("/api/bonus-hunt", { cache: "no-store" });
   return (await res.json()) as BonusHuntState;
@@ -43,6 +53,9 @@ export function ActiveHuntPanel() {
   const [epicTier, setEpicTier] = useState(false);
   const [huntTitle, setHuntTitle] = useState("");
   const [winDrafts, setWinDrafts] = useState<Record<string, string>>({});
+  const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
+    null,
+  );
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
@@ -84,6 +97,28 @@ export function ActiveHuntPanel() {
 
     load();
     const timer = setInterval(load, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSlots() {
+      try {
+        const res = await fetch("/api/bonus-hunt/slots", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as SlotCatalogSummary;
+        if (!cancelled) setSlotCatalog(data);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    loadSlots();
+    const timer = setInterval(loadSlots, 60_000);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -170,6 +205,30 @@ export function ActiveHuntPanel() {
     } catch {
       setAdminError("Could not reach server");
       return null;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function refreshSlotCatalog() {
+    setAdminError(null);
+    setBusy(true);
+    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
+    try {
+      const res = await fetch("/api/bonus-hunt/slots?refresh=1", {
+        headers: { "x-admin-token": adminToken },
+        cache: "no-store",
+      });
+      const data = (await res.json()) as SlotCatalogSummary & {
+        error?: string;
+      };
+      if (!res.ok) {
+        setAdminError(data.error ?? "Slot catalog refresh failed");
+        return;
+      }
+      setSlotCatalog(data);
+    } catch {
+      setAdminError("Slot catalog refresh failed");
     } finally {
       setBusy(false);
     }
@@ -481,7 +540,27 @@ export function ActiveHuntPanel() {
         </div>
         <p className={styles.help}>
           Viewers type <code>!s Slot Name</code> in Kick chat when requests are
-          open. One request per username — resubmit to change the slot.
+          open. Slot must be an exact name from Stake{" "}
+          <a
+            href="https://stake.com/casino/group/only-on-stake"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Only on Stake
+          </a>{" "}
+          or{" "}
+          <a
+            href="https://stake.com/casino/group/new-releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            New Releases
+          </a>
+          . Catalog auto-refreshes daily
+          {slotCatalog?.counts.total
+            ? ` (${slotCatalog.counts.total.toLocaleString()} names cached)`
+            : ""}
+          . One request per username — resubmit to change the slot.
         </p>
         {slotRequests.length === 0 ? (
           <p className={styles.empty}>No slot requests yet.</p>
@@ -623,7 +702,32 @@ export function ActiveHuntPanel() {
               >
                 End hunt
               </button>
+              <button
+                type="button"
+                className={styles.adminBtnSecondary}
+                disabled={busy || Boolean(slotCatalog?.refreshing)}
+                onClick={() => void refreshSlotCatalog()}
+              >
+                {slotCatalog?.refreshing
+                  ? "Refreshing slots…"
+                  : "Refresh Stake slots"}
+              </button>
             </div>
+
+            {slotCatalog ? (
+              <p className={styles.adminHint}>
+                Slot catalog: {slotCatalog.counts.total.toLocaleString()} cached
+                {slotCatalog.updatedAt
+                  ? ` · last ${new Date(slotCatalog.updatedAt).toLocaleString()}`
+                  : " · not crawled yet"}
+                {slotCatalog.nextRefreshAt
+                  ? ` · next auto ${new Date(slotCatalog.nextRefreshAt).toLocaleString()}`
+                  : " · auto daily when stale"}
+                {slotCatalog.lastError
+                  ? ` · error: ${slotCatalog.lastError}`
+                  : ""}
+              </p>
+            ) : null}
 
             {adminError ? (
               <p className={styles.adminError} role="alert">

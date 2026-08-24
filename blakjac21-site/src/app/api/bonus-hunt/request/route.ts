@@ -2,6 +2,7 @@ import {
   addSlotRequest,
   parseSlotRequestMessage,
 } from "@/lib/bonus-hunt";
+import { resolveAllowedStakeSlot } from "@/lib/stake-slots";
 
 export async function POST(request: Request) {
   let body: { username?: string; message?: string; slotName?: string };
@@ -35,7 +36,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = addSlotRequest(username, parsed.slotName);
+  const allowed = await resolveAllowedStakeSlot(parsed.slotName);
+  if (!allowed.ok) {
+    return Response.json(
+      { error: allowed.reason, allowed: false },
+      { status: 400 },
+    );
+  }
+
+  const result = addSlotRequest(username, allowed.slot.name);
   if (!result.accepted) {
     return Response.json(
       { error: result.reason ?? "Request rejected", state: result.state },
