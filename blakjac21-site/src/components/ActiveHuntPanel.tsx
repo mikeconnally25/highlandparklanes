@@ -347,7 +347,7 @@ export function ActiveHuntPanel() {
                 inputMode="decimal"
                 value={betSize}
                 onChange={(e) => setBetSize(e.target.value)}
-                placeholder="e.g. 1.00 or $2.50"
+                placeholder="$0.01 – $1,000"
                 autoComplete="off"
                 spellCheck={false}
               />

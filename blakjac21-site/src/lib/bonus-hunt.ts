@@ -145,8 +145,14 @@ export function parseMoneyAmount(
   return Math.round(amount * 100) / 100;
 }
 
+export const MIN_BET_SIZE = 0.01;
+export const MAX_BET_SIZE = 1000;
+
 export function parseBetSize(value: string | number | null | undefined): number | null {
-  return parseMoneyAmount(value, { allowZero: false });
+  const amount = parseMoneyAmount(value, { allowZero: false });
+  if (amount == null) return null;
+  if (amount < MIN_BET_SIZE || amount > MAX_BET_SIZE) return null;
+  return amount;
 }
 
 export function formatBetSize(amount: number | null): string {
@@ -270,7 +276,11 @@ export function addBonus(input: {
     input.betSize != null && String(input.betSize).trim() !== "";
   const betSize = parseBetSize(input.betSize);
   if (hasBetInput && betSize == null) {
-    return { accepted: false, reason: "Enter a valid bet size", state };
+    return {
+      accepted: false,
+      reason: "Bet size must be between $0.01 and $1,000",
+      state,
+    };
   }
 
   const tier: BonusTier =
