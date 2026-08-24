@@ -38,12 +38,26 @@ export type BonusHuntState = {
   startAmount: number | null;
   bonuses: BonusItem[];
   slotRequests: SlotRequest[];
+  startedAt: string | null;
   updatedAt: string;
+};
+
+export type PastHuntResult = {
+  id: string;
+  title: string;
+  startAmount: number | null;
+  bonuses: BonusItem[];
+  stats: BonusHuntStats;
+  startedAt: string | null;
+  endedAt: string;
 };
 
 type StoreGlobal = typeof globalThis & {
   __bonusHuntState?: BonusHuntState;
+  __bonusHuntHistory?: PastHuntResult[];
 };
+
+const MAX_PAST_HUNTS = 50;
 
 function createState(): BonusHuntState {
   return {
@@ -53,6 +67,7 @@ function createState(): BonusHuntState {
     startAmount: null,
     bonuses: [],
     slotRequests: [],
+    startedAt: null,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -63,6 +78,7 @@ export function getBonusHuntState(): BonusHuntState {
 
   const state = g.__bonusHuntState;
   if (state.startAmount === undefined) state.startAmount = null;
+  if (state.startedAt === undefined) state.startedAt = null;
   state.bonuses = state.bonuses.map((bonus) => ({
     ...bonus,
     winAmount: bonus.winAmount ?? null,
@@ -76,19 +92,84 @@ export function getBonusHuntState(): BonusHuntState {
   return state;
 }
 
+export function getPastHunts(): PastHuntResult[] {
+  const g = globalThis as StoreGlobal;
+  if (!g.__bonusHuntHistory) g.__bonusHuntHistory = [];
+  return g.__bonusHuntHistory;
+}
+
+function markHuntStarted(state: BonusHuntState) {
+  if (!state.startedAt) {
+    state.startedAt = new Date().toISOString();
+  }
+}
+
 export function setHuntActive(active: boolean): BonusHuntState {
   const state = getBonusHuntState();
   state.huntActive = active;
-  if (!active) {
+  if (active) {
+    markHuntStarted(state);
+  } else {
     state.requestsOpen = false;
   }
   state.updatedAt = new Date().toISOString();
   return state;
 }
 
+/** Archive the current hunt into past results and reset the active board. */
+export function endAndArchiveHunt(): {
+  accepted: boolean;
+  reason?: string;
+  state: BonusHuntState;
+  archived: PastHuntResult | null;
+} {
+  const state = getBonusHuntState();
+  const hasContent =
+    state.bonuses.length > 0 ||
+    state.startAmount != null ||
+    Boolean(state.title.trim());
+
+  let archived: PastHuntResult | null = null;
+
+  if (hasContent) {
+    const history = getPastHunts();
+    archived = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: state.title.trim() || "Untitled hunt",
+      startAmount: state.startAmount,
+      bonuses: state.bonuses.map((bonus) => ({ ...bonus })),
+      stats: getHuntStats(state),
+      startedAt: state.startedAt,
+      endedAt: new Date().toISOString(),
+    };
+    history.unshift(archived);
+    if (history.length > MAX_PAST_HUNTS) {
+      history.length = MAX_PAST_HUNTS;
+    }
+  }
+
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntState = createState();
+  return { accepted: true, state: getBonusHuntState(), archived };
+}
+
+export function getPastHunt(id: string): PastHuntResult | null {
+  return getPastHunts().find((hunt) => hunt.id === id) ?? null;
+}
+
+export function clearPastHunts(): PastHuntResult[] {
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntHistory = [];
+  return g.__bonusHuntHistory;
+}
+
 export function setHuntTitle(title: string): BonusHuntState {
   const state = getBonusHuntState();
   state.title = title.trim();
+  if (state.title) {
+    state.huntActive = true;
+    markHuntStarted(state);
+  }
   state.updatedAt = new Date().toISOString();
   return state;
 }
@@ -116,6 +197,7 @@ export function setStartAmount(
 
   state.startAmount = amount;
   state.huntActive = true;
+  markHuntStarted(state);
   state.updatedAt = new Date().toISOString();
   return { accepted: true, state };
 }
@@ -123,7 +205,10 @@ export function setStartAmount(
 export function setRequestsOpen(open: boolean): BonusHuntState {
   const state = getBonusHuntState();
   state.requestsOpen = open;
-  if (open) state.huntActive = true;
+  if (open) {
+    state.huntActive = true;
+    markHuntStarted(state);
+  }
   state.updatedAt = new Date().toISOString();
   return state;
 }
@@ -319,6 +404,7 @@ export function addBonus(input: {
     requestedBy,
     createdAt: new Date().toISOString(),
   });
+  markHuntStarted(state);
   state.updatedAt = new Date().toISOString();
   return { accepted: true, state };
 }

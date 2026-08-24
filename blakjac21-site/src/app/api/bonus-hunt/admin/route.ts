@@ -1,5 +1,6 @@
 import {
   clearSlotRequests,
+  endAndArchiveHunt,
   promoteSlotRequestToBonus,
   removeSlotRequest,
   setBonusWinAmount,
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
       | "remove-request"
       | "promote-request"
       | "set-active"
+      | "end-hunt"
       | "set-title"
       | "set-start-amount"
       | "set-win-amount";
@@ -75,6 +77,13 @@ export async function POST(request: Request) {
         );
       }
       return Response.json(setHuntActive(body.active));
+    case "end-hunt": {
+      const result = endAndArchiveHunt();
+      return Response.json({
+        ...result.state,
+        archived: result.archived,
+      });
+    }
     case "set-title":
       return Response.json(setHuntTitle(body.title ?? ""));
     case "set-start-amount": {

@@ -203,8 +203,23 @@ export function ActiveHuntPanel() {
         return null;
       }
 
-      const next = (await res.json()) as BonusHuntState;
+      const next = (await res.json()) as BonusHuntState & {
+        archived?: unknown;
+      };
       setState(next);
+      if (url.includes("/api/bonus-hunt/admin") && body && "action" in body) {
+        const action = (body as { action?: string }).action;
+        if (action === "end-hunt") {
+          setWinDrafts({});
+          setSelectedRequestId(null);
+          setBonusName("");
+          setBetSize("");
+          setWinAmount("");
+          setHuntTitle("");
+          setStartAmountInput("");
+          window.dispatchEvent(new Event("bonus-hunt-history-changed"));
+        }
+      }
       return next;
     } catch {
       setAdminError("Could not reach server");
@@ -791,8 +806,7 @@ export function ActiveHuntPanel() {
                 disabled={busy || !state?.huntActive}
                 onClick={() =>
                   adminRequest("/api/bonus-hunt/admin", {
-                    action: "set-active",
-                    active: false,
+                    action: "end-hunt",
                   })
                 }
               >

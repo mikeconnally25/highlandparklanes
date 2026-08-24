@@ -122,6 +122,70 @@
   margin-top: 2rem;
 }
 
+.dropdownToggle {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title chevron"
+    "hint chevron";
+  gap: 0.2rem 0.85rem;
+  width: 100%;
+  padding: 0.95rem 1.1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-soft);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.dropdownToggle:hover,
+.dropdownToggle:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg-elevated));
+}
+
+.dropdownTitle {
+  grid-area: title;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.dropdownHint {
+  grid-area: hint;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.dropdownChevron {
+  grid-area: chevron;
+  align-self: center;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.dropdownChevron[data-open] {
+  transform: rotate(-135deg);
+}
+
+.dropdownBody {
+  margin-top: 0.75rem;
+}
+
 .huntLayout {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.95fr);
