@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
@@ -33,8 +34,8 @@ export default function BonusHuntsPage() {
         <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Bonus Hunts</h1>
         <p className={styles.lead}>
-          Follow along with bonus hunt streams, track opens, and compare results
-          from past hunts on Kick.
+          Build the live bonus list, tag Super/Epic hits, and take slot requests
+          from Kick chat with !r.
         </p>
 
         <section className={styles.section} aria-labelledby="active-hunt">
@@ -42,19 +43,7 @@ export default function BonusHuntsPage() {
             Active hunt
           </h2>
           <div className={styles.card}>
-            <p className={styles.cardStatus}>No active hunt right now</p>
-            <p className={styles.cardBody}>
-              When Blakjac21 goes live with a bonus hunt, stats and progress will
-              show up here automatically.
-            </p>
-            <a
-              className={styles.cardLink}
-              href={KICK_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Watch on Kick
-            </a>
+            <ActiveHuntPanel />
           </div>
         </section>
 
