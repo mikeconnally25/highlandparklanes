@@ -613,7 +613,14 @@ export function ActiveHuntPanel() {
                       }
                     >
                       <td className={styles.colIndex}>{index + 1}</td>
-                      <td className={styles.colName}>{bonus.name}</td>
+                      <td className={styles.colName}>
+                        <span className={styles.bonusName}>{bonus.name}</span>
+                        {bonus.requestedBy ? (
+                          <span className={styles.bonusRequester}>
+                            {bonus.requestedBy}
+                          </span>
+                        ) : null}
+                      </td>
                       <td className={styles.colBet}>
                         {formatBetSize(bonus.betSize)}
                       </td>

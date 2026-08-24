@@ -413,6 +413,19 @@
   color: var(--text);
 }
 
+.bonusName {
+  display: inline;
+}
+
+.bonusRequester {
+  display: inline;
+  margin-left: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.01em;
+}
+
 .colBet {
   font-family: var(--font-display);
   font-weight: 700;

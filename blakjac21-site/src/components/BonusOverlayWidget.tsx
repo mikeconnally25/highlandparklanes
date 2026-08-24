@@ -128,7 +128,12 @@ export function BonusOverlayWidget({
             >
               <span className={styles.index}>{bonuses.length - index}</span>
               <div className={styles.main}>
-                <span className={styles.name}>{bonus.name}</span>
+                <span className={styles.name}>
+                  {bonus.name}
+                  {bonus.requestedBy ? (
+                    <span className={styles.requester}> {bonus.requestedBy}</span>
+                  ) : null}
+                </span>
                 <span className={styles.meta}>
                   <span className={styles.bet}>
                     Bet {formatBetSize(bonus.betSize)}

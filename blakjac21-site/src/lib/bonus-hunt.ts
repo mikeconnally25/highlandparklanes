@@ -6,6 +6,8 @@ export type BonusItem = {
   betSize: number | null;
   winAmount: number | null;
   tier: BonusTier;
+  /** Kick username that requested this slot via !s, if any */
+  requestedBy: string | null;
   createdAt: string;
 };
 
@@ -64,6 +66,7 @@ export function getBonusHuntState(): BonusHuntState {
   state.bonuses = state.bonuses.map((bonus) => ({
     ...bonus,
     winAmount: bonus.winAmount ?? null,
+    requestedBy: bonus.requestedBy ?? null,
   }));
   state.slotRequests = state.slotRequests.map((req) => ({
     ...req,
@@ -265,6 +268,7 @@ export function addBonus(input: {
   betSize?: string | number | null;
   winAmount?: string | number | null;
   tier?: BonusTier;
+  requestedBy?: string | null;
 }): {
   accepted: boolean;
   reason?: string;
@@ -303,6 +307,8 @@ export function addBonus(input: {
   const tier: BonusTier =
     input.tier === "super" || input.tier === "epic" ? input.tier : "normal";
 
+  const requestedBy = input.requestedBy?.trim().toLowerCase() || null;
+
   state.huntActive = true;
   state.bonuses.push({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -310,6 +316,7 @@ export function addBonus(input: {
     betSize,
     winAmount,
     tier,
+    requestedBy,
     createdAt: new Date().toISOString(),
   });
   state.updatedAt = new Date().toISOString();
@@ -338,6 +345,7 @@ export function promoteSlotRequestToBonus(input: {
     betSize: input.betSize,
     winAmount: input.winAmount,
     tier: input.tier,
+    requestedBy: request.username,
   });
   if (!result.accepted) return result;
 
