@@ -1,0 +1,57 @@
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.85rem;
+  padding: 0.65rem 1.25rem;
+  text-decoration: none;
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 1rem;
+  background: var(--accent);
+  color: #041006;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.cta:hover,
+.cta:focus-visible {
+  transform: translateY(-1px);
+  background: #6dff3a;
+}
+
+.cta[data-live] {
+  background: #0f140f;
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--live) 45%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--live) 18%, transparent);
+}
+
+.cta[data-live]:hover,
+.cta[data-live]:focus-visible {
+  background: color-mix(in srgb, var(--live) 12%, #0f140f);
+}
+
+.liveDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent);
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 65%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}

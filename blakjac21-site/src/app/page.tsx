@@ -1,4 +1,5 @@
 import { KickPlayer } from "@/components/KickPlayer";
+import { WatchCta } from "@/components/WatchCta";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
 
@@ -28,12 +29,7 @@ export default function Home() {
             High-stakes sessions, live when it counts — watch on Kick.
           </p>
           <div className={styles.ctas}>
-            <a
-              className={styles.ctaPrimary}
-              href="#watch"
-            >
-              Watch now
-            </a>
+            <WatchCta />
             <a
               className={styles.ctaSecondary}
               href={KICK_CHANNEL_URL}

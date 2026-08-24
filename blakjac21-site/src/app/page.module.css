@@ -153,8 +153,9 @@
 }
 
 .playerBleed {
+  align-self: center;
   width: 100%;
-  max-width: 10rem;
+  max-width: 24rem;
   margin: 0.25rem auto 0;
   padding: 0 clamp(1rem, 3vw, 2rem);
 }
@@ -213,8 +214,7 @@
     width: 100%;
   }
 
-  .ctaPrimary,
-  .ctaSecondary {
+  .ctas > a {
     flex: 1 1 auto;
   }
 }
