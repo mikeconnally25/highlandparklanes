@@ -13,7 +13,7 @@ async function fetchState(): Promise<GuessBalanceState> {
   return (await res.json()) as GuessBalanceState;
 }
 
-export function GuessBalancePanel() {
+export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) {
   const [state, setState] = useState<GuessBalanceState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
   const [adminToken, setAdminToken] = useState(() => {
@@ -141,10 +141,12 @@ export function GuessBalancePanel() {
     await adminRequest("/api/guess/balance/clear", "POST");
   }
 
-  const guesses = [...(state?.guesses ?? [])].reverse().slice(0, 15);
+  const guesses = [...(state?.guesses ?? [])]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, fullPage ? undefined : 15);
 
   return (
-    <div className={styles.wrap}>
+    <div className={`${styles.wrap} ${fullPage ? styles.wrapPage : ""}`}>
       <div className={styles.statusRow}>
         <span
           className={`${styles.statusBadge} ${entriesOpen ? styles.statusOpen : styles.statusClosed}`}
@@ -168,14 +170,17 @@ export function GuessBalancePanel() {
 
       <div className={styles.guessList} aria-live="polite">
         <p className={styles.guessHeading}>
-          Live guesses ({state?.guesses.length ?? 0})
+          {fullPage ? "Results" : "Live guesses"} ({state?.guesses.length ?? 0})
         </p>
         {guesses.length === 0 ? (
           <p className={styles.empty}>No guesses yet.</p>
         ) : (
-          <ul className={styles.guessItems}>
-            {guesses.map((guess) => (
+          <ul className={`${styles.guessItems} ${fullPage ? styles.guessItemsPage : ""}`}>
+            {guesses.map((guess, index) => (
               <li key={guess.id} className={styles.guessItem}>
+                {fullPage ? (
+                  <span className={styles.guessRank}>{index + 1}</span>
+                ) : null}
                 <span className={styles.guessUser}>{guess.username}</span>
                 <span className={styles.guessAmount}>
                   {formatUsd(guess.amount)}

@@ -2,23 +2,27 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { GuessBalancePanel } from "@/components/GuessBalancePanel";
 import styles from "./FeatureTabs.module.css";
 
-type PanelTabId = "balance" | "leaderboard" | "rewards";
+type PanelTabId = "leaderboard" | "rewards";
 
 type TabConfig =
-  | { id: PanelTabId; label: string; kind: "panel" }
-  | { id: "bonusHunts"; label: string; kind: "link"; href: string };
+  | { id: string; label: string; kind: "link"; href: string }
+  | { id: PanelTabId; label: string; kind: "panel" };
 
 const TABS: TabConfig[] = [
-  { id: "balance", label: "Guess the Balance", kind: "panel" },
+  {
+    id: "guessBalance",
+    label: "Guess the Balance",
+    kind: "link",
+    href: "/guess-the-balance",
+  },
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
   { id: "leaderboard", label: "Leaderboard", kind: "panel" },
   { id: "rewards", label: "Rewards", kind: "panel" },
 ];
 
-const PANEL_COPY: Record<Exclude<PanelTabId, "balance">, { title: string; body: string }> = {
+const PANEL_COPY: Record<PanelTabId, { title: string; body: string }> = {
   leaderboard: {
     title: "Leaderboard",
     body: "Top viewers and streak holders will show up here. Rankings reset each stream week.",
@@ -31,7 +35,7 @@ const PANEL_COPY: Record<Exclude<PanelTabId, "balance">, { title: string; body: 
 
 export function FeatureTabs() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [openTab, setOpenTab] = useState<PanelTabId | null>("balance");
+  const [openTab, setOpenTab] = useState<PanelTabId | null>(null);
   const rootRef = useRef<HTMLElement>(null);
 
   function toggleTab(id: PanelTabId) {
@@ -96,7 +100,7 @@ export function FeatureTabs() {
             }
 
             const isOpen = openTab === tab.id;
-            const panel = tab.id === "balance" ? null : PANEL_COPY[tab.id];
+            const panel = PANEL_COPY[tab.id];
 
             return (
               <li key={tab.id} className={styles.item}>
@@ -117,20 +121,14 @@ export function FeatureTabs() {
                 </button>
                 <div
                   id={`panel-${tab.id}`}
-                  className={`${styles.panel} ${tab.id === "balance" ? styles.panelWide : ""}`}
+                  className={styles.panel}
                   data-open={isOpen || undefined}
                   role="region"
                   aria-labelledby={`tab-${tab.id}`}
                   aria-hidden={!isOpen}
                 >
-                  {tab.id === "balance" ? (
-                    <GuessBalancePanel />
-                  ) : panel ? (
-                    <>
-                      <p className={styles.panelTitle}>{panel.title}</p>
-                      <p className={styles.panelBody}>{panel.body}</p>
-                    </>
-                  ) : null}
+                  <p className={styles.panelTitle}>{panel.title}</p>
+                  <p className={styles.panelBody}>{panel.body}</p>
                 </div>
               </li>
             );
