@@ -21,6 +21,15 @@
   background: var(--bg-elevated);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-soft);
+  overflow: visible;
+}
+
+.topLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  overflow: visible;
 }
 
 .logoSlot {
@@ -253,6 +262,16 @@
 @media (max-width: 720px) {
   .top {
     margin-top: 0.65rem;
+    align-items: flex-start;
+  }
+
+  .topLeft {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .logoHint {
+    display: none;
   }
 
   .heroGrid {

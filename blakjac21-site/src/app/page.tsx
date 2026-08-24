@@ -8,9 +8,12 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <header className={styles.top}>
-        <div className={styles.logoSlot} aria-label="Logo placeholder">
-          <span className={styles.logoMark}>BJ</span>
-          <span className={styles.logoHint}>Logo soon</span>
+        <div className={styles.topLeft}>
+          <FeatureTabs />
+          <div className={styles.logoSlot} aria-label="Logo placeholder">
+            <span className={styles.logoMark}>BJ</span>
+            <span className={styles.logoHint}>Logo soon</span>
+          </div>
         </div>
         <a
           className={styles.kickLink}
@@ -41,7 +44,6 @@ export default function Home() {
                 Open on Kick
               </a>
             </div>
-            <FeatureTabs />
           </div>
 
           <div id="watch" className={styles.playerBleed}>

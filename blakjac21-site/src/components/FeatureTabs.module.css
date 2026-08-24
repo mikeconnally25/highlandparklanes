@@ -1,21 +1,82 @@
 .wrap {
-  margin-top: 1.85rem;
-  max-width: 22rem;
-  padding: 0.9rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(14px);
+  position: relative;
+  z-index: 20;
 }
 
-.heading {
-  margin: 0 0 0.75rem;
+.menuTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: 0.76rem;
-  color: var(--gold);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.menuTrigger:hover,
+.menuTrigger:focus-visible {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.menuTrigger[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: 0 12px 32px rgba(83, 252, 24, 0.12);
+}
+
+.menuChevron {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.menuChevron[data-open] {
+  transform: rotate(-135deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 0;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow-soft), var(--shadow-glow);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top left;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dropdown[data-open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 .list {
@@ -118,7 +179,7 @@
 }
 
 @media (max-width: 720px) {
-  .wrap {
-    max-width: 100%;
+  .dropdown {
+    width: min(20rem, calc(100vw - 2rem));
   }
 }
