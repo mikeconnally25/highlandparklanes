@@ -411,7 +411,7 @@
 
 .item {
   display: grid;
-  grid-template-columns: 1.75rem 1fr auto auto;
+  grid-template-columns: 1.75rem 1fr auto;
   align-items: center;
   gap: 0.55rem;
   padding: 0.55rem 0.65rem;
@@ -443,10 +443,26 @@
   border: 1px solid var(--glass-border);
 }
 
+.itemMeta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
 .itemName {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemSlot {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

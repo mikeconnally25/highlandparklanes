@@ -12,6 +12,7 @@ export type BonusItem = {
 export type SlotRequest = {
   id: string;
   username: string;
+  slotName: string;
   createdAt: string;
 };
 
@@ -63,6 +64,10 @@ export function getBonusHuntState(): BonusHuntState {
   state.bonuses = state.bonuses.map((bonus) => ({
     ...bonus,
     winAmount: bonus.winAmount ?? null,
+  }));
+  state.slotRequests = state.slotRequests.map((req) => ({
+    ...req,
+    slotName: req.slotName?.trim() || "—",
   }));
 
   return state;
@@ -346,7 +351,10 @@ export function clearBonuses(): BonusHuntState {
   return state;
 }
 
-export function addSlotRequest(username: string): {
+export function addSlotRequest(
+  username: string,
+  slotName: string,
+): {
   accepted: boolean;
   reason?: string;
   state: BonusHuntState;
@@ -362,15 +370,34 @@ export function addSlotRequest(username: string): {
     return { accepted: false, reason: "Missing username", state };
   }
 
-  if (state.slotRequests.some((req) => req.username === normalized)) {
-    return { accepted: false, reason: "Already in the queue", state };
+  const slot = slotName.trim().replace(/\s+/g, " ").slice(0, 80);
+  if (!slot) {
+    return {
+      accepted: false,
+      reason: "Include a slot name after !s",
+      state,
+    };
+  }
+
+  const existing = state.slotRequests.find((req) => req.username === normalized);
+  if (existing) {
+    existing.slotName = slot;
+    existing.createdAt = new Date().toISOString();
+    state.updatedAt = new Date().toISOString();
+    return { accepted: true, state };
   }
 
   state.slotRequests.push({
     id: `${Date.now()}-${normalized}`,
     username: normalized,
+    slotName: slot,
     createdAt: new Date().toISOString(),
   });
+
+  if (state.slotRequests.length > 100) {
+    state.slotRequests = state.slotRequests.slice(-100);
+  }
+
   state.updatedAt = new Date().toISOString();
   return { accepted: true, state };
 }
@@ -389,8 +416,19 @@ export function removeSlotRequest(id: string): BonusHuntState {
   return state;
 }
 
+/** Parse `!s Slot Name` — null if missing a slot name. */
+export function parseSlotRequestMessage(
+  content: string,
+): { slotName: string } | null {
+  const match = content.trim().match(/^!s\s+(.+)$/i);
+  if (!match) return null;
+  const slotName = match[1].trim().replace(/\s+/g, " ").slice(0, 80);
+  if (!slotName) return null;
+  return { slotName };
+}
+
 export function isSlotRequestMessage(content: string): boolean {
-  return /^!s(?:\s|$)/i.test(content.trim());
+  return parseSlotRequestMessage(content) != null;
 }
 
 export function verifyBonusHuntAdminToken(request: Request): boolean {

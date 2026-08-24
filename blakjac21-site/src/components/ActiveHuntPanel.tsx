@@ -8,7 +8,7 @@ import {
   formatMultiplier,
   getBonusMultiplier,
   getHuntStats,
-  isSlotRequestMessage,
+  parseSlotRequestMessage,
 } from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
 import styles from "./ActiveHuntPanel.module.css";
@@ -112,7 +112,7 @@ export function ActiveHuntPanel() {
   const handleChatMessage = useCallback(
     async (message: { username: string; content: string }) => {
       if (!requestsOpen) return;
-      if (!isSlotRequestMessage(message.content)) return;
+      if (!parseSlotRequestMessage(message.content)) return;
 
       try {
         const res = await fetch("/api/bonus-hunt/request", {
@@ -248,9 +248,9 @@ export function ActiveHuntPanel() {
         <span className={styles.chatStatus}>
           {requestsOpen
             ? chatConnected
-              ? "Listening for !s in Kick chat"
+              ? "Listening for !s <slot> in Kick chat"
               : "Connecting to chat…"
-            : "Open requests to capture !s"}
+            : "Open requests to capture !s <slot>"}
         </span>
       </div>
 
@@ -480,8 +480,8 @@ export function ActiveHuntPanel() {
           <span className={styles.count}>{slotRequests.length}</span>
         </div>
         <p className={styles.help}>
-          Viewers type <code>!s</code> in Kick chat when requests are open. One
-          request per username.
+          Viewers type <code>!s Slot Name</code> in Kick chat when requests are
+          open. One request per username — resubmit to change the slot.
         </p>
         {slotRequests.length === 0 ? (
           <p className={styles.empty}>No slot requests yet.</p>
@@ -490,7 +490,10 @@ export function ActiveHuntPanel() {
             {slotRequests.map((req, index) => (
               <li key={req.id} className={styles.item}>
                 <span className={styles.itemIndex}>{index + 1}</span>
-                <span className={styles.itemName}>{req.username}</span>
+                <div className={styles.itemMeta}>
+                  <span className={styles.itemName}>{req.username}</span>
+                  <span className={styles.itemSlot}>{req.slotName}</span>
+                </div>
                 <button
                   type="button"
                   className={styles.removeBtn}

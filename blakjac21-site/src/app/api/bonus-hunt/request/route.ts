@@ -1,9 +1,16 @@
-import { addSlotRequest, isSlotRequestMessage } from "@/lib/bonus-hunt";
+import {
+  addSlotRequest,
+  parseSlotRequestMessage,
+} from "@/lib/bonus-hunt";
 
 export async function POST(request: Request) {
-  let body: { username?: string; message?: string };
+  let body: { username?: string; message?: string; slotName?: string };
   try {
-    body = (await request.json()) as { username?: string; message?: string };
+    body = (await request.json()) as {
+      username?: string;
+      message?: string;
+      slotName?: string;
+    };
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -15,11 +22,20 @@ export async function POST(request: Request) {
     return Response.json({ error: "username is required" }, { status: 400 });
   }
 
-  if (message && !isSlotRequestMessage(message)) {
-    return Response.json({ error: "Not a slot request" }, { status: 400 });
+  const parsed = message
+    ? parseSlotRequestMessage(message)
+    : body.slotName?.trim()
+      ? { slotName: body.slotName.trim() }
+      : null;
+
+  if (!parsed) {
+    return Response.json(
+      { error: "Type !s followed by a slot name" },
+      { status: 400 },
+    );
   }
 
-  const result = addSlotRequest(username);
+  const result = addSlotRequest(username, parsed.slotName);
   if (!result.accepted) {
     return Response.json(
       { error: result.reason ?? "Request rejected", state: result.state },
