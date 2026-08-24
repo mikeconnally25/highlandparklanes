@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
+  formatBreakEvenLabel,
   formatMultiplier,
   getBonusMultiplier,
   getHuntStats,
@@ -300,12 +301,16 @@ export function ActiveHuntPanel() {
           <div className={styles.statCard}>
             <p className={styles.statLabel}>Avg x to break even</p>
             <p className={styles.statValue}>
-              {formatMultiplier(stats?.breakEvenX ?? null)}
+              {stats ? formatBreakEvenLabel(stats) : "—"}
             </p>
             <p className={styles.statHint}>
-              {stats?.startAmount != null && stats.totalBet > 0
-                ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
-                : "Needs start amount + bet sizes"}
+              {stats?.breakEvenReached
+                ? `Recovered ${formatBetSize(stats.totalWins)} of ${formatBetSize(stats.startAmount)}`
+                : stats?.remainingToRecover != null && stats.remainingBet > 0
+                  ? `${formatBetSize(stats.remainingToRecover)} left ÷ ${formatBetSize(stats.remainingBet)} remaining bet`
+                  : stats?.startAmount != null && stats.openedCount === 0 && stats.totalBet > 0
+                    ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
+                    : "Needs start amount, bets, and remaining bonuses"}
             </p>
           </div>
         </div>

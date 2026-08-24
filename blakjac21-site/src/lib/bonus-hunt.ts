@@ -18,9 +18,14 @@ export type SlotRequest = {
 export type BonusHuntStats = {
   startAmount: number | null;
   totalBet: number;
+  totalWins: number;
+  remainingToRecover: number | null;
+  remainingBet: number;
   openedCount: number;
+  remainingCount: number;
   avgXOpened: number | null;
   breakEvenX: number | null;
+  breakEvenReached: boolean;
 };
 
 export type BonusHuntState = {
@@ -155,7 +160,14 @@ export function formatBetSize(amount: number | null): string {
 
 export function formatMultiplier(value: number | null): string {
   if (value == null || !Number.isFinite(value)) return "—";
+  if (value === 0) return "0.00x";
   return `${value.toFixed(2)}x`;
+}
+
+export function formatBreakEvenLabel(stats: BonusHuntStats): string {
+  if (stats.breakEvenReached) return "Break-even hit";
+  if (stats.breakEvenX == null) return "—";
+  return formatMultiplier(stats.breakEvenX);
 }
 
 export function getBonusMultiplier(bonus: BonusItem): number | null {
@@ -165,12 +177,27 @@ export function getBonusMultiplier(bonus: BonusItem): number | null {
 }
 
 export function getHuntStats(state: BonusHuntState): BonusHuntStats {
-  const bets = state.bonuses
-    .map((bonus) => bonus.betSize)
-    .filter((bet): bet is number => bet != null && bet > 0);
-  const totalBet = bets.reduce((sum, bet) => sum + bet, 0);
+  const totalBet = state.bonuses.reduce((sum, bonus) => {
+    return bonus.betSize != null && bonus.betSize > 0 ? sum + bonus.betSize : sum;
+  }, 0);
 
-  const openedMultipliers = state.bonuses
+  const openedBonuses = state.bonuses.filter(
+    (bonus) => bonus.winAmount != null && bonus.betSize != null && bonus.betSize > 0,
+  );
+  const remainingBonuses = state.bonuses.filter(
+    (bonus) =>
+      bonus.winAmount == null && bonus.betSize != null && bonus.betSize > 0,
+  );
+
+  const totalWins = state.bonuses.reduce((sum, bonus) => {
+    return bonus.winAmount != null ? sum + bonus.winAmount : sum;
+  }, 0);
+
+  const remainingBet = remainingBonuses.reduce((sum, bonus) => {
+    return sum + (bonus.betSize ?? 0);
+  }, 0);
+
+  const openedMultipliers = openedBonuses
     .map((bonus) => getBonusMultiplier(bonus))
     .filter((value): value is number => value != null);
 
@@ -183,17 +210,41 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
         ) / 100
       : null;
 
-  const breakEvenX =
-    state.startAmount != null && state.startAmount > 0 && totalBet > 0
-      ? Math.round((state.startAmount / totalBet) * 100) / 100
+  const remainingToRecover =
+    state.startAmount != null && state.startAmount > 0
+      ? Math.round(Math.max(0, state.startAmount - totalWins) * 100) / 100
       : null;
+
+  const breakEvenReached =
+    state.startAmount != null &&
+    state.startAmount > 0 &&
+    totalWins >= state.startAmount;
+
+  // Needed average x on remaining unopened bonuses to recover start bankroll.
+  let breakEvenX: number | null = null;
+  if (state.startAmount != null && state.startAmount > 0) {
+    if (breakEvenReached) {
+      breakEvenX = 0;
+    } else if (remainingBet > 0 && remainingToRecover != null) {
+      breakEvenX =
+        Math.round((remainingToRecover / remainingBet) * 100) / 100;
+    } else if (totalBet > 0 && openedBonuses.length === 0) {
+      // No wins logged yet — classic full-list break-even.
+      breakEvenX = Math.round((state.startAmount / totalBet) * 100) / 100;
+    }
+  }
 
   return {
     startAmount: state.startAmount,
     totalBet,
-    openedCount: openedMultipliers.length,
+    totalWins,
+    remainingToRecover,
+    remainingBet,
+    openedCount: openedBonuses.length,
+    remainingCount: remainingBonuses.length,
     avgXOpened,
     breakEvenX,
+    breakEvenReached,
   };
 }
 

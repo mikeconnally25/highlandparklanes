@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { BonusHuntState, BonusHuntStats, BonusItem, BonusTier } from "@/lib/bonus-hunt";
-import { formatBetSize, formatMultiplier, getHuntStats } from "@/lib/bonus-hunt";
+import {
+  formatBetSize,
+  formatBreakEvenLabel,
+  formatMultiplier,
+  getHuntStats,
+} from "@/lib/bonus-hunt";
 import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
@@ -103,7 +108,7 @@ export function BonusOverlayWidget({
         <div className={styles.stat}>
           <span className={styles.statLabel}>BE x</span>
           <span className={styles.statValue}>
-            {formatMultiplier(stats?.breakEvenX ?? null)}
+            {stats ? formatBreakEvenLabel(stats) : "—"}
           </span>
         </div>
       </div>
