@@ -1,25 +1,26 @@
 :root {
-  --bg-0: #030504;
-  --bg-1: #080c0a;
-  --bg-elevated: rgba(12, 18, 14, 0.72);
-  --felt: #0d4a32;
-  --accent: #53fc18;
-  --accent-soft: #3de012;
+  --bg-0: #02080f;
+  --bg-1: #061018;
+  --bg-elevated: rgba(8, 20, 32, 0.78);
+  --felt: #0a3d52;
+  --accent: #22e0ff;
+  --accent-soft: #0bb4e0;
   --live: #ff4d5a;
-  --gold: #e8c56a;
-  --text: #f4f7f2;
-  --text-muted: #a8b5a9;
-  --text-dim: #6b776c;
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.04);
+  --gold: #7ee8ff;
+  --text: #eef9ff;
+  --text-muted: #9bb6c7;
+  --text-dim: #627a8a;
+  --glass-border: rgba(126, 232, 255, 0.12);
+  --glass-highlight: rgba(34, 224, 255, 0.06);
   --radius-sm: 0.65rem;
   --radius-md: 1rem;
   --radius-lg: 1.25rem;
   --radius-pill: 999px;
-  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.45);
-  --shadow-glow: 0 0 40px rgba(83, 252, 24, 0.12);
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 44px rgba(34, 224, 255, 0.16);
   --font-display: "Syne", "Segoe UI", sans-serif;
   --font-body: "DM Sans", "Segoe UI", sans-serif;
+  --on-accent: #031018;
 }
 
 * {
@@ -43,9 +44,9 @@ body {
   min-height: 100%;
   color: var(--text);
   background:
-    radial-gradient(circle at 15% 10%, rgba(83, 252, 24, 0.08), transparent 28%),
-    radial-gradient(circle at 85% 18%, rgba(232, 197, 106, 0.06), transparent 24%),
-    radial-gradient(circle at 50% 100%, rgba(13, 74, 50, 0.22), transparent 40%),
+    radial-gradient(circle at 15% 10%, rgba(34, 224, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(11, 180, 224, 0.08), transparent 24%),
+    radial-gradient(circle at 50% 100%, rgba(10, 61, 82, 0.35), transparent 40%),
     linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
   font-family: var(--font-body);
   font-weight: 400;
@@ -58,10 +59,10 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: 0.3;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(126, 232, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(126, 232, 255, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(circle at 50% 20%, black, transparent 75%);
   z-index: 0;

@@ -38,7 +38,7 @@
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
-  box-shadow: 0 12px 32px rgba(83, 252, 24, 0.12);
+  box-shadow: 0 12px 32px rgba(34, 224, 255, 0.12);
 }
 
 .menuChevron {

@@ -137,8 +137,8 @@
     linear-gradient(
       135deg,
       color-mix(in srgb, var(--felt) 55%, #000) 0%,
-      #050806 55%,
-      color-mix(in srgb, var(--gold) 18%, #050806) 100%
+      #050d14 55%,
+      color-mix(in srgb, var(--gold) 18%, #050d14) 100%
     );
 }
 
@@ -175,7 +175,7 @@
   height: 1.75rem;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
-  box-shadow: 0 8px 24px rgba(83, 252, 24, 0.28);
+  box-shadow: 0 8px 24px rgba(34, 224, 255, 0.28);
 }
 
 .playTriangle {
@@ -184,7 +184,7 @@
   margin-left: 0.12rem;
   border-style: solid;
   border-width: 0.35rem 0 0.35rem 0.55rem;
-  border-color: transparent transparent transparent #041006;
+  border-color: transparent transparent transparent var(--on-accent);
 }
 
 .vodCta {
