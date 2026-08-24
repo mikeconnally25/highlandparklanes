@@ -1,5 +1,6 @@
 "use client";
 
+import { maskUsername } from "@/lib/wagered-leaderboard";
 import { useWageredLeaderboard } from "@/hooks/useWageredLeaderboard";
 import styles from "./WageredLeaderboard.module.css";
 
@@ -60,7 +61,7 @@ export function WageredLeaderboard() {
             data-rank={entry.rank <= 3 ? entry.rank : undefined}
           >
             <span className={styles.rank}>{entry.rank}</span>
-            <span className={styles.userName}>{entry.userName}</span>
+            <span className={styles.userName}>{maskUsername(entry.userName)}</span>
             <span className={styles.wagered}>{entry.wagered}</span>
           </li>
         ))}

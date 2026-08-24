@@ -5,6 +5,20 @@ export type WageredLeaderboardEntry = {
   wageredAmount: number;
 };
 
+export function maskUsername(username: string): string {
+  const name = username.trim();
+  if (!name) return "";
+
+  if (name.length <= 6) {
+    if (name.length === 1) return "*";
+    if (name.length === 2) return `${name[0]}*`;
+    if (name.length === 3) return `${name[0]}*${name[2]}`;
+    return `${name.slice(0, 3)}*${name.slice(-3)}`;
+  }
+
+  return `${name.slice(0, 3)}${"*".repeat(name.length - 6)}${name.slice(-3)}`;
+}
+
 export type WageredLeaderboardData = {
   entries: WageredLeaderboardEntry[];
   periodStart: string | null;
