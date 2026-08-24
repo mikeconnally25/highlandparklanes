@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 import { GuessBalancePanel } from "@/components/GuessBalancePanel";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./page.module.css";
@@ -14,9 +15,12 @@ export default function GuessTheBalancePage() {
   return (
     <div className={styles.page}>
       <header className={styles.top}>
-        <Link className={styles.backLink} href="/">
-          ← Back home
-        </Link>
+        <div className={styles.topBrand}>
+          <BrandLogo size="sm" />
+          <Link className={styles.backLink} href="/">
+            ← Back home
+          </Link>
+        </div>
         <a
           className={styles.kickLink}
           href={KICK_CHANNEL_URL}
@@ -41,7 +45,10 @@ export default function GuessTheBalancePage() {
       </main>
 
       <footer className={styles.footer}>
-        <p className={styles.footerBrand}>Blakjac21</p>
+        <div className={styles.footerBrandRow}>
+          <BrandLogo href={null} size="sm" />
+          <p className={styles.footerBrand}>Blakjac21</p>
+        </div>
         <p className={styles.disclaimer}>
           For entertainment only. Gambling involves risk. Please play
           responsibly — 18+ / 21+ where required.

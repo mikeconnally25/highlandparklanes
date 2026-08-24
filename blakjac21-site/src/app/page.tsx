@@ -1,3 +1,4 @@
+import { BrandLogo } from "@/components/BrandLogo";
 import { FeatureTabs } from "@/components/FeatureTabs";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
@@ -8,10 +9,7 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <header className={styles.top}>
-        <div className={styles.logoSlot} aria-label="Logo placeholder">
-          <span className={styles.logoMark}>BJ</span>
-          <span className={styles.logoHint}>Logo soon</span>
-        </div>
+        <BrandLogo size="md" showWordmark priority />
         <a
           className={styles.kickLink}
           href={KICK_CHANNEL_URL}
@@ -32,14 +30,6 @@ export default function Home() {
             </p>
             <div className={styles.ctas}>
               <WatchCta />
-              <a
-                className={styles.ctaSecondary}
-                href={KICK_CHANNEL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open on Kick
-              </a>
             </div>
             <FeatureTabs />
           </div>
@@ -51,7 +41,10 @@ export default function Home() {
       </main>
 
       <footer className={styles.footer}>
-        <p className={styles.footerBrand}>Blakjac21</p>
+        <div className={styles.footerBrandRow}>
+          <BrandLogo href={null} size="sm" />
+          <p className={styles.footerBrand}>Blakjac21</p>
+        </div>
         <p className={styles.disclaimer}>
           For entertainment only. Gambling involves risk. Please play
           responsibly — 18+ / 21+ where required.

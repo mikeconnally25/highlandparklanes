@@ -20,6 +20,13 @@
   box-shadow: var(--shadow-soft);
 }
 
+.topBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
 .backLink {
   display: inline-flex;
   align-items: center;
@@ -134,6 +141,12 @@
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.04em;
+}
+
+.footerBrandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
 
 .disclaimer {
