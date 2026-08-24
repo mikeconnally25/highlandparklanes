@@ -137,7 +137,8 @@ export function parseMoneyAmount(
   if (typeof value !== "string") return null;
   const normalized = value.trim().replace(/[$,\s]/g, "");
   if (!normalized) return null;
-  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  // Allow 10, 10.5, 0.01, and shorthand .01 / .5
+  if (!/^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(normalized)) return null;
 
   const amount = Number(normalized);
   if (!Number.isFinite(amount) || amount < 0 || amount > 999_999_999) return null;
