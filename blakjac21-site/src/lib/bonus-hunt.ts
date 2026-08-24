@@ -385,15 +385,19 @@ export function addSlotRequest(
     (req) => req.username === normalized,
   );
   const slotKey = slot.toLowerCase();
-  const existingSame = userRequests.find(
+  const duplicateSlot = state.slotRequests.find(
     (req) => req.slotName.toLowerCase() === slotKey,
   );
 
-  if (existingSame) {
-    existingSame.slotName = slot;
-    existingSame.createdAt = new Date().toISOString();
-    state.updatedAt = new Date().toISOString();
-    return { accepted: true, state };
+  if (duplicateSlot) {
+    return {
+      accepted: false,
+      reason:
+        duplicateSlot.username === normalized
+          ? "You already requested that slot"
+          : "That slot was already requested",
+      state,
+    };
   }
 
   if (userRequests.length >= MAX_SLOT_REQUESTS_PER_USER) {
