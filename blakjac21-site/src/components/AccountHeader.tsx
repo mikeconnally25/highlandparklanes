@@ -57,7 +57,7 @@ export function AccountHeader() {
   return (
     <div className={styles.slot}>
       <Link className={styles.signIn} href="/account?mode=login">
-        Sign in
+        Sign in with Kick
       </Link>
       <Link className={styles.createBtn} href="/account">
         Create account

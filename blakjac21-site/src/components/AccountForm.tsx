@@ -1,154 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import styles from "./AccountForm.module.css";
 
 function AccountFormInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const initialMode = searchParams.get("mode") === "login" ? "login" : "register";
-  const [mode, setMode] = useState<"register" | "login">(initialMode);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const mode = searchParams.get("mode") === "login" ? "login" : "register";
+  const queryError = searchParams.get("error");
+  const [kickConfigured, setKickConfigured] = useState<boolean | null>(null);
 
-  const title = useMemo(
-    () => (mode === "login" ? "Sign in" : "Create account"),
-    [mode],
-  );
-
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          username,
-          email,
-          password,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Request failed");
-        return;
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/account/session", { cache: "no-store" });
+        const data = (await res.json()) as { kickConfigured?: boolean };
+        if (!cancelled) setKickConfigured(Boolean(data.kickConfigured));
+      } catch {
+        if (!cancelled) setKickConfigured(false);
       }
-      router.push("/");
-      router.refresh();
-    } catch {
-      setError("Could not reach the server");
-    } finally {
-      setBusy(false);
     }
-  }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const title = mode === "login" ? "Sign in with Kick" : "Create account with Kick";
 
   return (
     <div className={styles.wrap}>
       <h1 className={styles.title}>{title}</h1>
       <p className={styles.lead}>
-        {mode === "login"
-          ? "Welcome back — sign in to your Blakjac21 account."
-          : "Make an account for the site to save your spot in the community."}
+        Accounts on this site are tied to your Kick profile. Continue with Kick
+        to create an account or sign in — no password on this site.
       </p>
 
-      <form className={styles.form} onSubmit={onSubmit}>
-        {mode === "register" ? (
-          <label className={styles.label}>
-            Username
-            <input
-              className={styles.input}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              spellCheck={false}
-              required
-              minLength={3}
-              maxLength={24}
-              pattern="[A-Za-z0-9_]+"
-              placeholder="your_name"
-            />
-          </label>
-        ) : null}
+      {queryError ? (
+        <p className={styles.error} role="alert">
+          {queryError}
+        </p>
+      ) : null}
 
-        <label className={styles.label}>
-          Email
-          <input
-            className={styles.input}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-            placeholder="you@email.com"
-          />
-        </label>
+      {kickConfigured === false ? (
+        <p className={styles.error} role="alert">
+          Kick login is not configured yet. Add{" "}
+          <code>KICK_CLIENT_ID</code>, <code>KICK_CLIENT_SECRET</code>, and{" "}
+          <code>KICK_REDIRECT_URI</code> (or <code>NEXT_PUBLIC_SITE_URL</code>)
+          in the server environment, then register the callback URL in the Kick
+          Developer Portal.
+        </p>
+      ) : null}
 
-        <label className={styles.label}>
-          Password
-          <input
-            className={styles.input}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
-            required
-            minLength={6}
-            placeholder="At least 6 characters"
-          />
-        </label>
-
-        {error ? (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <button className={styles.submit} type="submit" disabled={busy}>
-          {busy
-            ? "Please wait…"
-            : mode === "login"
-              ? "Sign in"
-              : "Create account"}
-        </button>
-      </form>
+      <a
+        className={styles.kickBtn}
+        href="/api/account/kick"
+        aria-disabled={kickConfigured === false || undefined}
+        onClick={(event) => {
+          if (kickConfigured === false) event.preventDefault();
+        }}
+      >
+        Continue with Kick
+      </a>
 
       <p className={styles.switch}>
         {mode === "login" ? (
           <>
-            Need an account?{" "}
-            <button
-              type="button"
-              className={styles.switchBtn}
-              onClick={() => {
-                setMode("register");
-                setError(null);
-              }}
-            >
-              Create one
-            </button>
+            New here?{" "}
+            <Link className={styles.switchLink} href="/account">
+              Create account with Kick
+            </Link>
           </>
         ) : (
           <>
-            Already have an account?{" "}
-            <button
-              type="button"
-              className={styles.switchBtn}
-              onClick={() => {
-                setMode("login");
-                setError(null);
-              }}
-            >
-              Sign in
-            </button>
+            Already joined?{" "}
+            <Link className={styles.switchLink} href="/account?mode=login">
+              Sign in with Kick
+            </Link>
           </>
         )}
       </p>

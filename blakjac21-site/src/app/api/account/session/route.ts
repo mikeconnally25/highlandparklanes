@@ -1,9 +1,13 @@
-import { destroySession, getSessionUser } from "@/lib/site-auth";
+import { destroySession, getKickOAuthConfig, getSessionUser } from "@/lib/site-auth";
 
 export async function GET() {
   const user = await getSessionUser();
+  const kick = getKickOAuthConfig();
   return Response.json(
-    { user },
+    {
+      user,
+      kickConfigured: kick.configured,
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
