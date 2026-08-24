@@ -2,7 +2,7 @@
   display: grid;
   gap: 0.85rem;
   width: 100%;
-  max-width: 22rem;
+  max-width: 28rem;
   font-family: var(--font-body);
   color: #eef9ff;
 }
@@ -188,6 +188,22 @@
   font-size: 0.78rem;
   letter-spacing: 0.03em;
   color: #7ee8ff;
+}
+
+.win {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: #a7f3d0;
+}
+
+.hitX {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: #fde68a;
 }
 
 .tier {

@@ -31,7 +31,7 @@ export function ObsOverlayLink() {
         {copied ? "Copied" : "Copy full URL"}
       </button>
       <p className={styles.hint}>
-        Width ~360 · Height ~720 · Transparent background recommended
+        Width ~440 · Height ~720 · Transparent background recommended
       </p>
     </div>
   );

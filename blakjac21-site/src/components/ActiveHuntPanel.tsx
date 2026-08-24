@@ -248,9 +248,9 @@ export function ActiveHuntPanel() {
         <span className={styles.chatStatus}>
           {requestsOpen
             ? chatConnected
-              ? "Listening for !r in Kick chat"
+              ? "Listening for !s in Kick chat"
               : "Connecting to chat…"
-            : "Open requests to capture !r"}
+            : "Open requests to capture !s"}
         </span>
       </div>
 
@@ -480,7 +480,7 @@ export function ActiveHuntPanel() {
           <span className={styles.count}>{slotRequests.length}</span>
         </div>
         <p className={styles.help}>
-          Viewers type <code>!r</code> in Kick chat when requests are open. One
+          Viewers type <code>!s</code> in Kick chat when requests are open. One
           request per username.
         </p>
         {slotRequests.length === 0 ? (
@@ -573,7 +573,7 @@ export function ActiveHuntPanel() {
                   adminRequest("/api/bonus-hunt/toggle", { open: true })
                 }
               >
-                Open !r requests
+                Open !s requests
               </button>
               <button
                 type="button"
@@ -583,7 +583,7 @@ export function ActiveHuntPanel() {
                   adminRequest("/api/bonus-hunt/toggle", { open: false })
                 }
               >
-                Close !r requests
+                Close !s requests
               </button>
               <button
                 type="button"

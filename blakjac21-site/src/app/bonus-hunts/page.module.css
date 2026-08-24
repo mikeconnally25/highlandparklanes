@@ -124,7 +124,7 @@
 
 .huntLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(16rem, 0.75fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.95fr);
   gap: 1rem;
   align-items: start;
 }

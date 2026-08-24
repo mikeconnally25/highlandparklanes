@@ -390,7 +390,7 @@ export function removeSlotRequest(id: string): BonusHuntState {
 }
 
 export function isSlotRequestMessage(content: string): boolean {
-  return /^!r(?:\s|$)/i.test(content.trim());
+  return /^!s(?:\s|$)/i.test(content.trim());
 }
 
 export function verifyBonusHuntAdminToken(request: Request): boolean {

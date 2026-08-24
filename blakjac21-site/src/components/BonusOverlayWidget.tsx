@@ -6,6 +6,7 @@ import {
   formatBetSize,
   formatBreakEvenLabel,
   formatMultiplier,
+  getBonusMultiplier,
   getHuntStats,
 } from "@/lib/bonus-hunt";
 import styles from "./BonusOverlayWidget.module.css";
@@ -129,7 +130,17 @@ export function BonusOverlayWidget({
               <div className={styles.main}>
                 <span className={styles.name}>{bonus.name}</span>
                 <span className={styles.meta}>
-                  <span className={styles.bet}>{formatBetSize(bonus.betSize)}</span>
+                  <span className={styles.bet}>
+                    Bet {formatBetSize(bonus.betSize)}
+                  </span>
+                  <span className={styles.win}>
+                    Win {formatBetSize(bonus.winAmount)}
+                  </span>
+                  {bonus.winAmount != null && bonus.betSize != null ? (
+                    <span className={styles.hitX}>
+                      {formatMultiplier(getBonusMultiplier(bonus))}
+                    </span>
+                  ) : null}
                   {bonus.tier !== "normal" ? (
                     <span className={styles.tier} data-tier={bonus.tier}>
                       {tierLabel(bonus.tier)}
