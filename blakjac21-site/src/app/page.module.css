@@ -61,15 +61,21 @@
 
 .hero {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: clamp(1.25rem, 3vw, 2rem);
   padding-bottom: 2.5rem;
 }
 
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(24rem, 38vw);
+  grid-template-areas: "brand player";
+  align-items: start;
+  gap: clamp(1rem, 3vw, 2rem);
+  padding: 0 clamp(1rem, 3vw, 2rem);
+}
+
 .brandBlock {
-  padding: 0.25rem clamp(1rem, 3vw, 2rem) 0;
+  grid-area: brand;
+  padding-top: 0.25rem;
   max-width: 52rem;
   animation: brandIn 0.8s ease both;
 }
@@ -153,11 +159,13 @@
 }
 
 .playerBleed {
-  align-self: center;
+  grid-area: player;
+  justify-self: end;
+  align-self: start;
   width: 100%;
   max-width: 24rem;
-  margin: 0.25rem auto 0;
-  padding: 0 clamp(1rem, 3vw, 2rem);
+  margin: 0;
+  padding: 0;
 }
 
 .footer {
@@ -206,6 +214,19 @@
 }
 
 @media (max-width: 720px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "player"
+      "brand";
+    gap: 1.25rem;
+  }
+
+  .playerBleed {
+    justify-self: end;
+    max-width: min(24rem, 100%);
+  }
+
   .brand {
     font-size: clamp(3.4rem, 18vw, 5.5rem);
   }

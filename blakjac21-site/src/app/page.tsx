@@ -22,27 +22,29 @@ export default function Home() {
       </header>
 
       <main className={styles.hero}>
-        <div className={styles.brandBlock}>
-          <p className={styles.eyebrow}>Gambling streams on Kick</p>
-          <h1 className={styles.brand}>Blakjac21</h1>
-          <p className={styles.tagline}>
-            High-stakes sessions, live when it counts — watch on Kick.
-          </p>
-          <div className={styles.ctas}>
-            <WatchCta />
-            <a
-              className={styles.ctaSecondary}
-              href={KICK_CHANNEL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open on Kick
-            </a>
+        <div className={styles.heroGrid}>
+          <div className={styles.brandBlock}>
+            <p className={styles.eyebrow}>Gambling streams on Kick</p>
+            <h1 className={styles.brand}>Blakjac21</h1>
+            <p className={styles.tagline}>
+              High-stakes sessions, live when it counts — watch on Kick.
+            </p>
+            <div className={styles.ctas}>
+              <WatchCta />
+              <a
+                className={styles.ctaSecondary}
+                href={KICK_CHANNEL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open on Kick
+              </a>
+            </div>
           </div>
-        </div>
 
-        <div id="watch" className={styles.playerBleed}>
-          <KickPlayer />
+          <div id="watch" className={styles.playerBleed}>
+            <KickPlayer />
+          </div>
         </div>
       </main>
 
