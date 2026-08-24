@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
-import { formatBetSize, isSlotRequestMessage } from "@/lib/bonus-hunt";
+import {
+  formatBetSize,
+  formatMultiplier,
+  getBonusMultiplier,
+  getHuntStats,
+  isSlotRequestMessage,
+} from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
 import styles from "./ActiveHuntPanel.module.css";
 
@@ -31,9 +37,11 @@ export function ActiveHuntPanel() {
   const [busy, setBusy] = useState(false);
   const [bonusName, setBonusName] = useState("");
   const [betSize, setBetSize] = useState("");
+  const [startAmountInput, setStartAmountInput] = useState("");
   const [superTier, setSuperTier] = useState(false);
   const [epicTier, setEpicTier] = useState(false);
   const [huntTitle, setHuntTitle] = useState("");
+  const [winDrafts, setWinDrafts] = useState<Record<string, string>>({});
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
@@ -50,6 +58,23 @@ export function ActiveHuntPanel() {
         if (!cancelled) {
           setState(next);
           setHuntTitle((current) => (current ? current : next.title));
+          setStartAmountInput((current) =>
+            current
+              ? current
+              : next.startAmount != null
+                ? String(next.startAmount)
+                : "",
+          );
+          setWinDrafts((current) => {
+            const nextDrafts = { ...current };
+            for (const bonus of next.bonuses) {
+              if (nextDrafts[bonus.id] === undefined) {
+                nextDrafts[bonus.id] =
+                  bonus.winAmount != null ? String(bonus.winAmount) : "";
+              }
+            }
+            return nextDrafts;
+          });
         }
       } catch {
         /* ignore */
@@ -182,6 +207,29 @@ export function ActiveHuntPanel() {
 
   const bonuses = state?.bonuses ?? [];
   const slotRequests = state?.slotRequests ?? [];
+  const stats = state ? getHuntStats(state) : null;
+
+  async function saveStartAmount() {
+    await adminRequest("/api/bonus-hunt/admin", {
+      action: "set-start-amount",
+      startAmount: startAmountInput,
+    });
+  }
+
+  async function saveWinAmount(id: string) {
+    const next = await adminRequest("/api/bonus-hunt/admin", {
+      action: "set-win-amount",
+      id,
+      winAmount: winDrafts[id] ?? "",
+    });
+    if (next) {
+      const bonus = next.bonuses.find((item) => item.id === id);
+      setWinDrafts((current) => ({
+        ...current,
+        [id]: bonus?.winAmount != null ? String(bonus.winAmount) : "",
+      }));
+    }
+  }
 
   return (
     <div className={styles.wrap}>
@@ -206,6 +254,62 @@ export function ActiveHuntPanel() {
       </div>
 
       {state?.title ? <p className={styles.huntTitle}>{state.title}</p> : null}
+
+      <section className={styles.block} aria-labelledby="hunt-bankroll-heading">
+        <div className={styles.blockHeader}>
+          <h3 id="hunt-bankroll-heading" className={styles.blockTitle}>
+            Hunt bankroll
+          </h3>
+        </div>
+        <div className={styles.bankrollRow}>
+          <label className={styles.label}>
+            Started with
+            <input
+              className={styles.input}
+              type="text"
+              inputMode="decimal"
+              value={startAmountInput}
+              onChange={(e) => setStartAmountInput(e.target.value)}
+              placeholder="e.g. 500 or $1,000"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.addBtn}
+            disabled={busy}
+            onClick={saveStartAmount}
+          >
+            Save start amount
+          </button>
+        </div>
+
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>Avg x opened</p>
+            <p className={styles.statValue}>
+              {formatMultiplier(stats?.avgXOpened ?? null)}
+            </p>
+            <p className={styles.statHint}>
+              {stats?.openedCount
+                ? `From ${stats.openedCount} opened bonus${stats.openedCount === 1 ? "" : "es"}`
+                : "Log win amounts below to track"}
+            </p>
+          </div>
+          <div className={styles.statCard}>
+            <p className={styles.statLabel}>Avg x to break even</p>
+            <p className={styles.statValue}>
+              {formatMultiplier(stats?.breakEvenX ?? null)}
+            </p>
+            <p className={styles.statHint}>
+              {stats?.startAmount != null && stats.totalBet > 0
+                ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
+                : "Needs start amount + bet sizes"}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className={styles.block} aria-labelledby="bonus-list-heading">
         <div className={styles.blockHeader}>
@@ -285,6 +389,8 @@ export function ActiveHuntPanel() {
                   <th scope="col">#</th>
                   <th scope="col">Bonus</th>
                   <th scope="col">Bet</th>
+                  <th scope="col">Win</th>
+                  <th scope="col">X</th>
                   <th scope="col">Tier</th>
                   <th scope="col">
                     <span className={styles.srOnly}>Remove</span>
@@ -300,6 +406,35 @@ export function ActiveHuntPanel() {
                     <td className={styles.colIndex}>{index + 1}</td>
                     <td className={styles.colName}>{bonus.name}</td>
                     <td className={styles.colBet}>{formatBetSize(bonus.betSize)}</td>
+                    <td className={styles.colWin}>
+                      <div className={styles.winEditor}>
+                        <input
+                          className={styles.winInput}
+                          type="text"
+                          inputMode="decimal"
+                          value={winDrafts[bonus.id] ?? ""}
+                          onChange={(e) =>
+                            setWinDrafts((current) => ({
+                              ...current,
+                              [bonus.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="0"
+                          aria-label={`Win amount for ${bonus.name}`}
+                        />
+                        <button
+                          type="button"
+                          className={styles.winSave}
+                          disabled={busy}
+                          onClick={() => saveWinAmount(bonus.id)}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </td>
+                    <td className={styles.colX}>
+                      {formatMultiplier(getBonusMultiplier(bonus))}
+                    </td>
                     <td className={styles.colTier}>
                       {bonus.tier !== "normal" ? (
                         <span className={styles.tierBadge} data-tier={bonus.tier}>

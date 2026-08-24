@@ -1,8 +1,10 @@
 import {
   clearSlotRequests,
   removeSlotRequest,
+  setBonusWinAmount,
   setHuntActive,
   setHuntTitle,
+  setStartAmount,
   verifyBonusHuntAdminToken,
 } from "@/lib/bonus-hunt";
 
@@ -12,10 +14,18 @@ export async function POST(request: Request) {
   }
 
   let body: {
-    action?: "clear-requests" | "remove-request" | "set-active" | "set-title";
+    action?:
+      | "clear-requests"
+      | "remove-request"
+      | "set-active"
+      | "set-title"
+      | "set-start-amount"
+      | "set-win-amount";
     id?: string;
     active?: boolean;
     title?: string;
+    startAmount?: string | number | null;
+    winAmount?: string | number | null;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -38,6 +48,32 @@ export async function POST(request: Request) {
       return Response.json(setHuntActive(body.active));
     case "set-title":
       return Response.json(setHuntTitle(body.title ?? ""));
+    case "set-start-amount": {
+      const result = setStartAmount(body.startAmount);
+      if (!result.accepted) {
+        return Response.json(
+          { error: result.reason ?? "Could not set start amount", state: result.state },
+          { status: 400 },
+        );
+      }
+      return Response.json(result.state);
+    }
+    case "set-win-amount": {
+      if (!body.id) {
+        return Response.json({ error: "id is required" }, { status: 400 });
+      }
+      const result = setBonusWinAmount({
+        id: body.id,
+        winAmount: body.winAmount,
+      });
+      if (!result.accepted) {
+        return Response.json(
+          { error: result.reason ?? "Could not set win amount", state: result.state },
+          { status: 400 },
+        );
+      }
+      return Response.json(result.state);
+    }
     default:
       return Response.json({ error: "Unknown action" }, { status: 400 });
   }

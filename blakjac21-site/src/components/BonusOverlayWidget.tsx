@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { BonusHuntState, BonusItem, BonusTier } from "@/lib/bonus-hunt";
-import { formatBetSize } from "@/lib/bonus-hunt";
+import type { BonusHuntState, BonusHuntStats, BonusItem, BonusTier } from "@/lib/bonus-hunt";
+import { formatBetSize, formatMultiplier, getHuntStats } from "@/lib/bonus-hunt";
 import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
@@ -24,6 +24,7 @@ export function BonusOverlayWidget({
 }: BonusOverlayWidgetProps) {
   const [bonuses, setBonuses] = useState<BonusItem[]>([]);
   const [title, setTitle] = useState("");
+  const [stats, setStats] = useState<BonusHuntStats | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
@@ -60,6 +61,7 @@ export function BonusOverlayWidget({
 
         setBonuses(next);
         setTitle(data.title);
+        setStats(getHuntStats(data));
       } catch {
         /* ignore transient errors */
       } finally {
@@ -84,6 +86,26 @@ export function BonusOverlayWidget({
       <div className={styles.header}>
         <p className={styles.kicker}>Bonus list</p>
         <h2 className={styles.title}>{title || "Active hunt"}</h2>
+        {stats?.startAmount != null ? (
+          <p className={styles.startAmount}>
+            Started with {formatBetSize(stats.startAmount)}
+          </p>
+        ) : null}
+      </div>
+
+      <div className={styles.stats}>
+        <div className={styles.stat}>
+          <span className={styles.statLabel}>Avg x</span>
+          <span className={styles.statValue}>
+            {formatMultiplier(stats?.avgXOpened ?? null)}
+          </span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statLabel}>BE x</span>
+          <span className={styles.statValue}>
+            {formatMultiplier(stats?.breakEvenX ?? null)}
+          </span>
+        </div>
       </div>
 
       {bonuses.length === 0 ? (

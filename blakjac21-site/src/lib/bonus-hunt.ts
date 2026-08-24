@@ -4,6 +4,7 @@ export type BonusItem = {
   id: string;
   name: string;
   betSize: number | null;
+  winAmount: number | null;
   tier: BonusTier;
   createdAt: string;
 };
@@ -14,10 +15,19 @@ export type SlotRequest = {
   createdAt: string;
 };
 
+export type BonusHuntStats = {
+  startAmount: number | null;
+  totalBet: number;
+  openedCount: number;
+  avgXOpened: number | null;
+  breakEvenX: number | null;
+};
+
 export type BonusHuntState = {
   huntActive: boolean;
   requestsOpen: boolean;
   title: string;
+  startAmount: number | null;
   bonuses: BonusItem[];
   slotRequests: SlotRequest[];
   updatedAt: string;
@@ -32,6 +42,7 @@ function createState(): BonusHuntState {
     huntActive: false,
     requestsOpen: false,
     title: "",
+    startAmount: null,
     bonuses: [],
     slotRequests: [],
     updatedAt: new Date().toISOString(),
@@ -41,7 +52,15 @@ function createState(): BonusHuntState {
 export function getBonusHuntState(): BonusHuntState {
   const g = globalThis as StoreGlobal;
   if (!g.__bonusHuntState) g.__bonusHuntState = createState();
-  return g.__bonusHuntState;
+
+  const state = g.__bonusHuntState;
+  if (state.startAmount === undefined) state.startAmount = null;
+  state.bonuses = state.bonuses.map((bonus) => ({
+    ...bonus,
+    winAmount: bonus.winAmount ?? null,
+  }));
+
+  return state;
 }
 
 export function setHuntActive(active: boolean): BonusHuntState {
@@ -61,6 +80,33 @@ export function setHuntTitle(title: string): BonusHuntState {
   return state;
 }
 
+export function setStartAmount(
+  value: string | number | null | undefined,
+): {
+  accepted: boolean;
+  reason?: string;
+  state: BonusHuntState;
+} {
+  const state = getBonusHuntState();
+  const hasInput = value != null && String(value).trim() !== "";
+
+  if (!hasInput) {
+    state.startAmount = null;
+    state.updatedAt = new Date().toISOString();
+    return { accepted: true, state };
+  }
+
+  const amount = parseMoneyAmount(value, { allowZero: false });
+  if (amount == null) {
+    return { accepted: false, reason: "Enter a valid start amount", state };
+  }
+
+  state.startAmount = amount;
+  state.huntActive = true;
+  state.updatedAt = new Date().toISOString();
+  return { accepted: true, state };
+}
+
 export function setRequestsOpen(open: boolean): BonusHuntState {
   const state = getBonusHuntState();
   state.requestsOpen = open;
@@ -69,9 +115,17 @@ export function setRequestsOpen(open: boolean): BonusHuntState {
   return state;
 }
 
-export function parseBetSize(value: string | number | null | undefined): number | null {
+export function parseMoneyAmount(
+  value: string | number | null | undefined,
+  options?: { allowZero?: boolean },
+): number | null {
+  const allowZero = options?.allowZero ?? false;
+
   if (typeof value === "number") {
-    if (!Number.isFinite(value) || value <= 0) return null;
+    if (!Number.isFinite(value)) return null;
+    if (value < 0) return null;
+    if (value === 0) return allowZero ? 0 : null;
+    if (value > 999_999_999) return null;
     return Math.round(value * 100) / 100;
   }
 
@@ -81,8 +135,13 @@ export function parseBetSize(value: string | number | null | undefined): number 
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
 
   const amount = Number(normalized);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 999_999_999) return null;
+  if (!Number.isFinite(amount) || amount < 0 || amount > 999_999_999) return null;
+  if (amount === 0) return allowZero ? 0 : null;
   return Math.round(amount * 100) / 100;
+}
+
+export function parseBetSize(value: string | number | null | undefined): number | null {
+  return parseMoneyAmount(value, { allowZero: false });
 }
 
 export function formatBetSize(amount: number | null): string {
@@ -92,6 +151,50 @@ export function formatBetSize(amount: number | null): string {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+export function formatMultiplier(value: number | null): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${value.toFixed(2)}x`;
+}
+
+export function getBonusMultiplier(bonus: BonusItem): number | null {
+  if (bonus.betSize == null || bonus.betSize <= 0) return null;
+  if (bonus.winAmount == null) return null;
+  return Math.round((bonus.winAmount / bonus.betSize) * 100) / 100;
+}
+
+export function getHuntStats(state: BonusHuntState): BonusHuntStats {
+  const bets = state.bonuses
+    .map((bonus) => bonus.betSize)
+    .filter((bet): bet is number => bet != null && bet > 0);
+  const totalBet = bets.reduce((sum, bet) => sum + bet, 0);
+
+  const openedMultipliers = state.bonuses
+    .map((bonus) => getBonusMultiplier(bonus))
+    .filter((value): value is number => value != null);
+
+  const avgXOpened =
+    openedMultipliers.length > 0
+      ? Math.round(
+          (openedMultipliers.reduce((sum, value) => sum + value, 0) /
+            openedMultipliers.length) *
+            100,
+        ) / 100
+      : null;
+
+  const breakEvenX =
+    state.startAmount != null && state.startAmount > 0 && totalBet > 0
+      ? Math.round((state.startAmount / totalBet) * 100) / 100
+      : null;
+
+  return {
+    startAmount: state.startAmount,
+    totalBet,
+    openedCount: openedMultipliers.length,
+    avgXOpened,
+    breakEvenX,
+  };
 }
 
 export function addBonus(input: {
@@ -127,9 +230,42 @@ export function addBonus(input: {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name: trimmed,
     betSize,
+    winAmount: null,
     tier,
     createdAt: new Date().toISOString(),
   });
+  state.updatedAt = new Date().toISOString();
+  return { accepted: true, state };
+}
+
+export function setBonusWinAmount(input: {
+  id: string;
+  winAmount?: string | number | null;
+}): {
+  accepted: boolean;
+  reason?: string;
+  state: BonusHuntState;
+} {
+  const state = getBonusHuntState();
+  const bonus = state.bonuses.find((item) => item.id === input.id);
+  if (!bonus) {
+    return { accepted: false, reason: "Bonus not found", state };
+  }
+
+  const hasInput =
+    input.winAmount != null && String(input.winAmount).trim() !== "";
+  if (!hasInput) {
+    bonus.winAmount = null;
+    state.updatedAt = new Date().toISOString();
+    return { accepted: true, state };
+  }
+
+  const winAmount = parseMoneyAmount(input.winAmount, { allowZero: true });
+  if (winAmount == null) {
+    return { accepted: false, reason: "Enter a valid win amount", state };
+  }
+
+  bonus.winAmount = winAmount;
   state.updatedAt = new Date().toISOString();
   return { accepted: true, state };
 }

@@ -99,8 +99,56 @@
   gap: 0.65rem;
 }
 
+.bankrollRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.statCard {
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.statLabel {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.statValue {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.statHint {
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
 @media (max-width: 640px) {
-  .formGrid {
+  .formGrid,
+  .bankrollRow,
+  .statsGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -273,6 +321,57 @@
   font-size: 0.84rem;
   letter-spacing: 0.02em;
   color: var(--accent);
+  white-space: nowrap;
+}
+
+.colWin {
+  min-width: 8.5rem;
+}
+
+.winEditor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.winInput {
+  width: 100%;
+  min-width: 4.5rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.winSave {
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.winSave:hover,
+.winSave:focus-visible {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.colX {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--gold);
   white-space: nowrap;
 }
 
