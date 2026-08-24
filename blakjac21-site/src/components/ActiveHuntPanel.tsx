@@ -560,8 +560,8 @@ export function ActiveHuntPanel() {
           {slotCatalog?.counts.total
             ? ` (${slotCatalog.counts.total.toLocaleString()} names cached)`
             : ""}
-          . Up to 3 requests per username — repeat a name to bump it, or pick
-          different slots.
+          . Up to 3 requests per username. Duplicate slot names are not
+          allowed.
         </p>
         {slotRequests.length === 0 ? (
           <p className={styles.empty}>No slot requests yet.</p>
