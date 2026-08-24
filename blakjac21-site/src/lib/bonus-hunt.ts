@@ -3,6 +3,7 @@ export type BonusTier = "normal" | "super" | "epic";
 export type BonusItem = {
   id: string;
   name: string;
+  betSize: number | null;
   tier: BonusTier;
   createdAt: string;
 };
@@ -68,8 +69,34 @@ export function setRequestsOpen(open: boolean): BonusHuntState {
   return state;
 }
 
+export function parseBetSize(value: string | number | null | undefined): number | null {
+  if (typeof value === "number") {
+    if (!Number.isFinite(value) || value <= 0) return null;
+    return Math.round(value * 100) / 100;
+  }
+
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().replace(/[$,\s]/g, "");
+  if (!normalized) return null;
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 999_999_999) return null;
+  return Math.round(amount * 100) / 100;
+}
+
+export function formatBetSize(amount: number | null): string {
+  if (amount == null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 export function addBonus(input: {
   name: string;
+  betSize?: string | number | null;
   tier?: BonusTier;
 }): {
   accepted: boolean;
@@ -85,6 +112,13 @@ export function addBonus(input: {
     return { accepted: false, reason: "Bonus name is too long", state };
   }
 
+  const hasBetInput =
+    input.betSize != null && String(input.betSize).trim() !== "";
+  const betSize = parseBetSize(input.betSize);
+  if (hasBetInput && betSize == null) {
+    return { accepted: false, reason: "Enter a valid bet size", state };
+  }
+
   const tier: BonusTier =
     input.tier === "super" || input.tier === "epic" ? input.tier : "normal";
 
@@ -92,6 +126,7 @@ export function addBonus(input: {
   state.bonuses.push({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name: trimmed,
+    betSize,
     tier,
     createdAt: new Date().toISOString(),
   });

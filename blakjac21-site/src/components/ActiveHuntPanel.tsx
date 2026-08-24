@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
-import { isSlotRequestMessage } from "@/lib/bonus-hunt";
+import { formatBetSize, isSlotRequestMessage } from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
 import styles from "./ActiveHuntPanel.module.css";
 
@@ -30,6 +30,7 @@ export function ActiveHuntPanel() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [bonusName, setBonusName] = useState("");
+  const [betSize, setBetSize] = useState("");
   const [superTier, setSuperTier] = useState(false);
   const [epicTier, setEpicTier] = useState(false);
   const [huntTitle, setHuntTitle] = useState("");
@@ -152,10 +153,12 @@ export function ActiveHuntPanel() {
     event.preventDefault();
     const next = await adminRequest("/api/bonus-hunt/bonus", {
       name: bonusName,
+      betSize,
       tier: selectedTier,
     });
     if (next) {
       setBonusName("");
+      setBetSize("");
       setSuperTier(false);
       setEpicTier(false);
     }
@@ -213,18 +216,34 @@ export function ActiveHuntPanel() {
         </div>
 
         <form className={styles.addForm} onSubmit={handleAddBonus}>
-          <label className={styles.label}>
-            Add bonus
-            <input
-              className={styles.input}
-              type="text"
-              value={bonusName}
-              onChange={(e) => setBonusName(e.target.value)}
-              placeholder="e.g. Sugar Rush 1000"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
+          <div className={styles.formGrid}>
+            <label className={styles.label}>
+              Bonus name
+              <input
+                className={styles.input}
+                type="text"
+                value={bonusName}
+                onChange={(e) => setBonusName(e.target.value)}
+                placeholder="e.g. Sugar Rush 1000"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+
+            <label className={styles.label}>
+              Bet size
+              <input
+                className={styles.input}
+                type="text"
+                inputMode="decimal"
+                value={betSize}
+                onChange={(e) => setBetSize(e.target.value)}
+                placeholder="e.g. 1.00 or $2.50"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+          </div>
 
           <div className={styles.tierRow} role="group" aria-label="Bonus tier">
             <button
@@ -259,34 +278,57 @@ export function ActiveHuntPanel() {
         {bonuses.length === 0 ? (
           <p className={styles.empty}>No bonuses added yet.</p>
         ) : (
-          <ol className={styles.list}>
-            {bonuses.map((bonus, index) => (
-              <li
-                key={bonus.id}
-                className={styles.item}
-                data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
-              >
-                <span className={styles.itemIndex}>{index + 1}</span>
-                <span className={styles.itemName}>{bonus.name}</span>
-                {bonus.tier !== "normal" ? (
-                  <span className={styles.tierBadge} data-tier={bonus.tier}>
-                    {tierLabel(bonus.tier)}
-                  </span>
-                ) : null}
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  disabled={busy}
-                  onClick={() =>
-                    adminRequest("/api/bonus-hunt/bonus/remove", { id: bonus.id })
-                  }
-                  aria-label={`Remove ${bonus.name}`}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ol>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Bonus</th>
+                  <th scope="col">Bet</th>
+                  <th scope="col">Tier</th>
+                  <th scope="col">
+                    <span className={styles.srOnly}>Remove</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {bonuses.map((bonus, index) => (
+                  <tr
+                    key={bonus.id}
+                    data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
+                  >
+                    <td className={styles.colIndex}>{index + 1}</td>
+                    <td className={styles.colName}>{bonus.name}</td>
+                    <td className={styles.colBet}>{formatBetSize(bonus.betSize)}</td>
+                    <td className={styles.colTier}>
+                      {bonus.tier !== "normal" ? (
+                        <span className={styles.tierBadge} data-tier={bonus.tier}>
+                          {tierLabel(bonus.tier)}
+                        </span>
+                      ) : (
+                        <span className={styles.tierMuted}>Normal</span>
+                      )}
+                    </td>
+                    <td className={styles.colAction}>
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        disabled={busy}
+                        onClick={() =>
+                          adminRequest("/api/bonus-hunt/bonus/remove", {
+                            id: bonus.id,
+                          })
+                        }
+                        aria-label={`Remove ${bonus.name}`}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

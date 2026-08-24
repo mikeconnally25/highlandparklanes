@@ -79,7 +79,7 @@
 
 .main {
   flex: 1;
-  max-width: 42rem;
+  max-width: 52rem;
   padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2rem) 2rem;
 }
 
