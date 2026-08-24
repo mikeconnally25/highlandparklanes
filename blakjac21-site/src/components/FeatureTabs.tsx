@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./FeatureTabs.module.css";
 
-type PanelTabId = "rewards";
+type PanelTabId = "rewards" | "social";
+
+type SocialLink = {
+  label: string;
+  href: string;
+  handle?: string;
+};
 
 type TabConfig =
   | { id: string; label: string; kind: "link"; href: string }
@@ -20,12 +27,42 @@ const TABS: TabConfig[] = [
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
   { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
   { id: "rewards", label: "Rewards", kind: "panel" },
+  { id: "social", label: "Social Media", kind: "panel" },
 ];
 
-const PANEL_COPY: Record<PanelTabId, { title: string; body: string }> = {
+const PANEL_COPY: Record<
+  PanelTabId,
+  { title: string; body: string; links?: SocialLink[] }
+> = {
   rewards: {
     title: "Rewards",
     body: "Sub perks, giveaways, and channel rewards will be listed here. Follow on Kick so you do not miss drops.",
+  },
+  social: {
+    title: "Social Media",
+    body: "Follow Blakjac21 across platforms for stream updates, highlights, and community posts.",
+    links: [
+      {
+        label: "Kick",
+        href: KICK_CHANNEL_URL,
+        handle: "kick.com/Blakjac21",
+      },
+      {
+        label: "X / Twitter",
+        href: "https://x.com/Blakjac21",
+        handle: "@Blakjac21",
+      },
+      {
+        label: "Instagram",
+        href: "https://instagram.com/Blakjac21",
+        handle: "@Blakjac21",
+      },
+      {
+        label: "Discord",
+        href: "https://discord.gg/",
+        handle: "Coming soon",
+      },
+    ],
   },
 };
 
@@ -82,6 +119,27 @@ export function FeatureTabs() {
               >
                 <p className={styles.panelTitle}>{panel.title}</p>
                 <p className={styles.panelBody}>{panel.body}</p>
+                {panel.links?.length ? (
+                  <ul className={styles.socialList}>
+                    {panel.links.map((link) => (
+                      <li key={link.label}>
+                        <a
+                          className={styles.socialLink}
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <span className={styles.socialLabel}>{link.label}</span>
+                          {link.handle ? (
+                            <span className={styles.socialHandle}>
+                              {link.handle}
+                            </span>
+                          ) : null}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </div>
             </li>
           );
