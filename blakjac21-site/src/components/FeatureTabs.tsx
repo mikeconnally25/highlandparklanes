@@ -5,7 +5,7 @@ import Link from "next/link";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
 import styles from "./FeatureTabs.module.css";
 
-type PanelTabId = "rewards" | "social";
+type PanelTabId = "social";
 
 type SocialLink = {
   label: string;
@@ -26,7 +26,7 @@ const TABS: TabConfig[] = [
   },
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
   { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
-  { id: "rewards", label: "Rewards", kind: "panel" },
+  { id: "rewards", label: "Rewards", kind: "link", href: "/rewards" },
   { id: "social", label: "Social Media", kind: "panel" },
 ];
 
@@ -34,10 +34,6 @@ const PANEL_COPY: Record<
   PanelTabId,
   { title: string; body: string; links?: SocialLink[] }
 > = {
-  rewards: {
-    title: "Rewards",
-    body: "Sub perks, giveaways, and channel rewards will be listed here. Follow on Kick so you do not miss drops.",
-  },
   social: {
     title: "Social Media",
     body: "Follow Blakjac21 across platforms for stream updates, highlights, and community posts.",
