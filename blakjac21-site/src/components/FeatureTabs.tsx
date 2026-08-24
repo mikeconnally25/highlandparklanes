@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./FeatureTabs.module.css";
 
-type PanelTabId = "leaderboard" | "rewards";
+type PanelTabId = "rewards";
 
 type TabConfig =
   | { id: string; label: string; kind: "link"; href: string }
@@ -18,15 +18,11 @@ const TABS: TabConfig[] = [
     href: "/guess-the-balance",
   },
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
-  { id: "leaderboard", label: "Leaderboard", kind: "panel" },
+  { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
   { id: "rewards", label: "Rewards", kind: "panel" },
 ];
 
 const PANEL_COPY: Record<PanelTabId, { title: string; body: string }> = {
-  leaderboard: {
-    title: "Leaderboard",
-    body: "Top viewers and streak holders will show up here. Rankings reset each stream week.",
-  },
   rewards: {
     title: "Rewards",
     body: "Sub perks, giveaways, and channel rewards will be listed here. Follow on Kick so you do not miss drops.",
