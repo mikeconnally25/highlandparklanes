@@ -263,6 +263,7 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
 export function addBonus(input: {
   name: string;
   betSize?: string | number | null;
+  winAmount?: string | number | null;
   tier?: BonusTier;
 }): {
   accepted: boolean;
@@ -289,6 +290,16 @@ export function addBonus(input: {
     };
   }
 
+  const hasWinInput =
+    input.winAmount != null && String(input.winAmount).trim() !== "";
+  let winAmount: number | null = null;
+  if (hasWinInput) {
+    winAmount = parseMoneyAmount(input.winAmount, { allowZero: true });
+    if (winAmount == null) {
+      return { accepted: false, reason: "Enter a valid win amount", state };
+    }
+  }
+
   const tier: BonusTier =
     input.tier === "super" || input.tier === "epic" ? input.tier : "normal";
 
@@ -297,12 +308,44 @@ export function addBonus(input: {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name: trimmed,
     betSize,
-    winAmount: null,
+    winAmount,
     tier,
     createdAt: new Date().toISOString(),
   });
   state.updatedAt = new Date().toISOString();
   return { accepted: true, state };
+}
+
+/** Move a chat slot request onto the bonus list, then drop it from the queue. */
+export function promoteSlotRequestToBonus(input: {
+  requestId: string;
+  betSize?: string | number | null;
+  winAmount?: string | number | null;
+  tier?: BonusTier;
+}): {
+  accepted: boolean;
+  reason?: string;
+  state: BonusHuntState;
+} {
+  const state = getBonusHuntState();
+  const request = state.slotRequests.find((req) => req.id === input.requestId);
+  if (!request) {
+    return { accepted: false, reason: "Slot request not found", state };
+  }
+
+  const result = addBonus({
+    name: request.slotName,
+    betSize: input.betSize,
+    winAmount: input.winAmount,
+    tier: input.tier,
+  });
+  if (!result.accepted) return result;
+
+  result.state.slotRequests = result.state.slotRequests.filter(
+    (req) => req.id !== input.requestId,
+  );
+  result.state.updatedAt = new Date().toISOString();
+  return result;
 }
 
 export function setBonusWinAmount(input: {

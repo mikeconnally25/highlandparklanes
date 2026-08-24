@@ -48,11 +48,15 @@ export function ActiveHuntPanel() {
   const [busy, setBusy] = useState(false);
   const [bonusName, setBonusName] = useState("");
   const [betSize, setBetSize] = useState("");
+  const [winAmount, setWinAmount] = useState("");
   const [startAmountInput, setStartAmountInput] = useState("");
   const [superTier, setSuperTier] = useState(false);
   const [epicTier, setEpicTier] = useState(false);
   const [huntTitle, setHuntTitle] = useState("");
   const [winDrafts, setWinDrafts] = useState<Record<string, string>>({});
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(
+    null,
+  );
   const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
     null,
   );
@@ -236,17 +240,60 @@ export function ActiveHuntPanel() {
 
   async function handleAddBonus(event: FormEvent) {
     event.preventDefault();
+
+    if (selectedRequestId) {
+      const next = await adminRequest("/api/bonus-hunt/admin", {
+        action: "promote-request",
+        id: selectedRequestId,
+        betSize,
+        winAmount,
+        tier: selectedTier,
+      });
+      if (next) {
+        setSelectedRequestId(null);
+        setBonusName("");
+        setBetSize("");
+        setWinAmount("");
+        setSuperTier(false);
+        setEpicTier(false);
+        setWinDrafts((current) => {
+          const nextDrafts = { ...current };
+          for (const bonus of next.bonuses) {
+            if (nextDrafts[bonus.id] === undefined) {
+              nextDrafts[bonus.id] =
+                bonus.winAmount != null ? String(bonus.winAmount) : "";
+            }
+          }
+          return nextDrafts;
+        });
+      }
+      return;
+    }
+
     const next = await adminRequest("/api/bonus-hunt/bonus", {
       name: bonusName,
       betSize,
+      winAmount,
       tier: selectedTier,
     });
     if (next) {
       setBonusName("");
       setBetSize("");
+      setWinAmount("");
       setSuperTier(false);
       setEpicTier(false);
     }
+  }
+
+  function selectRequest(id: string, slotName: string) {
+    setSelectedRequestId((current) => {
+      if (current === id) {
+        setBonusName("");
+        return null;
+      }
+      setBonusName(slotName);
+      return id;
+    });
   }
 
   function toggleSuper() {
@@ -268,6 +315,12 @@ export function ActiveHuntPanel() {
   const bonuses = state?.bonuses ?? [];
   const slotRequests = state?.slotRequests ?? [];
   const stats = state ? getHuntStats(state) : null;
+
+  useEffect(() => {
+    if (!selectedRequestId) return;
+    if (slotRequests.some((req) => req.id === selectedRequestId)) return;
+    setSelectedRequestId(null);
+  }, [selectedRequestId, slotRequests]);
 
   async function saveStartAmount() {
     await adminRequest("/api/bonus-hunt/admin", {
@@ -378,21 +431,92 @@ export function ActiveHuntPanel() {
       <section className={styles.block} aria-labelledby="bonus-list-heading">
         <div className={styles.blockHeader}>
           <h3 id="bonus-list-heading" className={styles.blockTitle}>
-            Bonus list
+            Bonuses & requests
           </h3>
-          <span className={styles.count}>{bonuses.length}</span>
+          <span className={styles.count}>
+            {bonuses.length}
+            {slotRequests.length ? ` / ${slotRequests.length}` : ""}
+          </span>
+        </div>
+
+        <p className={styles.help}>
+          Viewers type <code>!s Slot Name</code> in Kick chat when requests are
+          open (Only on Stake / New Releases, up to 3 per user, no duplicates).
+          Select a request below, set bet and win, then add it to the hunt list.
+        </p>
+
+        <div className={styles.subBlock}>
+          <div className={styles.subHeader}>
+            <h4 className={styles.subTitle}>Chat requests</h4>
+            <span className={styles.subCount}>{slotRequests.length}</span>
+          </div>
+          {slotRequests.length === 0 ? (
+            <p className={styles.empty}>No slot requests yet.</p>
+          ) : (
+            <ul className={styles.requestList}>
+              {slotRequests.map((req, index) => {
+                const selected = selectedRequestId === req.id;
+                return (
+                  <li key={req.id}>
+                    <button
+                      type="button"
+                      className={styles.requestRow}
+                      data-selected={selected || undefined}
+                      disabled={busy}
+                      onClick={() => selectRequest(req.id, req.slotName)}
+                      aria-pressed={selected}
+                    >
+                      <span className={styles.itemIndex}>{index + 1}</span>
+                      <span className={styles.itemMeta}>
+                        <span className={styles.itemName}>{req.username}</span>
+                        <span className={styles.itemSlot}>{req.slotName}</span>
+                      </span>
+                      <span className={styles.selectHint}>
+                        {selected ? "Selected" : "Select"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.removeBtn}
+                      disabled={busy}
+                      onClick={() => {
+                        if (selectedRequestId === req.id) {
+                          setSelectedRequestId(null);
+                          setBonusName("");
+                        }
+                        void adminRequest("/api/bonus-hunt/admin", {
+                          action: "remove-request",
+                          id: req.id,
+                        });
+                      }}
+                      aria-label={`Dismiss ${req.slotName}`}
+                    >
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
         <form className={styles.addForm} onSubmit={handleAddBonus}>
-          <div className={styles.formGrid}>
+          <div className={styles.formGridThree}>
             <label className={styles.label}>
               Bonus name
               <input
                 className={styles.input}
                 type="text"
                 value={bonusName}
-                onChange={(e) => setBonusName(e.target.value)}
-                placeholder="e.g. Sugar Rush 1000"
+                onChange={(e) => {
+                  setBonusName(e.target.value);
+                  if (selectedRequestId) setSelectedRequestId(null);
+                }}
+                placeholder={
+                  selectedRequestId
+                    ? "Selected from chat request"
+                    : "Select a request or type a name"
+                }
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -407,6 +531,20 @@ export function ActiveHuntPanel() {
                 value={betSize}
                 onChange={(e) => setBetSize(e.target.value)}
                 placeholder=".01 to 1000"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+
+            <label className={styles.label}>
+              Win
+              <input
+                className={styles.input}
+                type="text"
+                inputMode="decimal"
+                value={winAmount}
+                onChange={(e) => setWinAmount(e.target.value)}
+                placeholder="Optional"
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -439,159 +577,109 @@ export function ActiveHuntPanel() {
             className={styles.addBtn}
             disabled={busy || !bonusName.trim()}
           >
-            Add to list
+            {selectedRequestId ? "Add selected to list" : "Add to list"}
           </button>
         </form>
 
-        {bonuses.length === 0 ? (
-          <p className={styles.empty}>No bonuses added yet.</p>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Bonus</th>
-                  <th scope="col">Bet</th>
-                  <th scope="col">Win</th>
-                  <th scope="col">X</th>
-                  <th scope="col">Tier</th>
-                  <th scope="col">
-                    <span className={styles.srOnly}>Remove</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {bonuses.map((bonus, index) => (
-                  <tr
-                    key={bonus.id}
-                    data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
-                  >
-                    <td className={styles.colIndex}>{index + 1}</td>
-                    <td className={styles.colName}>{bonus.name}</td>
-                    <td className={styles.colBet}>{formatBetSize(bonus.betSize)}</td>
-                    <td className={styles.colWin}>
-                      <div className={styles.winEditor}>
-                        <input
-                          className={styles.winInput}
-                          type="text"
-                          inputMode="decimal"
-                          value={winDrafts[bonus.id] ?? ""}
-                          onChange={(e) =>
-                            setWinDrafts((current) => ({
-                              ...current,
-                              [bonus.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="0"
-                          aria-label={`Win amount for ${bonus.name}`}
-                        />
+        <div className={styles.subBlock}>
+          <div className={styles.subHeader}>
+            <h4 className={styles.subTitle}>Hunt list</h4>
+            <span className={styles.subCount}>{bonuses.length}</span>
+          </div>
+          {bonuses.length === 0 ? (
+            <p className={styles.empty}>No bonuses on the list yet.</p>
+          ) : (
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Bonus</th>
+                    <th scope="col">Bet</th>
+                    <th scope="col">Win</th>
+                    <th scope="col">X</th>
+                    <th scope="col">Tier</th>
+                    <th scope="col">
+                      <span className={styles.srOnly}>Remove</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bonuses.map((bonus, index) => (
+                    <tr
+                      key={bonus.id}
+                      data-tier={
+                        bonus.tier !== "normal" ? bonus.tier : undefined
+                      }
+                    >
+                      <td className={styles.colIndex}>{index + 1}</td>
+                      <td className={styles.colName}>{bonus.name}</td>
+                      <td className={styles.colBet}>
+                        {formatBetSize(bonus.betSize)}
+                      </td>
+                      <td className={styles.colWin}>
+                        <div className={styles.winEditor}>
+                          <input
+                            className={styles.winInput}
+                            type="text"
+                            inputMode="decimal"
+                            value={winDrafts[bonus.id] ?? ""}
+                            onChange={(e) =>
+                              setWinDrafts((current) => ({
+                                ...current,
+                                [bonus.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="0"
+                            aria-label={`Win amount for ${bonus.name}`}
+                          />
+                          <button
+                            type="button"
+                            className={styles.winSave}
+                            disabled={busy}
+                            onClick={() => saveWinAmount(bonus.id)}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </td>
+                      <td className={styles.colX}>
+                        {formatMultiplier(getBonusMultiplier(bonus))}
+                      </td>
+                      <td className={styles.colTier}>
+                        {bonus.tier !== "normal" ? (
+                          <span
+                            className={styles.tierBadge}
+                            data-tier={bonus.tier}
+                          >
+                            {tierLabel(bonus.tier)}
+                          </span>
+                        ) : (
+                          <span className={styles.tierMuted}>Normal</span>
+                        )}
+                      </td>
+                      <td className={styles.colAction}>
                         <button
                           type="button"
-                          className={styles.winSave}
+                          className={styles.removeBtn}
                           disabled={busy}
-                          onClick={() => saveWinAmount(bonus.id)}
+                          onClick={() =>
+                            adminRequest("/api/bonus-hunt/bonus/remove", {
+                              id: bonus.id,
+                            })
+                          }
+                          aria-label={`Remove ${bonus.name}`}
                         >
-                          Save
+                          ×
                         </button>
-                      </div>
-                    </td>
-                    <td className={styles.colX}>
-                      {formatMultiplier(getBonusMultiplier(bonus))}
-                    </td>
-                    <td className={styles.colTier}>
-                      {bonus.tier !== "normal" ? (
-                        <span className={styles.tierBadge} data-tier={bonus.tier}>
-                          {tierLabel(bonus.tier)}
-                        </span>
-                      ) : (
-                        <span className={styles.tierMuted}>Normal</span>
-                      )}
-                    </td>
-                    <td className={styles.colAction}>
-                      <button
-                        type="button"
-                        className={styles.removeBtn}
-                        disabled={busy}
-                        onClick={() =>
-                          adminRequest("/api/bonus-hunt/bonus/remove", {
-                            id: bonus.id,
-                          })
-                        }
-                        aria-label={`Remove ${bonus.name}`}
-                      >
-                        ×
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className={styles.block} aria-labelledby="slot-queue-heading">
-        <div className={styles.blockHeader}>
-          <h3 id="slot-queue-heading" className={styles.blockTitle}>
-            Slot requests
-          </h3>
-          <span className={styles.count}>{slotRequests.length}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-        <p className={styles.help}>
-          Viewers type <code>!s Slot Name</code> in Kick chat when requests are
-          open. Slot must be an exact name from Stake{" "}
-          <a
-            href="https://stake.com/casino/group/only-on-stake"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Only on Stake
-          </a>{" "}
-          or{" "}
-          <a
-            href="https://stake.com/casino/group/new-releases"
-            target="_blank"
-            rel="noreferrer"
-          >
-            New Releases
-          </a>
-          . Catalog auto-refreshes every 10 seconds
-          {slotCatalog?.counts.total
-            ? ` (${slotCatalog.counts.total.toLocaleString()} names cached)`
-            : ""}
-          . Up to 3 requests per username. Duplicate slot names are not
-          allowed.
-        </p>
-        {slotRequests.length === 0 ? (
-          <p className={styles.empty}>No slot requests yet.</p>
-        ) : (
-          <ol className={styles.list}>
-            {slotRequests.map((req, index) => (
-              <li key={req.id} className={styles.item}>
-                <span className={styles.itemIndex}>{index + 1}</span>
-                <div className={styles.itemMeta}>
-                  <span className={styles.itemName}>{req.username}</span>
-                  <span className={styles.itemSlot}>{req.slotName}</span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.removeBtn}
-                  disabled={busy}
-                  onClick={() =>
-                    adminRequest("/api/bonus-hunt/admin", {
-                      action: "remove-request",
-                      id: req.id,
-                    })
-                  }
-                  aria-label={`Remove ${req.username}`}
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ol>
-        )}
       </section>
 
       <div className={styles.admin}>

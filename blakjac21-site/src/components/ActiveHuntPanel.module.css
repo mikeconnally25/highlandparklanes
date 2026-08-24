@@ -99,6 +99,97 @@
   gap: 0.65rem;
 }
 
+.formGridThree {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.7fr;
+  gap: 0.65rem;
+}
+
+.subBlock {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.subHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.subTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.subCount {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.requestList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.requestList > li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.requestRow {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.requestRow:hover,
+.requestRow:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.requestRow[data-selected] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.selectHint {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.requestRow[data-selected] .selectHint {
+  color: var(--accent);
+}
+
 .bankrollRow {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -147,6 +238,7 @@
 
 @media (max-width: 640px) {
   .formGrid,
+  .formGridThree,
   .bankrollRow,
   .statsGrid {
     grid-template-columns: 1fr;

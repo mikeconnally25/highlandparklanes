@@ -6,11 +6,17 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { name?: string; betSize?: string | number | null; tier?: BonusTier };
+  let body: {
+    name?: string;
+    betSize?: string | number | null;
+    winAmount?: string | number | null;
+    tier?: BonusTier;
+  };
   try {
     body = (await request.json()) as {
       name?: string;
       betSize?: string | number | null;
+      winAmount?: string | number | null;
       tier?: BonusTier;
     };
   } catch {
@@ -20,6 +26,7 @@ export async function POST(request: Request) {
   const result = addBonus({
     name: body.name ?? "",
     betSize: body.betSize,
+    winAmount: body.winAmount,
     tier: body.tier,
   });
   if (!result.accepted) {
