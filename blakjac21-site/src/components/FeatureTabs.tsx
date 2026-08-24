@@ -53,11 +53,6 @@ const PANEL_COPY: Record<
         handle: "@21Blakjac",
       },
       {
-        label: "Instagram",
-        href: "https://instagram.com/Blakjac21",
-        handle: "@Blakjac21",
-      },
-      {
         label: "Discord",
         href: "https://discord.gg/",
         handle: "Coming soon",
