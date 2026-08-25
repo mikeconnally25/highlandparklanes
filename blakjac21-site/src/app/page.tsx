@@ -1,6 +1,7 @@
 import { AccountHeader } from "@/components/AccountHeader";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FeatureTabs } from "@/components/FeatureTabs";
+import { HomeHuntStats } from "@/components/HomeHuntStats";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
@@ -19,23 +20,27 @@ export default function Home() {
           <AccountHeader />
         </header>
 
-        <main className={styles.hero}>
-          <div className={styles.heroGrid}>
-            <div className={styles.brandBlock}>
-              <p className={styles.eyebrow}>Gambling streams on Kick</p>
-              <h1 className={styles.brand}>Blakjac21</h1>
-              <p className={styles.tagline}>
-                High-stakes sessions, live when it counts — watch on Kick.
-              </p>
-              <div className={styles.ctas}>
-                <WatchCta />
+        <main>
+          <section className={styles.hero} aria-label="Blakjac21">
+            <div className={styles.heroGrid}>
+              <div className={styles.brandBlock}>
+                <p className={styles.eyebrow}>Gambling streams on Kick</p>
+                <h1 className={styles.brand}>Blakjac21</h1>
+                <p className={styles.tagline}>
+                  High-stakes sessions, live when it counts — watch on Kick.
+                </p>
+                <div className={styles.ctas}>
+                  <WatchCta />
+                </div>
+              </div>
+
+              <div id="watch" className={styles.playerBleed}>
+                <KickPlayer />
               </div>
             </div>
+          </section>
 
-            <div id="watch" className={styles.playerBleed}>
-              <KickPlayer />
-            </div>
-          </div>
+          <HomeHuntStats />
         </main>
 
         <footer className={styles.footer}>
