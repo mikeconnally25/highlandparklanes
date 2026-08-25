@@ -18,6 +18,38 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Deploy (public URL for viewers)
+
+This app lives in the `blakjac21-site/` folder (separate from the Highland Park Lanes root app). Deploy **this folder** so people get a real `https://…` link.
+
+### Option A — Vercel (fastest)
+
+1. Go to [vercel.com](https://vercel.com) → **Add New Project** → import `mikeconnally25/highlandparklanes`
+2. Set **Root Directory** to `blakjac21-site`
+3. Framework: Next.js (auto). Deploy
+4. Copy the URL Vercel gives you (e.g. `https://something.vercel.app`)
+5. In **Settings → Environment Variables**, add:
+
+```
+KICK_CLIENT_ID=…
+KICK_CLIENT_SECRET=…
+KICK_REDIRECT_URI=https://YOUR_VERCEL_URL/api/account/kick/callback
+NEXT_PUBLIC_SITE_URL=https://YOUR_VERCEL_URL
+SESSION_SECRET=long-random-string
+GUESS_ADMIN_TOKEN=your-admin-token
+```
+
+6. Redeploy after saving vars
+7. In [Kick Developer settings](https://kick.com/settings/developer), add the same Redirect URL as `KICK_REDIRECT_URI`
+
+### Option B — Railway
+
+1. [railway.app](https://railway.app) → New Project → Deploy from GitHub → this repo
+2. Set the service **Root Directory** / watch path to `blakjac21-site` (uses the Dockerfile there)
+3. Generate a public domain under Networking
+4. Add the same env vars as above (with your Railway domain)
+5. Update the Kick app Redirect URL to match
+
 ## Kick status
 
 Server routes:
