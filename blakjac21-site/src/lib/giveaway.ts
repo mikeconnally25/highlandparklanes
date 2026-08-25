@@ -52,8 +52,36 @@ export function clearGiveawayEntries(): GiveawayState {
   return state;
 }
 
+export function removeGiveawayEntry(username: string): {
+  removed: boolean;
+  state: GiveawayState;
+} {
+  const state = getGiveawayState();
+  const needle = username.trim().toLowerCase();
+  if (!needle) return { removed: false, state };
+
+  const before = state.entries.length;
+  state.entries = state.entries.filter((entry) => entry.username !== needle);
+  if (state.entries.length !== before) {
+    state.updatedAt = new Date().toISOString();
+    return { removed: true, state };
+  }
+  return { removed: false, state };
+}
+
 export function normalizeGiveawayKeyword(keyword: string): string {
   return keyword.trim().toLowerCase();
+}
+
+export const GIVEAWAY_CLAIM_KEYWORD = "claim";
+
+/** Winner must type claim / !claim in Kick chat within the claim window. */
+export function messageMatchesGiveawayClaim(message: string): boolean {
+  const normalized = normalizeGiveawayKeyword(message);
+  return (
+    normalized === GIVEAWAY_CLAIM_KEYWORD ||
+    normalized === `!${GIVEAWAY_CLAIM_KEYWORD}`
+  );
 }
 
 /** Chat message counts as an entry when it matches the keyword (case-insensitive). */
