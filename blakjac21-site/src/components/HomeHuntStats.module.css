@@ -1,0 +1,162 @@
+.section {
+  margin: 0 clamp(1rem, 3vw, 2rem) 1.5rem;
+  padding: 1.35rem 1.25rem 1.45rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
+  animation: huntStatsIn 0.7s ease both;
+  animation-delay: 0.12s;
+}
+
+.intro {
+  max-width: 36rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  margin: 0 0 0.55rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #ffffff 0%, #c8f7ff 45%, #22e0ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lead {
+  margin: 0.55rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.stat {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 0.85rem 0.15rem 0;
+  border-right: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.stat:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.value {
+  display: grid;
+  gap: 0.15rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.valueHint {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-dim);
+}
+
+.empty {
+  margin: 1.1rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.link {
+  display: inline-flex;
+  margin-top: 1.2rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: underline;
+}
+
+@keyframes huntStatsIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .stat:nth-child(3n) {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .stat:nth-child(n + 4) {
+    border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    padding-top: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat:nth-child(3n) {
+    border-right: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    padding-right: 0.85rem;
+  }
+
+  .stat:nth-child(2n) {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .stat:nth-child(n + 3) {
+    border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    padding-top: 1rem;
+  }
+}
