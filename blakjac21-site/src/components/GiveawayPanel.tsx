@@ -208,14 +208,8 @@ export function GiveawayPanel() {
         claimMessage,
       });
       await removeWinner(username);
-      setWinner(null);
-
-      window.setTimeout(() => {
-        setClaim((current) =>
-          current?.username === username ? null : current,
-        );
-        finishingClaimRef.current = false;
-      }, 4000);
+      setWinner(username);
+      finishingClaimRef.current = false;
     },
     [],
   );
