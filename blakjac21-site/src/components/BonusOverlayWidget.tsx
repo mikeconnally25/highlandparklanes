@@ -47,7 +47,7 @@ function BonusRows({
               : { animationDelay: `${Math.min(index, 8) * 40}ms` }
           }
         >
-          <span className={styles.index}>{bonuses.length - index}</span>
+          <span className={styles.index}>{index + 1}</span>
           <div className={styles.main}>
             <span className={styles.name}>
               {bonus.name}
