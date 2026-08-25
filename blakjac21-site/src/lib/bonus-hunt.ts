@@ -163,6 +163,18 @@ export function clearPastHunts(): PastHuntResult[] {
   return g.__bonusHuntHistory;
 }
 
+export function removePastHunt(id: string): {
+  removed: boolean;
+  hunts: PastHuntResult[];
+} {
+  const history = getPastHunts();
+  const before = history.length;
+  const next = history.filter((hunt) => hunt.id !== id);
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntHistory = next;
+  return { removed: next.length < before, hunts: next };
+}
+
 export function setHuntTitle(title: string): BonusHuntState {
   const state = getBonusHuntState();
   state.title = title.trim();

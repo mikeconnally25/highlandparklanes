@@ -1,7 +1,9 @@
 import {
+  clearPastHunts,
   clearSlotRequests,
   endAndArchiveHunt,
   promoteSlotRequestToBonus,
+  removePastHunt,
   removeSlotRequest,
   setBonusWinAmount,
   setHuntActive,
@@ -25,7 +27,9 @@ export async function POST(request: Request) {
       | "end-hunt"
       | "set-title"
       | "set-start-amount"
-      | "set-win-amount";
+      | "set-win-amount"
+      | "delete-past-hunt"
+      | "clear-past-hunts";
     id?: string;
     active?: boolean;
     title?: string;
@@ -118,6 +122,21 @@ export async function POST(request: Request) {
       }
       return Response.json(result.state);
     }
+    case "delete-past-hunt": {
+      if (!body.id) {
+        return Response.json({ error: "id is required" }, { status: 400 });
+      }
+      const result = removePastHunt(body.id);
+      if (!result.removed) {
+        return Response.json(
+          { error: "Hunt not found", hunts: result.hunts },
+          { status: 404 },
+        );
+      }
+      return Response.json({ hunts: result.hunts });
+    }
+    case "clear-past-hunts":
+      return Response.json({ hunts: clearPastHunts() });
     default:
       return Response.json({ error: "Unknown action" }, { status: 400 });
   }
