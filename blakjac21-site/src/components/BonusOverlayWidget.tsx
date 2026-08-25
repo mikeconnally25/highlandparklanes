@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { BonusHuntState, BonusHuntStats, BonusItem, BonusTier } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
@@ -24,16 +24,76 @@ type BonusOverlayWidgetProps = {
   limit?: number;
 };
 
+function BonusRows({
+  bonuses,
+  flashId,
+  ariaHidden,
+}: {
+  bonuses: BonusItem[];
+  flashId: string | null;
+  ariaHidden?: boolean;
+}) {
+  return (
+    <ul className={styles.list} aria-hidden={ariaHidden || undefined}>
+      {bonuses.map((bonus, index) => (
+        <li
+          key={`${ariaHidden ? "dup-" : ""}${bonus.id}`}
+          className={styles.row}
+          data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
+          data-flash={!ariaHidden && flashId === bonus.id ? true : undefined}
+          style={
+            ariaHidden
+              ? undefined
+              : { animationDelay: `${Math.min(index, 8) * 40}ms` }
+          }
+        >
+          <span className={styles.index}>{bonuses.length - index}</span>
+          <div className={styles.main}>
+            <span className={styles.name}>
+              {bonus.name}
+              {bonus.requestedBy ? (
+                <span className={styles.requester}> {bonus.requestedBy}</span>
+              ) : null}
+            </span>
+            <span className={styles.meta}>
+              <span className={styles.bet}>
+                Bet {formatBetSize(bonus.betSize)}
+              </span>
+              <span className={styles.win}>
+                Win {formatBetSize(bonus.winAmount)}
+              </span>
+              {bonus.winAmount != null && bonus.betSize != null ? (
+                <span className={styles.hitX}>
+                  {formatMultiplier(getBonusMultiplier(bonus))}
+                </span>
+              ) : null}
+              {bonus.tier !== "normal" ? (
+                <span className={styles.tier} data-tier={bonus.tier}>
+                  {tierLabel(bonus.tier)}
+                </span>
+              ) : null}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function BonusOverlayWidget({
   mode = "obs",
-  limit = 12,
+  limit,
 }: BonusOverlayWidgetProps) {
+  const effectiveLimit = limit ?? (mode === "obs" ? 100 : 12);
   const [bonuses, setBonuses] = useState<BonusItem[]>([]);
   const [title, setTitle] = useState("");
   const [stats, setStats] = useState<BonusHuntStats | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +106,7 @@ export function BonusOverlayWidget({
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
 
-        const next = [...data.bonuses].reverse().slice(0, limit);
+        const next = [...data.bonuses].reverse().slice(0, effectiveLimit);
         const known = knownIdsRef.current;
 
         if (!primedRef.current) {
@@ -81,7 +141,29 @@ export function BonusOverlayWidget({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [limit]);
+  }, [effectiveLimit]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const measure = measureRef.current;
+    if (!viewport || !measure) {
+      setShouldScroll(false);
+      return;
+    }
+
+    function update() {
+      if (!viewport || !measure) return;
+      setShouldScroll(measure.scrollHeight > viewport.clientHeight + 8);
+    }
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    observer.observe(measure);
+    return () => observer.disconnect();
+  }, [bonuses]);
+
+  const durationSec = Math.max(14, bonuses.length * 2.4);
 
   return (
     <div
@@ -117,45 +199,28 @@ export function BonusOverlayWidget({
       {bonuses.length === 0 ? (
         <p className={styles.empty}>Waiting for bonuses…</p>
       ) : (
-        <ul className={styles.list}>
-          {bonuses.map((bonus, index) => (
-            <li
-              key={bonus.id}
-              className={styles.row}
-              data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
-              data-flash={flashId === bonus.id || undefined}
-              style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-            >
-              <span className={styles.index}>{bonuses.length - index}</span>
-              <div className={styles.main}>
-                <span className={styles.name}>
-                  {bonus.name}
-                  {bonus.requestedBy ? (
-                    <span className={styles.requester}> {bonus.requestedBy}</span>
-                  ) : null}
-                </span>
-                <span className={styles.meta}>
-                  <span className={styles.bet}>
-                    Bet {formatBetSize(bonus.betSize)}
-                  </span>
-                  <span className={styles.win}>
-                    Win {formatBetSize(bonus.winAmount)}
-                  </span>
-                  {bonus.winAmount != null && bonus.betSize != null ? (
-                    <span className={styles.hitX}>
-                      {formatMultiplier(getBonusMultiplier(bonus))}
-                    </span>
-                  ) : null}
-                  {bonus.tier !== "normal" ? (
-                    <span className={styles.tier} data-tier={bonus.tier}>
-                      {tierLabel(bonus.tier)}
-                    </span>
-                  ) : null}
-                </span>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div
+          ref={viewportRef}
+          className={styles.listViewport}
+          data-scrolling={shouldScroll || undefined}
+        >
+          <div
+            className={styles.listTrack}
+            data-scrolling={shouldScroll || undefined}
+            style={
+              shouldScroll
+                ? ({ "--scroll-duration": `${durationSec}s` } as CSSProperties)
+                : undefined
+            }
+          >
+            <div ref={measureRef}>
+              <BonusRows bonuses={bonuses} flashId={flashId} />
+            </div>
+            {shouldScroll ? (
+              <BonusRows bonuses={bonuses} flashId={null} ariaHidden />
+            ) : null}
+          </div>
+        </div>
       )}
     </div>
   );

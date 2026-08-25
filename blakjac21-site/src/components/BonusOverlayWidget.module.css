@@ -94,14 +94,39 @@
   color: rgba(238, 249, 255, 0.65);
 }
 
+.listViewport {
+  position: relative;
+  max-height: 28rem;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+}
+
+.listViewport:not([data-scrolling]) {
+  mask-image: none;
+}
+
+.listTrack {
+  display: flex;
+  flex-direction: column;
+}
+
+.listTrack[data-scrolling] {
+  animation: bonusScroll var(--scroll-duration, 18s) linear infinite;
+}
+
 .list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0.45rem;
   display: grid;
   gap: 0.45rem;
-  max-height: 28rem;
-  overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .row {
@@ -261,5 +286,14 @@
     opacity: 1;
     transform: translateX(0) scale(1);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+@keyframes bonusScroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
   }
 }
