@@ -276,6 +276,25 @@ export function getBonusMultiplier(bonus: BonusItem): number | null {
   return Math.round((bonus.winAmount / bonus.betSize) * 100) / 100;
 }
 
+const TIER_DISPLAY_ORDER: Record<BonusTier, number> = {
+  normal: 0,
+  super: 1,
+  epic: 2,
+};
+
+/** Normal bonuses first, then supers, epics last — stable within each tier. */
+export function sortBonusesForDisplay(bonuses: BonusItem[]): BonusItem[] {
+  return bonuses
+    .map((bonus, index) => ({ bonus, index }))
+    .sort((a, b) => {
+      const tierDiff =
+        TIER_DISPLAY_ORDER[a.bonus.tier] - TIER_DISPLAY_ORDER[b.bonus.tier];
+      if (tierDiff !== 0) return tierDiff;
+      return a.index - b.index;
+    })
+    .map(({ bonus }) => bonus);
+}
+
 export function getHuntStats(state: BonusHuntState): BonusHuntStats {
   const totalBet = state.bonuses.reduce((sum, bonus) => {
     return bonus.betSize != null && bonus.betSize > 0 ? sum + bonus.betSize : sum;

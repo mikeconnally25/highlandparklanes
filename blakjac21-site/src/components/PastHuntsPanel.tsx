@@ -7,6 +7,7 @@ import {
   formatBreakEvenLabel,
   formatMultiplier,
   getBonusMultiplier,
+  sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
 import styles from "./PastHuntsPanel.module.css";
 

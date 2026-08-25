@@ -9,6 +9,7 @@ import {
   getBonusMultiplier,
   getHuntStats,
   parseSlotRequestMessage,
+  sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
 import styles from "./ActiveHuntPanel.module.css";
@@ -327,7 +328,7 @@ export function ActiveHuntPanel() {
     });
   }
 
-  const bonuses = state?.bonuses ?? [];
+  const bonuses = sortBonusesForDisplay(state?.bonuses ?? []);
   const slotRequests = state?.slotRequests ?? [];
   const stats = state ? getHuntStats(state) : null;
 

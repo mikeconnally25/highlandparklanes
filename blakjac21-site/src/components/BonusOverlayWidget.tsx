@@ -8,6 +8,7 @@ import {
   formatMultiplier,
   getBonusMultiplier,
   getHuntStats,
+  sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
 import styles from "./BonusOverlayWidget.module.css";
 
@@ -106,14 +107,19 @@ export function BonusOverlayWidget({
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
 
-        const next = [...data.bonuses].reverse().slice(0, effectiveLimit);
+        const next = sortBonusesForDisplay(data.bonuses).slice(
+          0,
+          effectiveLimit,
+        );
         const known = knownIdsRef.current;
 
         if (!primedRef.current) {
           knownIdsRef.current = new Set(next.map((bonus) => bonus.id));
           primedRef.current = true;
         } else {
-          const newest = next.find((bonus) => !known.has(bonus.id));
+          const newest = [...next]
+            .reverse()
+            .find((bonus) => !known.has(bonus.id));
           if (newest) {
             setFlashId(newest.id);
             window.setTimeout(() => {
