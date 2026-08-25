@@ -30,6 +30,7 @@ const TABS: TabConfig[] = [
   { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
   { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
   { id: "rewards", label: "Rewards", kind: "link", href: "/rewards" },
+  { id: "giveaways", label: "Giveaways", kind: "link", href: "/giveaways" },
   { id: "stake", label: "Stake", kind: "external", href: STAKE_URL },
   { id: "social", label: "Social Media", kind: "panel" },
 ];
