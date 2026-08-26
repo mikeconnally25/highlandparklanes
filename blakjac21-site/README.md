@@ -74,6 +74,22 @@ In **Streamer controls** under Guess the Balance, paste the same token to open/c
 
 Create account / Sign in is **Kick OAuth only** (`user:read`). No email/password on this site.
 
+### Streamer admin (your Kick account only)
+
+Streamer controls (Guess the Balance, Bonus Hunts, Giveaways) are **hidden** unless you are signed in with the admin Kick account.
+
+Set in `.env.local` / production:
+
+```bash
+ADMIN_KICK_USERNAME=Blakjac21
+# optional, more precise:
+# ADMIN_KICK_USER_ID=12345678
+```
+
+Sign in with Kick as that account — the header shows an **Admin** badge and streamer controls appear. Other Kick accounts can still sign in as viewers; they will not see or call admin controls.
+
+`GUESS_ADMIN_TOKEN` remains an optional server-only fallback for scripts; it is no longer shown in the UI.
+
 ### 1. Create a Kick developer app
 
 1. Log into Kick as **your** streamer account.

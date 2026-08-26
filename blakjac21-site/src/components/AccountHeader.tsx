@@ -1,43 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { PublicSiteUser } from "@/lib/site-auth";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./AccountHeader.module.css";
 
 export function AccountHeader() {
-  const [user, setUser] = useState<PublicSiteUser | null>(null);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch("/api/account/session", { cache: "no-store" });
-        const data = (await res.json()) as { user?: PublicSiteUser | null };
-        if (!cancelled) setUser(data.user ?? null);
-      } catch {
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function signOut() {
-    try {
-      await fetch("/api/account/session", { method: "DELETE" });
-    } catch {
-      /* ignore */
-    }
-    setUser(null);
-  }
+  const { user, ready, isAdmin, signOut } = useSiteSession();
 
   if (!ready) {
     return <div className={styles.slot} aria-hidden />;
@@ -47,6 +15,7 @@ export function AccountHeader() {
     return (
       <div className={styles.slot}>
         <span className={styles.username}>@{user.username}</span>
+        {isAdmin ? <span className={styles.adminBadge}>Admin</span> : null}
         <button type="button" className={styles.ghostBtn} onClick={signOut}>
           Sign out
         </button>

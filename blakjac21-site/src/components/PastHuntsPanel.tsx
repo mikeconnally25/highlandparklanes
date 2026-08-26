@@ -9,9 +9,8 @@ import {
   getBonusMultiplier,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./PastHuntsPanel.module.css";
-
-const ADMIN_TOKEN_KEY = "blakjac21-guess-admin-token";
 
 function formatWhen(value: string | null): string {
   if (!value) return "—";
@@ -30,12 +29,9 @@ function profitLabel(hunt: PastHuntResult): string {
 }
 
 export function PastHuntsPanel() {
+  const { isAdmin, ready: sessionReady } = useSiteSession();
   const [hunts, setHunts] = useState<PastHuntResult[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [adminToken, setAdminToken] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
-  });
   const [showDeleteControls, setShowDeleteControls] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,14 +71,12 @@ export function PastHuntsPanel() {
   ) {
     setError(null);
     setBusy(true);
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
 
     try {
       const res = await fetch("/api/bonus-hunt/admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": adminToken,
         },
         body: JSON.stringify({ action, id }),
       });
@@ -91,7 +85,11 @@ export function PastHuntsPanel() {
         hunts?: PastHuntResult[];
       };
       if (!res.ok) {
-        setError(data.error ?? "Could not delete hunt");
+        setError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to delete hunts"
+            : (data.error ?? "Could not delete hunt"),
+        );
         return;
       }
       setHunts(data.hunts ?? []);
@@ -105,9 +103,7 @@ export function PastHuntsPanel() {
   }
 
   async function deleteHunt(id: string, title: string) {
-    if (!window.confirm(`Delete past hunt “${title}”? This cannot be undone.`)) {
-      return;
-    }
+    if (!window.confirm(`Delete past hunt “${title}”?`)) return;
     await adminDelete("delete-past-hunt", id);
   }
 
@@ -120,60 +116,56 @@ export function PastHuntsPanel() {
       return;
     }
     await adminDelete("clear-past-hunts");
-    setOpenId(null);
   }
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.deleteSection}>
-        <button
-          type="button"
-          className={styles.deleteToggle}
-          aria-expanded={showDeleteControls}
-          onClick={() => setShowDeleteControls((open) => !open)}
-        >
-          Delete past hunts
-          <span
-            className={styles.chevron}
-            data-open={showDeleteControls || undefined}
-            aria-hidden
-          />
-        </button>
-
-        {showDeleteControls ? (
-          <div className={styles.deletePanel}>
-            <label className={styles.label}>
-              Admin token
-              <input
-                className={styles.input}
-                type="text"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.target.value)}
-                placeholder="Paste GUESS_ADMIN_TOKEN from .env.local"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
-            <button
-              type="button"
-              className={styles.clearAllBtn}
-              disabled={busy || hunts.length === 0 || !adminToken.trim()}
-              onClick={() => void clearAll()}
-            >
-              Delete all past hunts
-            </button>
-            <p className={styles.deleteHint}>
-              Paste your admin token, then delete individual hunts below or
-              clear the full archive.
-            </p>
-            {error ? (
-              <p className={styles.error} role="alert">
-                {error}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+    <section className={styles.wrap} aria-labelledby="past-hunts-heading">
+      <div className={styles.header}>
+        <h2 id="past-hunts-heading" className={styles.title}>
+          Past hunts
+        </h2>
+        <span className={styles.count}>{hunts.length}</span>
       </div>
+
+      {sessionReady && isAdmin ? (
+        <div className={styles.deleteControls}>
+          <button
+            type="button"
+            className={styles.deleteToggle}
+            aria-expanded={showDeleteControls}
+            onClick={() => setShowDeleteControls((v) => !v)}
+          >
+            Delete past hunts
+            <span
+              className={styles.chevron}
+              data-open={showDeleteControls || undefined}
+              aria-hidden
+            />
+          </button>
+
+          {showDeleteControls ? (
+            <div className={styles.deletePanel}>
+              <button
+                type="button"
+                className={styles.clearAllBtn}
+                disabled={busy || hunts.length === 0}
+                onClick={() => void clearAll()}
+              >
+                Delete all past hunts
+              </button>
+              <p className={styles.deleteHint}>
+                Signed in as admin via Kick. Delete individual hunts below or
+                clear the full archive.
+              </p>
+              {error ? (
+                <p className={styles.error} role="alert">
+                  {error}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {hunts.length === 0 ? (
         <p className={styles.empty}>
@@ -209,109 +201,77 @@ export function PastHuntsPanel() {
                       aria-hidden
                     />
                   </button>
-                  <button
-                    type="button"
-                    className={styles.deleteBtn}
-                    disabled={busy || !adminToken.trim()}
-                    onClick={() => void deleteHunt(hunt.id, hunt.title)}
-                    aria-label={`Delete ${hunt.title}`}
-                    title={
-                      adminToken.trim()
-                        ? "Delete this past hunt"
-                        : "Open Delete past hunts and paste admin token first"
-                    }
-                  >
-                    Delete
-                  </button>
+                  {sessionReady && isAdmin ? (
+                    <button
+                      type="button"
+                      className={styles.deleteBtn}
+                      disabled={busy}
+                      onClick={() => void deleteHunt(hunt.id, hunt.title)}
+                      aria-label={`Delete ${hunt.title}`}
+                      title="Delete this past hunt"
+                    >
+                      Delete
+                    </button>
+                  ) : null}
                 </div>
 
                 {open ? (
                   <div className={styles.detail}>
                     <div className={styles.stats}>
                       <div>
-                        <p className={styles.statLabel}>Started with</p>
-                        <p className={styles.statValue}>
-                          {formatBetSize(hunt.startAmount)}
-                        </p>
+                        <span className={styles.statLabel}>Start</span>
+                        <span className={styles.statValue}>
+                          {formatBetSize(hunt.stats.startAmount)}
+                        </span>
                       </div>
                       <div>
-                        <p className={styles.statLabel}>Total wins</p>
-                        <p className={styles.statValue}>
-                          {formatBetSize(hunt.stats.totalWins)}
-                        </p>
+                        <span className={styles.statLabel}>Bet</span>
+                        <span className={styles.statValue}>
+                          {formatBetSize(
+                            hunt.stats.totalBet > 0 ? hunt.stats.totalBet : null,
+                          )}
+                        </span>
                       </div>
                       <div>
-                        <p className={styles.statLabel}>P/L</p>
-                        <p className={styles.statValue}>
-                          {profitLabel(hunt)}
-                        </p>
+                        <span className={styles.statLabel}>Wins</span>
+                        <span className={styles.statValue}>
+                          {formatBetSize(
+                            hunt.stats.totalWins > 0
+                              ? hunt.stats.totalWins
+                              : null,
+                          )}
+                        </span>
                       </div>
                       <div>
-                        <p className={styles.statLabel}>Avg x opened</p>
-                        <p className={styles.statValue}>
+                        <span className={styles.statLabel}>Avg x</span>
+                        <span className={styles.statValue}>
                           {formatMultiplier(hunt.stats.avgXOpened)}
-                        </p>
+                        </span>
                       </div>
                       <div>
-                        <p className={styles.statLabel}>Break-even</p>
-                        <p className={styles.statValue}>
+                        <span className={styles.statLabel}>BE x</span>
+                        <span className={styles.statValue}>
                           {formatBreakEvenLabel(hunt.stats)}
-                        </p>
+                        </span>
                       </div>
                     </div>
-
-                    <p className={styles.when}>
-                      {hunt.startedAt
-                        ? `Started ${formatWhen(hunt.startedAt)} · `
-                        : ""}
-                      Ended {formatWhen(hunt.endedAt)}
-                    </p>
-
-                    {hunt.bonuses.length === 0 ? (
-                      <p className={styles.empty}>No bonuses recorded.</p>
-                    ) : (
-                      <div className={styles.tableWrap}>
-                        <table className={styles.table}>
-                          <thead>
-                            <tr>
-                              <th scope="col">#</th>
-                              <th scope="col">Bonus</th>
-                              <th scope="col">Bet</th>
-                              <th scope="col">Win</th>
-                              <th scope="col">X</th>
-                              <th scope="col">Tier</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {sortBonusesForDisplay(hunt.bonuses).map(
-                              (bonus, index) => (
-                                <tr key={bonus.id}>
-                                  <td>{index + 1}</td>
-                                  <td>
-                                    <span className={styles.bonusName}>
-                                      {bonus.name}
-                                    </span>
-                                    {bonus.requestedBy ? (
-                                      <span className={styles.requester}>
-                                        {bonus.requestedBy}
-                                      </span>
-                                    ) : null}
-                                  </td>
-                                  <td>{formatBetSize(bonus.betSize)}</td>
-                                  <td>{formatBetSize(bonus.winAmount)}</td>
-                                  <td>
-                                    {formatMultiplier(
-                                      getBonusMultiplier(bonus),
-                                    )}
-                                  </td>
-                                  <td className={styles.tier}>{bonus.tier}</td>
-                                </tr>
-                              ),
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <ul className={styles.bonusList}>
+                      {sortBonusesForDisplay(hunt.bonuses).map((bonus, i) => (
+                        <li key={bonus.id} className={styles.bonusItem}>
+                          <span className={styles.bonusIndex}>#{i + 1}</span>
+                          <span className={styles.bonusName}>{bonus.name}</span>
+                          <span className={styles.bonusBet}>
+                            {formatBetSize(bonus.betSize)}
+                          </span>
+                          <span className={styles.bonusWin}>
+                            {formatBetSize(bonus.winAmount)}
+                          </span>
+                          <span className={styles.bonusX}>
+                            {formatMultiplier(getBonusMultiplier(bonus))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ) : null}
               </li>
@@ -319,6 +279,6 @@ export function PastHuntsPanel() {
           })}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

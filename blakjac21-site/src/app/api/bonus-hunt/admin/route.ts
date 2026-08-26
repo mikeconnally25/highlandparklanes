@@ -9,12 +9,12 @@ import {
   setHuntActive,
   setHuntTitle,
   setStartAmount,
-  verifyBonusHuntAdminToken,
 } from "@/lib/bonus-hunt";
 import type { BonusTier } from "@/lib/bonus-hunt";
+import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
-  if (!verifyBonusHuntAdminToken(request)) {
+  if (!(await authorizeStreamerAdmin(request))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

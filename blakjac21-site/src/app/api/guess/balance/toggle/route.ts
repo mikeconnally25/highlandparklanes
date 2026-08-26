@@ -1,11 +1,11 @@
 import {
   getGuessBalanceState,
   setEntriesOpen,
-  verifyGuessAdminToken,
 } from "@/lib/guess-balance";
+import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
-  if (!verifyGuessAdminToken(request)) {
+  if (!(await authorizeStreamerAdmin(request))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -23,6 +23,7 @@ export type PublicSiteUser = {
   email: string | null;
   profilePicture: string | null;
   createdAt: string;
+  isAdmin: boolean;
 };
 
 type StoreGlobal = typeof globalThis & {
@@ -110,6 +111,36 @@ function verifyToken(token: string): { userId: string; exp: number } | null {
   return data;
 }
 
+/** Comma-separated Kick usernames allowed as streamer admin (case-insensitive). */
+export function getAdminKickUsernames(): string[] {
+  const raw =
+    process.env.ADMIN_KICK_USERNAME?.trim() ||
+    process.env.KICK_CHANNEL_SLUG?.trim() ||
+    "Blakjac21";
+  return raw
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** Optional comma-separated Kick user IDs (more precise than username). */
+export function getAdminKickUserIds(): string[] {
+  const raw = process.env.ADMIN_KICK_USER_ID?.trim() || "";
+  return raw
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+export function isAdminKickUser(user: {
+  username: string;
+  kickUserId: string;
+}): boolean {
+  const ids = getAdminKickUserIds();
+  if (ids.includes(user.kickUserId)) return true;
+  return getAdminKickUsernames().includes(user.username.trim().toLowerCase());
+}
+
 function toPublic(user: SiteUser): PublicSiteUser {
   return {
     id: user.id,
@@ -118,7 +149,28 @@ function toPublic(user: SiteUser): PublicSiteUser {
     email: user.email,
     profilePicture: user.profilePicture,
     createdAt: user.createdAt,
+    isAdmin: isAdminKickUser(user),
   };
+}
+
+/** True when the logged-in Kick account is the streamer admin. */
+export async function isSessionStreamerAdmin(): Promise<boolean> {
+  const user = await getSessionUser();
+  return Boolean(user?.isAdmin);
+}
+
+/**
+ * Authorize streamer controls: Kick admin session, or legacy GUESS_ADMIN_TOKEN
+ * header for scripts / emergency access.
+ */
+export async function authorizeStreamerAdmin(
+  request: Request,
+): Promise<boolean> {
+  if (await isSessionStreamerAdmin()) return true;
+
+  const expected = process.env.GUESS_ADMIN_TOKEN;
+  if (!expected) return false;
+  return request.headers.get("x-admin-token") === expected;
 }
 
 function findByKickUserId(kickUserId: string): SiteUser | undefined {

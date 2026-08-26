@@ -8,13 +8,12 @@ import {
   type GiveawayState,
 } from "@/lib/giveaway";
 import { useKickChat } from "@/hooks/useKickChat";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import {
   GiveawayWheel,
   rotationForWinner,
 } from "@/components/GiveawayWheel";
 import styles from "./GiveawayPanel.module.css";
-
-const ADMIN_TOKEN_KEY = "blakjac21-guess-admin-token";
 const SPIN_MS = 5500;
 const CLAIM_MS = 30_000;
 const CHAT_LOG_LIMIT = 80;
@@ -39,12 +38,9 @@ async function fetchState(): Promise<GiveawayState> {
 }
 
 export function GiveawayPanel() {
+  const { isAdmin, ready: sessionReady } = useSiteSession();
   const [state, setState] = useState<GiveawayState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
-  const [adminToken, setAdminToken] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
-  });
   const [keywordDraft, setKeywordDraft] = useState("");
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -59,7 +55,6 @@ export function GiveawayPanel() {
   const claimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const claimRef = useRef<ClaimPhase | null>(null);
   const finishingClaimRef = useRef(false);
-  const adminTokenRef = useRef(adminToken);
 
   const entriesOpen = state?.entriesOpen ?? false;
   const keyword = state?.keyword?.trim() ?? "";
@@ -68,10 +63,6 @@ export function GiveawayPanel() {
   useEffect(() => {
     claimRef.current = claim;
   }, [claim]);
-
-  useEffect(() => {
-    adminTokenRef.current = adminToken;
-  }, [adminToken]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,17 +134,11 @@ export function GiveawayPanel() {
   }, [claim]);
 
   async function removeWinner(username: string) {
-    const token =
-      adminTokenRef.current ||
-      (typeof window !== "undefined"
-        ? sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? ""
-        : "");
     try {
       const res = await fetch("/api/giveaway/remove", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": token,
         },
         body: JSON.stringify({ username }),
       });
@@ -303,21 +288,23 @@ export function GiveawayPanel() {
   ): Promise<boolean> {
     setAdminError(null);
     setBusy(true);
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
 
     try {
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": adminToken,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        setAdminError(data.error ?? "Admin request failed");
+        setAdminError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to use streamer controls"
+            : (data.error ?? "Admin request failed"),
+        );
         return false;
       }
 
@@ -450,6 +437,7 @@ export function GiveawayPanel() {
           )}
         </div>
 
+        {sessionReady && isAdmin ? (
         <div className={styles.admin}>
           <button
             type="button"
@@ -477,19 +465,6 @@ export function GiveawayPanel() {
                   autoComplete="off"
                   spellCheck={false}
                   maxLength={64}
-                />
-              </label>
-
-              <label className={styles.label}>
-                Admin token
-                <input
-                  className={styles.input}
-                  type="text"
-                  value={adminToken}
-                  onChange={(e) => setAdminToken(e.target.value)}
-                  placeholder="Paste GUESS_ADMIN_TOKEN from .env.local"
-                  autoComplete="off"
-                  spellCheck={false}
                 />
               </label>
 
@@ -534,24 +509,27 @@ export function GiveawayPanel() {
                 </p>
               ) : null}
               <p className={styles.adminHint}>
-                Viewers enter with the keyword, then winners type{" "}
-                <code>{GIVEAWAY_CLAIM_KEYWORD}</code> in Kick chat within 30s to
-                claim. Uses <code>GUESS_ADMIN_TOKEN</code>.
+                Signed in as admin via Kick. Viewers enter with the keyword, then
+                winners type <code>{GIVEAWAY_CLAIM_KEYWORD}</code> in Kick chat
+                within 30s to claim.
               </p>
             </div>
           ) : null}
         </div>
+        ) : null}
       </div>
 
       <aside className={styles.right} aria-label="Winner wheel">
-        <button
-          type="button"
-          className={styles.rollBtn}
-          disabled={entries.length === 0 || spinning || claiming}
-          onClick={rollWinner}
-        >
-          {spinning ? "Rolling…" : claiming ? "Awaiting claim…" : "Roll winner"}
-        </button>
+        {sessionReady && isAdmin ? (
+          <button
+            type="button"
+            className={styles.rollBtn}
+            disabled={entries.length === 0 || spinning || claiming}
+            onClick={rollWinner}
+          >
+            {spinning ? "Rolling…" : claiming ? "Awaiting claim…" : "Roll winner"}
+          </button>
+        ) : null}
         <GiveawayWheel
           names={names}
           rotationDeg={rotationDeg}

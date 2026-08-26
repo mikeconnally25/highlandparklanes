@@ -1,4 +1,9 @@
-import { destroySession, getKickOAuthConfig, getSessionUser } from "@/lib/site-auth";
+import {
+  destroySession,
+  getAdminKickUsernames,
+  getKickOAuthConfig,
+  getSessionUser,
+} from "@/lib/site-auth";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -6,6 +11,8 @@ export async function GET() {
   return Response.json(
     {
       user,
+      isAdmin: Boolean(user?.isAdmin),
+      adminUsernames: getAdminKickUsernames(),
       kickConfigured: kick.configured,
       kickMissing: kick.missing,
       kickRedirectUri: kick.redirectUri || null,

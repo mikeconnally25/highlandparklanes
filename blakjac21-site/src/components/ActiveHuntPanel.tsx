@@ -12,9 +12,8 @@ import {
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./ActiveHuntPanel.module.css";
-
-const ADMIN_TOKEN_KEY = "blakjac21-guess-admin-token";
 
 type SlotCatalogSummary = {
   counts: { total: number; onlyOnStake: number; newReleases: number };
@@ -38,12 +37,9 @@ function tierLabel(tier: BonusTier): string {
 }
 
 export function ActiveHuntPanel() {
+  const { isAdmin, ready: sessionReady } = useSiteSession();
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
-  const [adminToken, setAdminToken] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
-  });
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -186,21 +182,23 @@ export function ActiveHuntPanel() {
   ): Promise<BonusHuntState | null> {
     setAdminError(null);
     setBusy(true);
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
 
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": adminToken,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        setAdminError(data.error ?? "Admin request failed");
+        setAdminError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to use streamer controls"
+            : (data.error ?? "Admin request failed"),
+        );
         return null;
       }
 
@@ -233,17 +231,19 @@ export function ActiveHuntPanel() {
   async function refreshSlotCatalog() {
     setAdminError(null);
     setBusy(true);
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
     try {
       const res = await fetch("/api/bonus-hunt/slots?refresh=1", {
-        headers: { "x-admin-token": adminToken },
         cache: "no-store",
       });
       const data = (await res.json()) as SlotCatalogSummary & {
         error?: string;
       };
       if (!res.ok) {
-        setAdminError(data.error ?? "Slot catalog refresh failed");
+        setAdminError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to use streamer controls"
+            : (data.error ?? "Slot catalog refresh failed"),
+        );
         return;
       }
       setSlotCatalog(data);
@@ -391,27 +391,36 @@ export function ActiveHuntPanel() {
           </h3>
         </div>
         <div className={styles.bankrollRow}>
-          <label className={styles.label}>
-            Started with
-            <input
-              className={styles.input}
-              type="text"
-              inputMode="decimal"
-              value={startAmountInput}
-              onChange={(e) => setStartAmountInput(e.target.value)}
-              placeholder="e.g. 500 or $1,000"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </label>
-          <button
-            type="button"
-            className={styles.addBtn}
-            disabled={busy}
-            onClick={saveStartAmount}
-          >
-            Save start amount
-          </button>
+          {sessionReady && isAdmin ? (
+            <>
+              <label className={styles.label}>
+                Started with
+                <input
+                  className={styles.input}
+                  type="text"
+                  inputMode="decimal"
+                  value={startAmountInput}
+                  onChange={(e) => setStartAmountInput(e.target.value)}
+                  placeholder="e.g. 500 or $1,000"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </label>
+              <button
+                type="button"
+                className={styles.addBtn}
+                disabled={busy}
+                onClick={saveStartAmount}
+              >
+                Save start amount
+              </button>
+            </>
+          ) : (
+            <p className={styles.statHint}>
+              Started with{" "}
+              <strong>{formatBetSize(stats?.startAmount ?? null)}</strong>
+            </p>
+          )}
         </div>
 
         <div className={styles.statsGrid}>
@@ -474,41 +483,53 @@ export function ActiveHuntPanel() {
                 const selected = selectedRequestId === req.id;
                 return (
                   <li key={req.id}>
-                    <button
-                      type="button"
-                      className={styles.requestRow}
-                      data-selected={selected || undefined}
-                      disabled={busy}
-                      onClick={() => selectRequest(req.id, req.slotName)}
-                      aria-pressed={selected}
-                    >
-                      <span className={styles.itemIndex}>{index + 1}</span>
-                      <span className={styles.itemMeta}>
-                        <span className={styles.itemName}>{req.username}</span>
-                        <span className={styles.itemSlot}>{req.slotName}</span>
-                      </span>
-                      <span className={styles.selectHint}>
-                        {selected ? "Selected" : "Select"}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      disabled={busy}
-                      onClick={() => {
-                        if (selectedRequestId === req.id) {
-                          setSelectedRequestId(null);
-                          setBonusName("");
-                        }
-                        void adminRequest("/api/bonus-hunt/admin", {
-                          action: "remove-request",
-                          id: req.id,
-                        });
-                      }}
-                      aria-label={`Dismiss ${req.slotName}`}
-                    >
-                      ×
-                    </button>
+                    {sessionReady && isAdmin ? (
+                      <button
+                        type="button"
+                        className={styles.requestRow}
+                        data-selected={selected || undefined}
+                        disabled={busy}
+                        onClick={() => selectRequest(req.id, req.slotName)}
+                        aria-pressed={selected}
+                      >
+                        <span className={styles.itemIndex}>{index + 1}</span>
+                        <span className={styles.itemMeta}>
+                          <span className={styles.itemName}>{req.username}</span>
+                          <span className={styles.itemSlot}>{req.slotName}</span>
+                        </span>
+                        <span className={styles.selectHint}>
+                          {selected ? "Selected" : "Select"}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className={styles.requestRow}>
+                        <span className={styles.itemIndex}>{index + 1}</span>
+                        <span className={styles.itemMeta}>
+                          <span className={styles.itemName}>{req.username}</span>
+                          <span className={styles.itemSlot}>{req.slotName}</span>
+                        </span>
+                      </div>
+                    )}
+                    {sessionReady && isAdmin ? (
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        disabled={busy}
+                        onClick={() => {
+                          if (selectedRequestId === req.id) {
+                            setSelectedRequestId(null);
+                            setBonusName("");
+                          }
+                          void adminRequest("/api/bonus-hunt/admin", {
+                            action: "remove-request",
+                            id: req.id,
+                          });
+                        }}
+                        aria-label={`Dismiss ${req.slotName}`}
+                      >
+                        ×
+                      </button>
+                    ) : null}
                   </li>
                 );
               })}
@@ -516,6 +537,7 @@ export function ActiveHuntPanel() {
           )}
         </div>
 
+        {sessionReady && isAdmin ? (
         <form className={styles.addForm} onSubmit={handleAddBonus}>
           <div className={styles.formGridThree}>
             <label className={styles.label}>
@@ -596,6 +618,7 @@ export function ActiveHuntPanel() {
             {selectedRequestId ? "Add selected to list" : "Add to list"}
           </button>
         </form>
+        ) : null}
 
         <div className={styles.subBlock}>
           <div className={styles.subHeader}>
@@ -641,30 +664,34 @@ export function ActiveHuntPanel() {
                         {formatBetSize(bonus.betSize)}
                       </td>
                       <td className={styles.colWin}>
-                        <div className={styles.winEditor}>
-                          <input
-                            className={styles.winInput}
-                            type="text"
-                            inputMode="decimal"
-                            value={winDrafts[bonus.id] ?? ""}
-                            onChange={(e) =>
-                              setWinDrafts((current) => ({
-                                ...current,
-                                [bonus.id]: e.target.value,
-                              }))
-                            }
-                            placeholder="0"
-                            aria-label={`Win amount for ${bonus.name}`}
-                          />
-                          <button
-                            type="button"
-                            className={styles.winSave}
-                            disabled={busy}
-                            onClick={() => saveWinAmount(bonus.id)}
-                          >
-                            Save
-                          </button>
-                        </div>
+                        {sessionReady && isAdmin ? (
+                          <div className={styles.winEditor}>
+                            <input
+                              className={styles.winInput}
+                              type="text"
+                              inputMode="decimal"
+                              value={winDrafts[bonus.id] ?? ""}
+                              onChange={(e) =>
+                                setWinDrafts((current) => ({
+                                  ...current,
+                                  [bonus.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="0"
+                              aria-label={`Win amount for ${bonus.name}`}
+                            />
+                            <button
+                              type="button"
+                              className={styles.winSave}
+                              disabled={busy}
+                              onClick={() => saveWinAmount(bonus.id)}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        ) : (
+                          formatBetSize(bonus.winAmount)
+                        )}
                       </td>
                       <td className={styles.colX}>
                         {formatMultiplier(getBonusMultiplier(bonus))}
@@ -682,19 +709,21 @@ export function ActiveHuntPanel() {
                         )}
                       </td>
                       <td className={styles.colAction}>
-                        <button
-                          type="button"
-                          className={styles.removeBtn}
-                          disabled={busy}
-                          onClick={() =>
-                            adminRequest("/api/bonus-hunt/bonus/remove", {
-                              id: bonus.id,
-                            })
-                          }
-                          aria-label={`Remove ${bonus.name}`}
-                        >
-                          ×
-                        </button>
+                        {sessionReady && isAdmin ? (
+                          <button
+                            type="button"
+                            className={styles.removeBtn}
+                            disabled={busy}
+                            onClick={() =>
+                              adminRequest("/api/bonus-hunt/bonus/remove", {
+                                id: bonus.id,
+                              })
+                            }
+                            aria-label={`Remove ${bonus.name}`}
+                          >
+                            ×
+                          </button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -705,153 +734,142 @@ export function ActiveHuntPanel() {
         </div>
       </section>
 
-      <div className={styles.admin}>
-        <button
-          type="button"
-          className={styles.adminToggle}
-          aria-expanded={showAdmin}
-          onClick={() => setShowAdmin((v) => !v)}
-        >
-          Streamer controls
-          <span className={styles.adminChevron} data-open={showAdmin || undefined} />
-        </button>
+      {sessionReady && isAdmin ? (
+        <div className={styles.admin}>
+          <button
+            type="button"
+            className={styles.adminToggle}
+            aria-expanded={showAdmin}
+            onClick={() => setShowAdmin((v) => !v)}
+          >
+            Streamer controls
+            <span className={styles.adminChevron} data-open={showAdmin || undefined} />
+          </button>
 
-        {showAdmin ? (
-          <div className={styles.adminPanel}>
-            <label className={styles.label}>
-              Admin token
-              <input
-                className={styles.input}
-                type="text"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.target.value)}
-                placeholder="Paste GUESS_ADMIN_TOKEN from .env.local"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
+          {showAdmin ? (
+            <div className={styles.adminPanel}>
+              <label className={styles.label}>
+                Hunt title
+                <div className={styles.titleRow}>
+                  <input
+                    className={styles.input}
+                    type="text"
+                    value={huntTitle}
+                    onChange={(e) => setHuntTitle(e.target.value)}
+                    placeholder="e.g. Sunday sub day hunt"
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className={styles.adminBtnSecondary}
+                    disabled={busy}
+                    onClick={() =>
+                      adminRequest("/api/bonus-hunt/admin", {
+                        action: "set-title",
+                        title: huntTitle,
+                      })
+                    }
+                  >
+                    Save
+                  </button>
+                </div>
+              </label>
 
-            <label className={styles.label}>
-              Hunt title
-              <div className={styles.titleRow}>
-                <input
-                  className={styles.input}
-                  type="text"
-                  value={huntTitle}
-                  onChange={(e) => setHuntTitle(e.target.value)}
-                  placeholder="e.g. Sunday sub day hunt"
-                  autoComplete="off"
-                />
+              <div className={styles.adminActions}>
+                <button
+                  type="button"
+                  className={styles.adminBtnPrimary}
+                  disabled={busy || requestsOpen}
+                  onClick={() =>
+                    adminRequest("/api/bonus-hunt/toggle", { open: true })
+                  }
+                >
+                  Open !s requests
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy || !requestsOpen}
+                  onClick={() =>
+                    adminRequest("/api/bonus-hunt/toggle", { open: false })
+                  }
+                >
+                  Close !s requests
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy}
+                  onClick={() =>
+                    adminRequest("/api/bonus-hunt/bonus/remove", { all: true })
+                  }
+                >
+                  Clear bonuses
+                </button>
                 <button
                   type="button"
                   className={styles.adminBtnSecondary}
                   disabled={busy}
                   onClick={() =>
                     adminRequest("/api/bonus-hunt/admin", {
-                      action: "set-title",
-                      title: huntTitle,
+                      action: "clear-requests",
                     })
                   }
                 >
-                  Save
+                  Clear slot queue
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy || !state?.huntActive}
+                  onClick={() =>
+                    adminRequest("/api/bonus-hunt/admin", {
+                      action: "end-hunt",
+                    })
+                  }
+                >
+                  End hunt
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy || Boolean(slotCatalog?.refreshing)}
+                  onClick={() => void refreshSlotCatalog()}
+                >
+                  {slotCatalog?.refreshing
+                    ? "Refreshing slots…"
+                    : "Refresh Stake slots"}
                 </button>
               </div>
-            </label>
 
-            <div className={styles.adminActions}>
-              <button
-                type="button"
-                className={styles.adminBtnPrimary}
-                disabled={busy || requestsOpen}
-                onClick={() =>
-                  adminRequest("/api/bonus-hunt/toggle", { open: true })
-                }
-              >
-                Open !s requests
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy || !requestsOpen}
-                onClick={() =>
-                  adminRequest("/api/bonus-hunt/toggle", { open: false })
-                }
-              >
-                Close !s requests
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy}
-                onClick={() =>
-                  adminRequest("/api/bonus-hunt/bonus/remove", { all: true })
-                }
-              >
-                Clear bonuses
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy}
-                onClick={() =>
-                  adminRequest("/api/bonus-hunt/admin", {
-                    action: "clear-requests",
-                  })
-                }
-              >
-                Clear slot queue
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy || !state?.huntActive}
-                onClick={() =>
-                  adminRequest("/api/bonus-hunt/admin", {
-                    action: "end-hunt",
-                  })
-                }
-              >
-                End hunt
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy || Boolean(slotCatalog?.refreshing)}
-                onClick={() => void refreshSlotCatalog()}
-              >
-                {slotCatalog?.refreshing
-                  ? "Refreshing slots…"
-                  : "Refresh Stake slots"}
-              </button>
-            </div>
+              {slotCatalog ? (
+                <p className={styles.adminHint}>
+                  Slot catalog: {slotCatalog.counts.total.toLocaleString()} cached
+                  {slotCatalog.updatedAt
+                    ? ` · last ${new Date(slotCatalog.updatedAt).toLocaleString()}`
+                    : " · not crawled yet"}
+                  {slotCatalog.nextRefreshAt
+                    ? ` · next auto ${new Date(slotCatalog.nextRefreshAt).toLocaleString()}`
+                    : " · auto every 10s when stale"}
+                  {slotCatalog.lastError
+                    ? ` · error: ${slotCatalog.lastError}`
+                    : ""}
+                </p>
+              ) : null}
 
-            {slotCatalog ? (
+              {adminError ? (
+                <p className={styles.adminError} role="alert">
+                  {adminError}
+                </p>
+              ) : null}
               <p className={styles.adminHint}>
-                Slot catalog: {slotCatalog.counts.total.toLocaleString()} cached
-                {slotCatalog.updatedAt
-                  ? ` · last ${new Date(slotCatalog.updatedAt).toLocaleString()}`
-                  : " · not crawled yet"}
-                {slotCatalog.nextRefreshAt
-                  ? ` · next auto ${new Date(slotCatalog.nextRefreshAt).toLocaleString()}`
-                  : " · auto every 10s when stale"}
-                {slotCatalog.lastError
-                  ? ` · error: ${slotCatalog.lastError}`
-                  : ""}
+                Signed in as admin via Kick. Toggle Super or Epic before adding a
+                bonus to tag it.
               </p>
-            ) : null}
-
-            {adminError ? (
-              <p className={styles.adminError} role="alert">
-                {adminError}
-              </p>
-            ) : null}
-            <p className={styles.adminHint}>
-              Uses the same <code>GUESS_ADMIN_TOKEN</code> as Guess the Balance.
-              Toggle Super or Epic before adding a bonus to tag it.
-            </p>
-          </div>
-        ) : null}
-      </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

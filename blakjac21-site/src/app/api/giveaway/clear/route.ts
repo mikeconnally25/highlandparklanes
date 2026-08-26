@@ -1,7 +1,8 @@
-import { clearGiveawayEntries, verifyGiveawayAdminToken } from "@/lib/giveaway";
+import { clearGiveawayEntries } from "@/lib/giveaway";
+import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
-  if (!verifyGiveawayAdminToken(request)) {
+  if (!(await authorizeStreamerAdmin(request))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 

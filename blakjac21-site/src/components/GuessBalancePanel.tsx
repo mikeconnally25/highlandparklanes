@@ -8,9 +8,8 @@ import {
   parseBalanceGuess,
 } from "@/lib/guess-balance";
 import { isBalanceGuessMessage, useKickChat } from "@/hooks/useKickChat";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./GuessBalancePanel.module.css";
-
-const ADMIN_TOKEN_KEY = "blakjac21-guess-admin-token";
 
 async function fetchState(): Promise<GuessBalanceState> {
   const res = await fetch("/api/guess/balance", { cache: "no-store" });
@@ -18,12 +17,9 @@ async function fetchState(): Promise<GuessBalanceState> {
 }
 
 export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) {
+  const { isAdmin, ready: sessionReady } = useSiteSession();
   const [state, setState] = useState<GuessBalanceState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
-  const [adminToken, setAdminToken] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return sessionStorage.getItem(ADMIN_TOKEN_KEY) ?? "";
-  });
   const [showAdmin, setShowAdmin] = useState(fullPage);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -117,21 +113,23 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
   ): Promise<boolean> {
     setAdminError(null);
     setBusy(true);
-    sessionStorage.setItem(ADMIN_TOKEN_KEY, adminToken);
 
     try {
       const res = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": adminToken,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
-        setAdminError(data.error ?? "Admin request failed");
+        setAdminError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to use streamer controls"
+            : (data.error ?? "Admin request failed"),
+        );
         return false;
       }
 
@@ -268,71 +266,59 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
         )}
       </div>
 
-      <div className={styles.admin}>
-        <button
-          type="button"
-          className={styles.adminToggle}
-          aria-expanded={showAdmin}
-          onClick={() => setShowAdmin((v) => !v)}
-        >
-          Streamer controls
-          <span className={styles.adminChevron} data-open={showAdmin || undefined} />
-        </button>
+      {sessionReady && isAdmin ? (
+        <div className={styles.admin}>
+          <button
+            type="button"
+            className={styles.adminToggle}
+            aria-expanded={showAdmin}
+            onClick={() => setShowAdmin((v) => !v)}
+          >
+            Streamer controls
+            <span className={styles.adminChevron} data-open={showAdmin || undefined} />
+          </button>
 
-        {showAdmin ? (
-          <div className={styles.adminPanel}>
-            <label className={styles.label}>
-              Admin token
-              <input
-                className={styles.input}
-                type="text"
-                value={adminToken}
-                onChange={(e) => setAdminToken(e.target.value)}
-                placeholder="Paste GUESS_ADMIN_TOKEN from .env.local"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
+          {showAdmin ? (
+            <div className={styles.adminPanel}>
+              <div className={styles.adminActions}>
+                <button
+                  type="button"
+                  className={styles.adminBtnPrimary}
+                  disabled={busy || entriesOpen}
+                  onClick={() => toggleEntries(true)}
+                >
+                  Open entries
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy || !entriesOpen}
+                  onClick={() => toggleEntries(false)}
+                >
+                  Close entries
+                </button>
+                <button
+                  type="button"
+                  className={styles.adminBtnSecondary}
+                  disabled={busy}
+                  onClick={clearGuesses}
+                >
+                  Clear guesses
+                </button>
+              </div>
 
-            <div className={styles.adminActions}>
-              <button
-                type="button"
-                className={styles.adminBtnPrimary}
-                disabled={busy || entriesOpen}
-                onClick={() => toggleEntries(true)}
-              >
-                Open entries
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy || !entriesOpen}
-                onClick={() => toggleEntries(false)}
-              >
-                Close entries
-              </button>
-              <button
-                type="button"
-                className={styles.adminBtnSecondary}
-                disabled={busy}
-                onClick={clearGuesses}
-              >
-                Clear guesses
-              </button>
-            </div>
-
-            {adminError ? (
-              <p className={styles.adminError} role="alert">
-                {adminError}
+              {adminError ? (
+                <p className={styles.adminError} role="alert">
+                  {adminError}
+                </p>
+              ) : null}
+              <p className={styles.adminHint}>
+                Signed in as admin via Kick. Open or close entries during stream.
               </p>
-            ) : null}
-            <p className={styles.adminHint}>
-              Set <code>GUESS_ADMIN_TOKEN</code> in your environment and paste it
-              here to open or close entries during stream.
-            </p>
-          </div>
-        ) : null}
-      </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

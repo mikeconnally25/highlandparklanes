@@ -1,4 +1,3 @@
-import { verifyBonusHuntAdminToken } from "@/lib/bonus-hunt";
 import {
   ensureStakeSlotCatalog,
   getStakeSlotCatalog,
@@ -6,13 +5,14 @@ import {
   refreshStakeSlotCatalog,
   resolveAllowedStakeSlot,
 } from "@/lib/stake-slots";
+import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const refresh = url.searchParams.get("refresh") === "1";
 
   if (refresh) {
-    if (!verifyBonusHuntAdminToken(request)) {
+    if (!(await authorizeStreamerAdmin(request))) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
     await refreshStakeSlotCatalog(true);
