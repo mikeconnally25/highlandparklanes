@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import type { BonusHuntState, BonusHuntStats, BonusItem, BonusTier } from "@/lib/bonus-hunt";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { BonusHuntState, BonusItem } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
-  formatBreakEvenLabel,
   formatMultiplier,
   getBonusMultiplier,
   getHuntStats,
@@ -22,12 +21,6 @@ import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
 
-function tierLabel(tier: BonusTier): string {
-  if (tier === "super") return "SUPER";
-  if (tier === "epic") return "EPIC";
-  return "";
-}
-
 function huntFingerprint(state: BonusHuntState): string {
   return [
     state.updatedAt,
@@ -43,60 +36,91 @@ function huntFingerprint(state: BonusHuntState): string {
   ].join("::");
 }
 
+function huntNumberLabel(title: string): string {
+  const trimmed = title.trim();
+  if (!trimmed) return "#—";
+  const match = trimmed.match(/#\s*(\d+)/i);
+  if (match) return `#${match[1]}`;
+  return trimmed.length > 18 ? `${trimmed.slice(0, 16)}…` : trimmed;
+}
+
+function money(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "$0.00";
+  return formatBetSize(value);
+}
+
+function mult(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "0.00x";
+  return formatMultiplier(value);
+}
+
+function findBestWin(bonuses: BonusItem[]): BonusItem | null {
+  let best: BonusItem | null = null;
+  for (const bonus of bonuses) {
+    if (bonus.winAmount == null) continue;
+    if (!best || (best.winAmount ?? 0) < bonus.winAmount) best = bonus;
+  }
+  return best;
+}
+
+function findLuckyWin(bonuses: BonusItem[]): BonusItem | null {
+  let lucky: BonusItem | null = null;
+  let luckyX = -1;
+  for (const bonus of bonuses) {
+    const x = getBonusMultiplier(bonus);
+    if (x == null) continue;
+    if (x > luckyX) {
+      luckyX = x;
+      lucky = bonus;
+    }
+  }
+  return lucky;
+}
+
 type BonusOverlayWidgetProps = {
   mode?: "obs" | "preview";
   limit?: number;
 };
 
-function BonusRows({
+function BonusTableRows({
   bonuses,
-  flashId,
   ariaHidden,
 }: {
   bonuses: BonusItem[];
-  flashId: string | null;
   ariaHidden?: boolean;
 }) {
   return (
-    <ul className={styles.list} aria-hidden={ariaHidden || undefined}>
-      {bonuses.map((bonus, index) => (
-        <li
-          key={`${ariaHidden ? "dup-" : ""}${bonus.id}`}
-          className={styles.row}
-          data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
-          data-flash={!ariaHidden && flashId === bonus.id ? true : undefined}
-          data-enter={!ariaHidden && flashId === bonus.id ? true : undefined}
-        >
-          <span className={styles.index}>{index + 1}</span>
-          <div className={styles.main}>
-            <span className={styles.name}>
+    <div className={styles.tableBody} aria-hidden={ariaHidden || undefined}>
+      {bonuses.map((bonus, index) => {
+        const payout =
+          bonus.winAmount != null
+            ? money(bonus.winAmount)
+            : "—";
+        const x = getBonusMultiplier(bonus);
+        return (
+          <div
+            key={`${ariaHidden ? "dup-" : ""}${bonus.id}`}
+            className={styles.tableRow}
+            data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
+          >
+            <span className={styles.colIndex}>{index + 1}</span>
+            <span className={styles.colGame} title={bonus.name}>
               {bonus.name}
               {bonus.requestedBy ? (
-                <span className={styles.requester}> {bonus.requestedBy}</span>
+                <span className={styles.requester}>@{bonus.requestedBy}</span>
               ) : null}
             </span>
-            <span className={styles.meta}>
-              <span className={styles.bet}>
-                Bet {formatBetSize(bonus.betSize)}
-              </span>
-              <span className={styles.win}>
-                Win {formatBetSize(bonus.winAmount)}
-              </span>
-              {bonus.winAmount != null && bonus.betSize != null ? (
-                <span className={styles.hitX}>
-                  {formatMultiplier(getBonusMultiplier(bonus))}
-                </span>
-              ) : null}
-              {bonus.tier !== "normal" ? (
-                <span className={styles.tier} data-tier={bonus.tier}>
-                  {tierLabel(bonus.tier)}
-                </span>
+            <span className={styles.colBet}>{money(bonus.betSize)}</span>
+            <span className={styles.colPayout}>
+              {payout}
+              {x != null ? (
+                <span className={styles.payoutX}>{mult(x)}</span>
               ) : null}
             </span>
           </div>
-        </li>
-      ))}
-    </ul>
+        );
+      })}
+    </div>
   );
 }
 
@@ -104,13 +128,10 @@ export function BonusOverlayWidget({
   mode = "obs",
   limit,
 }: BonusOverlayWidgetProps) {
-  const effectiveLimit = limit ?? (mode === "obs" ? 100 : 12);
+  const effectiveLimit = limit ?? (mode === "obs" ? 100 : 24);
   const liveBoard = useHuntBoardState();
   const [board, setBoard] = useState<BonusHuntState | null>(null);
-  const [flashId, setFlashId] = useState<string | null>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const knownIdsRef = useRef<Set<string>>(new Set());
-  const primedRef = useRef(false);
   const fingerprintRef = useRef("");
   const boardRef = useRef<BonusHuntState | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -121,30 +142,12 @@ export function BonusOverlayWidget({
     const fp = huntFingerprint(merged);
     if (fp === fingerprintRef.current && boardRef.current) return;
 
-    const known = knownIdsRef.current;
-    const sorted = sortBonusesForDisplay(merged.bonuses);
-    if (!primedRef.current) {
-      knownIdsRef.current = new Set(sorted.map((bonus) => bonus.id));
-      primedRef.current = true;
-    } else {
-      const newest = [...sorted].reverse().find((bonus) => !known.has(bonus.id));
-      if (newest) {
-        setFlashId(newest.id);
-        window.setTimeout(() => {
-          setFlashId((current) => (current === newest.id ? null : current));
-        }, 1200);
-      }
-      knownIdsRef.current = new Set(sorted.map((bonus) => bonus.id));
-    }
-
     fingerprintRef.current = fp;
     boardRef.current = merged;
     setBoard(merged);
-    // Preview never overwrites cache with polled empties
     if (opts?.persist && mode !== "preview") writeHuntCache(merged);
   }
 
-  // Preview: mirror the Active Hunt panel via shared context (no API poll)
   useEffect(() => {
     if (mode !== "preview" || !liveBoard) return;
     applyBoard(liveBoard, { persist: false });
@@ -172,7 +175,6 @@ export function BonusOverlayWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // OBS page only: poll API. Preview relies on context/events.
   useEffect(() => {
     if (mode === "preview") return;
 
@@ -187,14 +189,13 @@ export function BonusOverlayWidget({
         if (cancelled) return;
         applyBoard(data, { persist: false });
       } catch {
-        /* ignore transient errors */
+        /* ignore */
       } finally {
         if (!cancelled) timer = setTimeout(load, POLL_MS);
       }
     }
 
     load();
-
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
@@ -202,12 +203,15 @@ export function BonusOverlayWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveLimit, mode]);
 
-  const bonuses = sortBonusesForDisplay(board?.bonuses ?? []).slice(
-    0,
-    effectiveLimit,
+  const bonuses = useMemo(
+    () => sortBonusesForDisplay(board?.bonuses ?? []).slice(0, effectiveLimit),
+    [board, effectiveLimit],
   );
+  const stats = board ? getHuntStats(board) : null;
+  const bestWin = useMemo(() => findBestWin(bonuses), [bonuses]);
+  const luckyWin = useMemo(() => findLuckyWin(bonuses), [bonuses]);
   const title = board?.title ?? "";
-  const stats: BonusHuntStats | null = board ? getHuntStats(board) : null;
+  const huntNo = huntNumberLabel(title);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -219,7 +223,7 @@ export function BonusOverlayWidget({
 
     function update() {
       if (!viewport || !measure) return;
-      setShouldScroll(measure.scrollHeight > viewport.clientHeight + 8);
+      setShouldScroll(measure.scrollHeight > viewport.clientHeight + 4);
     }
 
     update();
@@ -229,7 +233,7 @@ export function BonusOverlayWidget({
     return () => observer.disconnect();
   }, [bonuses]);
 
-  const durationSec = Math.max(14, bonuses.length * 2.4);
+  const durationSec = Math.max(16, bonuses.length * 2.2);
 
   return (
     <div
@@ -237,57 +241,124 @@ export function BonusOverlayWidget({
       aria-live="polite"
       aria-label="Bonus hunt overlay"
     >
-      <div className={styles.header}>
-        <p className={styles.kicker}>Bonus list</p>
-        <h2 className={styles.title}>{title || "Active hunt"}</h2>
-        {stats?.startAmount != null ? (
-          <p className={styles.startAmount}>
-            Started with {formatBetSize(stats.startAmount)}
-          </p>
-        ) : null}
-      </div>
+      <div className={styles.card}>
+        <header className={styles.topBar}>
+          <h2 className={styles.brand}>Bonus Hunt</h2>
+          <p className={styles.huntNo}>{huntNo}</p>
+        </header>
 
-      <div className={styles.stats}>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>Avg x</span>
-          <span className={styles.statValue}>
-            {formatMultiplier(stats?.avgXOpened ?? null)}
-          </span>
-        </div>
-        <div className={styles.stat}>
-          <span className={styles.statLabel}>BE x</span>
-          <span className={styles.statValue}>
-            {stats ? formatBreakEvenLabel(stats) : "—"}
-          </span>
-        </div>
-      </div>
-
-      {bonuses.length === 0 ? (
-        <p className={styles.empty}>Waiting for bonuses…</p>
-      ) : (
-        <div
-          ref={viewportRef}
-          className={styles.listViewport}
-          data-scrolling={shouldScroll || undefined}
-        >
-          <div
-            className={styles.listTrack}
-            data-scrolling={shouldScroll || undefined}
-            style={
-              shouldScroll
-                ? ({ "--scroll-duration": `${durationSec}s` } as CSSProperties)
-                : undefined
-            }
-          >
-            <div ref={measureRef}>
-              <BonusRows bonuses={bonuses} flashId={flashId} />
+        <div className={styles.statsPanel}>
+          <div className={styles.statsCol}>
+            <div className={styles.statLine}>
+              <span>Start:</span>
+              <strong>{money(stats?.startAmount)}</strong>
             </div>
-            {shouldScroll ? (
-              <BonusRows bonuses={bonuses} flashId={null} ariaHidden />
-            ) : null}
+            <div className={styles.statLine}>
+              <span>Total Bonuses:</span>
+              <strong>{bonuses.length}</strong>
+            </div>
+            <div className={styles.statLine}>
+              <span>Run Average:</span>
+              <strong>{mult(stats?.avgXOpened)}</strong>
+            </div>
+          </div>
+          <div className={styles.statsCol}>
+            <div className={styles.statLine}>
+              <span>Winnings:</span>
+              <strong>{money(stats?.totalWins)}</strong>
+            </div>
+            <div className={styles.statLine}>
+              <span>Remaining Bonuses:</span>
+              <strong>{stats?.remainingCount ?? 0}</strong>
+            </div>
+            <div className={styles.statLine}>
+              <span>Req Average</span>
+              <strong>
+                {stats?.breakEvenReached
+                  ? "Hit"
+                  : mult(stats?.breakEvenX)}
+              </strong>
+            </div>
           </div>
         </div>
-      )}
+
+        <div className={styles.highlights}>
+          <div className={styles.highlight}>
+            <div className={styles.thumb} aria-hidden>
+              <span className={styles.star}>★</span>
+              <span className={styles.thumbLetter}>
+                {(bestWin?.name ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+            </div>
+            <div className={styles.highlightMeta}>
+              <span className={styles.highlightLabel}>Best Win</span>
+              <strong className={styles.highlightName}>
+                {bestWin?.name ?? "—"}
+              </strong>
+              <span className={styles.highlightValue}>
+                {money(bestWin?.winAmount)}{" "}
+                <em>({money(bestWin?.betSize)})</em>
+              </span>
+            </div>
+          </div>
+          <div className={styles.highlight}>
+            <div className={styles.thumb} aria-hidden>
+              <span className={styles.star}>★</span>
+              <span className={styles.thumbLetter}>
+                {(luckyWin?.name ?? "?").slice(0, 1).toUpperCase()}
+              </span>
+            </div>
+            <div className={styles.highlightMeta}>
+              <span className={styles.highlightLabel}>Lucky Win</span>
+              <strong className={styles.highlightName}>
+                {luckyWin?.name ?? "—"}
+              </strong>
+              <span className={styles.highlightValue}>
+                {mult(luckyWin ? getBonusMultiplier(luckyWin) : null)}{" "}
+                <em>({money(luckyWin?.winAmount)})</em>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.tablePanel}>
+          <div className={styles.tableHead}>
+            <span>#</span>
+            <span>Game</span>
+            <span className={styles.alignEnd}>Bet Size</span>
+            <span className={styles.alignEnd}>Payout</span>
+          </div>
+
+          {bonuses.length === 0 ? (
+            <p className={styles.empty}>Waiting for bonuses…</p>
+          ) : (
+            <div
+              ref={viewportRef}
+              className={styles.tableViewport}
+              data-scrolling={shouldScroll || undefined}
+            >
+              <div
+                className={styles.tableTrack}
+                data-scrolling={shouldScroll || undefined}
+                style={
+                  shouldScroll
+                    ? ({
+                        "--scroll-duration": `${durationSec}s`,
+                      } as CSSProperties)
+                    : undefined
+                }
+              >
+                <div ref={measureRef}>
+                  <BonusTableRows bonuses={bonuses} />
+                </div>
+                {shouldScroll ? (
+                  <BonusTableRows bonuses={bonuses} ariaHidden />
+                ) : null}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

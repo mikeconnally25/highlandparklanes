@@ -188,7 +188,7 @@
 
 .huntLayout {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.95fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(22rem, 1.05fr);
   gap: 1rem;
   align-items: start;
 }
@@ -200,6 +200,7 @@
 .widgetColumn {
   position: sticky;
   top: 1rem;
+  min-width: 0;
 }
 
 .widgetLabel {
