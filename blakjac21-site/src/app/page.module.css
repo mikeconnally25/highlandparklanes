@@ -17,7 +17,7 @@
 .menuStage {
   display: flex;
   justify-content: center;
-  padding: 0.25rem clamp(0.5rem, 2vw, 1rem) 0;
+  padding: 0 clamp(0.5rem, 2vw, 1rem);
 }
 
 .top {
@@ -110,7 +110,7 @@
 
 .hero {
   flex: 1;
-  padding: clamp(1.5rem, 3vw, 2.5rem) 0 2.5rem;
+  padding: clamp(1.25rem, 2.5vw, 2rem) 0 2rem;
 }
 
 .heroGrid {
@@ -329,6 +329,6 @@
 
 @media (min-width: 960px) {
   .hero {
-    min-height: calc(100vh - 5.5rem);
+    min-height: 0;
   }
 }

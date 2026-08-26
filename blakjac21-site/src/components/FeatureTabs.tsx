@@ -136,13 +136,10 @@ export function FeatureTabs() {
     <section
       id="features"
       className={styles.wrap}
-      aria-labelledby="feature-menu-title"
+      aria-label="Site feature menu"
     >
       <div className={styles.intro}>
         <p className={styles.eyebrow}>Menu</p>
-        <h2 id="feature-menu-title" className={styles.title}>
-          Choose a feature
-        </h2>
         <p className={styles.lead}>
           Pick a card to jump into hunts, giveaways, guesses, and more.
         </p>

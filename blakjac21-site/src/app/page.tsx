@@ -20,6 +20,14 @@ export default function Home() {
         </header>
 
         <main>
+          <HomeLiveStrip />
+
+          <div className={styles.menuStage}>
+            <FeatureTabs />
+          </div>
+
+          <HomeHuntStats />
+
           <section className={styles.hero} aria-label="Blakjac21">
             <div className={styles.heroGrid}>
               <div className={styles.brandBlock}>
@@ -30,8 +38,8 @@ export default function Home() {
                 </p>
                 <div className={styles.ctas}>
                   <WatchCta />
-                  <Link className={styles.secondaryCta} href="#features">
-                    Explore features
+                  <Link className={styles.secondaryCta} href="#watch">
+                    Watch stream
                   </Link>
                 </div>
               </div>
@@ -42,13 +50,6 @@ export default function Home() {
             </div>
           </section>
 
-          <HomeLiveStrip />
-
-          <div className={styles.menuStage}>
-            <FeatureTabs />
-          </div>
-
-          <HomeHuntStats />
           <HomeCommunity />
         </main>
 

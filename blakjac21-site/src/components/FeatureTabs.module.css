@@ -1,6 +1,6 @@
 .wrap {
   width: min(56rem, 100%);
-  margin: 0 auto 1.5rem;
+  margin: 0 auto 1rem;
   padding: 1.5rem clamp(1rem, 3vw, 1.5rem) 1.55rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--glass-border);
@@ -30,20 +30,8 @@
   background: color-mix(in srgb, var(--gold) 8%, transparent);
 }
 
-.title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: clamp(1.7rem, 4vw, 2.35rem);
-  letter-spacing: -0.03em;
-  background: linear-gradient(180deg, #ffffff 0%, #c8f7ff 45%, #22e0ff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .lead {
-  margin: 0.55rem 0 0;
+  margin: 0.45rem 0 0;
   font-size: 0.94rem;
   line-height: 1.55;
   color: var(--text-muted);
