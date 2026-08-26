@@ -14,9 +14,29 @@ type SocialLink = {
 };
 
 type TabConfig =
-  | { id: string; label: string; kind: "link"; href: string }
-  | { id: string; label: string; kind: "external"; href: string }
-  | { id: PanelTabId; label: string; kind: "panel" };
+  | {
+      id: string;
+      label: string;
+      description: string;
+      kind: "link";
+      href: string;
+      accent: "cyan" | "gold" | "live";
+    }
+  | {
+      id: string;
+      label: string;
+      description: string;
+      kind: "external";
+      href: string;
+      accent: "cyan" | "gold" | "live";
+    }
+  | {
+      id: PanelTabId;
+      label: string;
+      description: string;
+      kind: "panel";
+      accent: "cyan" | "gold" | "live";
+    };
 
 const STAKE_URL = "https://stake.com/?offer=blakjac21&c=c52feb0e28";
 
@@ -24,15 +44,58 @@ const TABS: TabConfig[] = [
   {
     id: "guessBalance",
     label: "Guess the Balance",
+    description: "Call the balance live and climb the board.",
     kind: "link",
     href: "/guess-the-balance",
+    accent: "gold",
   },
-  { id: "bonusHunts", label: "Bonus Hunts", kind: "link", href: "/bonus-hunts" },
-  { id: "leaderboard", label: "Leaderboard", kind: "link", href: "/leaderboard" },
-  { id: "rewards", label: "Rewards", kind: "link", href: "/rewards" },
-  { id: "giveaways", label: "Giveaways", kind: "link", href: "/giveaways" },
-  { id: "stake", label: "Stake", kind: "external", href: STAKE_URL },
-  { id: "social", label: "Social Media", kind: "panel" },
+  {
+    id: "bonusHunts",
+    label: "Bonus Hunts",
+    description: "Track slots, wins, and break-even in real time.",
+    kind: "link",
+    href: "/bonus-hunts",
+    accent: "cyan",
+  },
+  {
+    id: "giveaways",
+    label: "Giveaways",
+    description: "Enter with a chat keyword and spin the winner wheel.",
+    kind: "link",
+    href: "/giveaways",
+    accent: "live",
+  },
+  {
+    id: "leaderboard",
+    label: "Leaderboard",
+    description: "See who is wagering the most this month.",
+    kind: "link",
+    href: "/leaderboard",
+    accent: "cyan",
+  },
+  {
+    id: "rewards",
+    label: "Rewards",
+    description: "Streamer perks, codes, and community drops.",
+    kind: "link",
+    href: "/rewards",
+    accent: "gold",
+  },
+  {
+    id: "stake",
+    label: "Stake",
+    description: "Play with code blakjac21 and support the stream.",
+    kind: "external",
+    href: STAKE_URL,
+    accent: "gold",
+  },
+  {
+    id: "social",
+    label: "Social Media",
+    description: "Kick, X, and Discord — follow for stream updates.",
+    kind: "panel",
+    accent: "cyan",
+  },
 ];
 
 const PANEL_COPY: Record<
@@ -70,94 +133,115 @@ export function FeatureTabs() {
   }
 
   return (
-    <nav className={styles.wrap} aria-label="Site features">
-      <p className={styles.navLabel}>Menu</p>
-      <ul className={styles.list}>
-        {TABS.map((tab) => {
-          if (tab.kind === "link") {
-            return (
-              <li key={tab.id} className={styles.item}>
-                <Link className={styles.linkTrigger} href={tab.href}>
-                  <span>{tab.label}</span>
-                  <span className={styles.linkArrow} aria-hidden />
-                </Link>
-              </li>
-            );
-          }
+    <section
+      id="features"
+      className={styles.wrap}
+      aria-labelledby="feature-menu-title"
+    >
+      <div className={styles.intro}>
+        <p className={styles.eyebrow}>Menu</p>
+        <h2 id="feature-menu-title" className={styles.title}>
+          Choose a feature
+        </h2>
+        <p className={styles.lead}>
+          Pick a card to jump into hunts, giveaways, guesses, and more.
+        </p>
+      </div>
 
-          if (tab.kind === "external") {
+      <nav aria-label="Site features">
+        <ul className={styles.grid}>
+          {TABS.map((tab) => {
+            if (tab.kind === "link") {
+              return (
+                <li key={tab.id}>
+                  <Link
+                    className={styles.card}
+                    href={tab.href}
+                    data-accent={tab.accent}
+                  >
+                    <span className={styles.cardLabel}>{tab.label}</span>
+                    <span className={styles.cardDesc}>{tab.description}</span>
+                    <span className={styles.cardAction}>Open</span>
+                  </Link>
+                </li>
+              );
+            }
+
+            if (tab.kind === "external") {
+              return (
+                <li key={tab.id}>
+                  <a
+                    className={styles.card}
+                    href={tab.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-accent={tab.accent}
+                  >
+                    <span className={styles.cardLabel}>{tab.label}</span>
+                    <span className={styles.cardDesc}>{tab.description}</span>
+                    <span className={styles.cardAction}>Visit</span>
+                  </a>
+                </li>
+              );
+            }
+
+            const panelId = tab.id;
+            const isOpen = openTab === panelId;
+
             return (
-              <li key={tab.id} className={styles.item}>
-                <a
-                  className={styles.linkTrigger}
-                  href={tab.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
+              <li key={panelId}>
+                <button
+                  type="button"
+                  id={`tab-${panelId}`}
+                  className={styles.card}
+                  data-accent={tab.accent}
+                  data-selected={isOpen || undefined}
+                  aria-expanded={isOpen}
+                  aria-controls={`panel-${panelId}`}
+                  onClick={() => toggleTab(panelId)}
                 >
-                  <span>{tab.label}</span>
-                  <span className={styles.linkArrow} aria-hidden />
-                </a>
+                  <span className={styles.cardLabel}>{tab.label}</span>
+                  <span className={styles.cardDesc}>{tab.description}</span>
+                  <span className={styles.cardAction}>
+                    {isOpen ? "Close" : "Select"}
+                  </span>
+                </button>
               </li>
             );
-          }
+          })}
+        </ul>
+      </nav>
 
-          const panelId = tab.id;
-          const isOpen = openTab === panelId;
-          const panel = PANEL_COPY[panelId];
-
-          return (
-            <li key={panelId} className={styles.item}>
-              <button
-                type="button"
-                id={`tab-${panelId}`}
-                className={styles.trigger}
-                aria-expanded={isOpen}
-                aria-controls={`panel-${panelId}`}
-                onClick={() => toggleTab(panelId)}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={styles.chevron}
-                  aria-hidden
-                  data-open={isOpen || undefined}
-                />
-              </button>
-              <div
-                id={`panel-${panelId}`}
-                className={styles.panel}
-                data-open={isOpen || undefined}
-                role="region"
-                aria-labelledby={`tab-${panelId}`}
-                aria-hidden={!isOpen}
-              >
-                <p className={styles.panelTitle}>{panel.title}</p>
-                <p className={styles.panelBody}>{panel.body}</p>
-                {panel.links?.length ? (
-                  <ul className={styles.socialList}>
-                    {panel.links.map((link) => (
-                      <li key={link.label}>
-                        <a
-                          className={styles.socialLink}
-                          href={link.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <span className={styles.socialLabel}>{link.label}</span>
-                          {link.handle ? (
-                            <span className={styles.socialHandle}>
-                              {link.handle}
-                            </span>
-                          ) : null}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+      {openTab ? (
+        <div
+          id={`panel-${openTab}`}
+          className={styles.panel}
+          role="region"
+          aria-labelledby={`tab-${openTab}`}
+        >
+          <p className={styles.panelTitle}>{PANEL_COPY[openTab].title}</p>
+          <p className={styles.panelBody}>{PANEL_COPY[openTab].body}</p>
+          {PANEL_COPY[openTab].links?.length ? (
+            <ul className={styles.socialList}>
+              {PANEL_COPY[openTab].links.map((link) => (
+                <li key={link.label}>
+                  <a
+                    className={styles.socialLink}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className={styles.socialLabel}>{link.label}</span>
+                    {link.handle ? (
+                      <span className={styles.socialHandle}>{link.handle}</span>
+                    ) : null}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   );
 }

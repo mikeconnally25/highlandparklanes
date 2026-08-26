@@ -5,7 +5,6 @@ import { FeatureTabs } from "@/components/FeatureTabs";
 import { HomeCommunity } from "@/components/HomeCommunity";
 import { HomeHuntStats } from "@/components/HomeHuntStats";
 import { HomeLiveStrip } from "@/components/HomeLiveStrip";
-import { HomeQuickLinks } from "@/components/HomeQuickLinks";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
@@ -14,10 +13,6 @@ import styles from "./page.module.css";
 export default function Home() {
   return (
     <div className={styles.page}>
-      <aside className={styles.sideNav} aria-label="Primary">
-        <FeatureTabs />
-      </aside>
-
       <div className={styles.shell}>
         <header className={styles.top}>
           <BrandLogo size="md" showWordmark priority />
@@ -48,7 +43,11 @@ export default function Home() {
           </section>
 
           <HomeLiveStrip />
-          <HomeQuickLinks />
+
+          <div className={styles.menuStage}>
+            <FeatureTabs />
+          </div>
+
           <HomeHuntStats />
           <HomeCommunity />
         </main>
