@@ -1,7 +1,5 @@
-import {
-  clearBonuses,
-  removeBonus,
-} from "@/lib/bonus-hunt";
+import { clearBonuses, removeBonus } from "@/lib/bonus-hunt";
+import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
@@ -17,12 +15,12 @@ export async function POST(request: Request) {
   }
 
   if (body.all) {
-    return Response.json(clearBonuses());
+    return huntJson(clearBonuses());
   }
 
   if (!body.id) {
     return Response.json({ error: "id is required" }, { status: 400 });
   }
 
-  return Response.json(removeBonus(body.id));
+  return huntJson(removeBonus(body.id));
 }

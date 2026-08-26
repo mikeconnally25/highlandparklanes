@@ -14,6 +14,10 @@ import {
 import { useKickChat } from "@/hooks/useKickChat";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
+import {
+  readHuntCache,
+  writeHuntCache,
+} from "@/lib/hunt-client-sync";
 import styles from "./ActiveHuntPanel.module.css";
 
 type SlotCatalogSummary = {
@@ -30,8 +34,6 @@ async function fetchState(): Promise<BonusHuntState> {
   const res = await fetch("/api/bonus-hunt", { cache: "no-store" });
   return (await res.json()) as BonusHuntState;
 }
-
-const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
 
 function tierLabel(tier: BonusTier): string {
   if (tier === "super") return "Super";
@@ -89,28 +91,20 @@ function preferState(
   return remote;
 }
 
-function readHuntCache(): BonusHuntState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(HUNT_CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as BonusHuntState;
-  } catch {
-    return null;
-  }
-}
-
-function writeHuntCache(state: BonusHuntState) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(HUNT_CACHE_KEY, JSON.stringify(state));
-  } catch {
-    /* ignore quota */
-  }
-}
-
 function nowMs() {
   return Date.now();
+}
+
+async function pushHuntSync(state: BonusHuntState) {
+  try {
+    await fetch("/api/bonus-hunt/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state),
+    });
+  } catch {
+    /* ignore */
+  }
 }
 
 export function ActiveHuntPanel() {
@@ -193,6 +187,16 @@ export function ActiveHuntPanel() {
     stateRef.current = merged;
     setState(merged);
 
+    // If this browser still has the real board, push it so OBS/API catch up
+    if (
+      canManage &&
+      prev &&
+      prev.bonuses.length > next.bonuses.length &&
+      merged.bonuses.length > next.bonuses.length
+    ) {
+      void pushHuntSync(merged);
+    }
+
     setHuntTitle((current) => current || merged.title);
     setStartAmountInput((current) =>
       current
@@ -213,7 +217,7 @@ export function ActiveHuntPanel() {
       }
       return draftsChanged ? copy : current;
     });
-  }, []);
+  }, [canManage]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -350,6 +354,7 @@ export function ActiveHuntPanel() {
       writeHuntCache(next);
       stateRef.current = next;
       setState(next);
+      if (canManage) void pushHuntSync(next);
       if (url.includes("/api/bonus-hunt/admin") && body && "action" in body) {
         const action = (body as { action?: string }).action;
         if (action === "end-hunt") {

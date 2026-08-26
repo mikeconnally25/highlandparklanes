@@ -11,6 +11,7 @@ import {
   setStartAmount,
 } from "@/lib/bonus-hunt";
 import type { BonusTier } from "@/lib/bonus-hunt";
+import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
@@ -46,12 +47,12 @@ export async function POST(request: Request) {
 
   switch (body.action) {
     case "clear-requests":
-      return Response.json(clearSlotRequests());
+      return huntJson(clearSlotRequests());
     case "remove-request":
       if (!body.id) {
         return Response.json({ error: "id is required" }, { status: 400 });
       }
-      return Response.json(removeSlotRequest(body.id));
+      return huntJson(removeSlotRequest(body.id));
     case "promote-request": {
       if (!body.id) {
         return Response.json({ error: "id is required" }, { status: 400 });
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
         tier: body.tier,
       });
       if (!result.accepted) {
-        return Response.json(
+        return huntJson(
           {
             error: result.reason ?? "Could not add bonus from request",
             state: result.state,
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      return Response.json(result.state);
+      return huntJson(result.state);
     }
     case "set-active":
       if (typeof body.active !== "boolean") {
@@ -80,20 +81,20 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      return Response.json(setHuntActive(body.active));
+      return huntJson(setHuntActive(body.active));
     case "end-hunt": {
       const result = endAndArchiveHunt();
-      return Response.json({
+      return huntJson({
         ...result.state,
         archived: result.archived,
       });
     }
     case "set-title":
-      return Response.json(setHuntTitle(body.title ?? ""));
+      return huntJson(setHuntTitle(body.title ?? ""));
     case "set-start-amount": {
       const result = setStartAmount(body.startAmount);
       if (!result.accepted) {
-        return Response.json(
+        return huntJson(
           {
             error: result.reason ?? "Could not set start amount",
             state: result.state,
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      return Response.json(result.state);
+      return huntJson(result.state);
     }
     case "set-win-amount": {
       if (!body.id) {
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
         winAmount: body.winAmount,
       });
       if (!result.accepted) {
-        return Response.json(
+        return huntJson(
           {
             error: result.reason ?? "Could not set win amount",
             state: result.state,
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
           { status: 400 },
         );
       }
-      return Response.json(result.state);
+      return huntJson(result.state);
     }
     case "delete-past-hunt": {
       if (!body.id) {
@@ -128,15 +129,15 @@ export async function POST(request: Request) {
       }
       const result = removePastHunt(body.id);
       if (!result.removed) {
-        return Response.json(
+        return huntJson(
           { error: "Hunt not found", hunts: result.hunts },
           { status: 404 },
         );
       }
-      return Response.json({ hunts: result.hunts });
+      return huntJson({ hunts: result.hunts });
     }
     case "clear-past-hunts":
-      return Response.json({ hunts: clearPastHunts() });
+      return huntJson({ hunts: clearPastHunts() });
     default:
       return Response.json({ error: "Unknown action" }, { status: 400 });
   }

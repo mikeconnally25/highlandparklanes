@@ -10,10 +10,16 @@ import {
   getHuntStats,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
+import {
+  HUNT_LIVE_EVENT,
+  preferHuntBoard,
+  readHuntCache,
+  readHuntHashSeed,
+  writeHuntCache,
+} from "@/lib/hunt-client-sync";
 import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
-const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
 
 function tierLabel(tier: BonusTier): string {
   if (tier === "super") return "SUPER";
@@ -34,17 +40,6 @@ function huntFingerprint(state: BonusHuntState): string {
       )
       .join("|"),
   ].join("::");
-}
-
-function readHuntCache(): BonusHuntState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(HUNT_CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as BonusHuntState;
-  } catch {
-    return null;
-  }
 }
 
 type BonusOverlayWidgetProps = {
@@ -70,11 +65,6 @@ function BonusRows({
           data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
           data-flash={!ariaHidden && flashId === bonus.id ? true : undefined}
           data-enter={!ariaHidden && flashId === bonus.id ? true : undefined}
-          style={
-            ariaHidden
-              ? undefined
-              : { animationDelay: `${Math.min(index, 8) * 40}ms` }
-          }
         >
           <span className={styles.index}>{index + 1}</span>
           <div className={styles.main}>
@@ -114,31 +104,63 @@ export function BonusOverlayWidget({
   limit,
 }: BonusOverlayWidgetProps) {
   const effectiveLimit = limit ?? (mode === "obs" ? 100 : 12);
-  const [bonuses, setBonuses] = useState<BonusItem[]>([]);
-  const [title, setTitle] = useState("");
-  const [stats, setStats] = useState<BonusHuntStats | null>(null);
+  const [board, setBoard] = useState<BonusHuntState | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
   const fingerprintRef = useRef("");
+  const boardRef = useRef<BonusHuntState | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
+  function applyBoard(next: BonusHuntState, opts?: { persist?: boolean }) {
+    const merged = preferHuntBoard(boardRef.current, next);
+    const fp = huntFingerprint(merged);
+    if (fp === fingerprintRef.current && boardRef.current) return;
+
+    const known = knownIdsRef.current;
+    const sorted = sortBonusesForDisplay(merged.bonuses);
+    if (!primedRef.current) {
+      knownIdsRef.current = new Set(sorted.map((bonus) => bonus.id));
+      primedRef.current = true;
+    } else {
+      const newest = [...sorted].reverse().find((bonus) => !known.has(bonus.id));
+      if (newest) {
+        setFlashId(newest.id);
+        window.setTimeout(() => {
+          setFlashId((current) => (current === newest.id ? null : current));
+        }, 1200);
+      }
+      knownIdsRef.current = new Set(sorted.map((bonus) => bonus.id));
+    }
+
+    fingerprintRef.current = fp;
+    boardRef.current = merged;
+    setBoard(merged);
+    if (opts?.persist !== false) writeHuntCache(merged);
+  }
+
   useEffect(() => {
-    const cached = readHuntCache();
-    if (!cached) return;
-    const next = sortBonusesForDisplay(cached.bonuses).slice(0, effectiveLimit);
-    knownIdsRef.current = new Set(next.map((bonus) => bonus.id));
-    primedRef.current = true;
-    fingerprintRef.current = huntFingerprint(cached);
+    const seeded = readHuntHashSeed() ?? readHuntCache();
+    if (!seeded) return;
     const frame = window.requestAnimationFrame(() => {
-      setBonuses(next);
-      setTitle(cached.title);
-      setStats(getHuntStats(cached));
+      applyBoard(seeded, { persist: false });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [effectiveLimit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    function onLive(event: Event) {
+      const detail = (event as CustomEvent<BonusHuntState>).detail;
+      if (!detail) return;
+      applyBoard(detail, { persist: false });
+    }
+    window.addEventListener(HUNT_LIVE_EVENT, onLive);
+    return () => window.removeEventListener(HUNT_LIVE_EVENT, onLive);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,43 +172,7 @@ export function BonusOverlayWidget({
         if (!res.ok) throw new Error("Failed to load");
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
-
-        // Ignore empty cold responses when we already have a board
-        if (data.bonuses.length === 0 && knownIdsRef.current.size > 0) {
-          return;
-        }
-
-        const fp = huntFingerprint(data);
-        if (fp === fingerprintRef.current) return;
-        fingerprintRef.current = fp;
-
-        const next = sortBonusesForDisplay(data.bonuses).slice(
-          0,
-          effectiveLimit,
-        );
-        const known = knownIdsRef.current;
-
-        if (!primedRef.current) {
-          knownIdsRef.current = new Set(next.map((bonus) => bonus.id));
-          primedRef.current = true;
-        } else {
-          const newest = [...next]
-            .reverse()
-            .find((bonus) => !known.has(bonus.id));
-          if (newest) {
-            setFlashId(newest.id);
-            window.setTimeout(() => {
-              if (!cancelled) setFlashId((current) =>
-                current === newest.id ? null : current,
-              );
-            }, 1200);
-          }
-          knownIdsRef.current = new Set(next.map((bonus) => bonus.id));
-        }
-
-        setBonuses(next);
-        setTitle(data.title);
-        setStats(getHuntStats(data));
+        applyBoard(data);
       } catch {
         /* ignore transient errors */
       } finally {
@@ -200,7 +186,15 @@ export function BonusOverlayWidget({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveLimit]);
+
+  const bonuses = sortBonusesForDisplay(board?.bonuses ?? []).slice(
+    0,
+    effectiveLimit,
+  );
+  const title = board?.title ?? "";
+  const stats: BonusHuntStats | null = board ? getHuntStats(board) : null;
 
   useEffect(() => {
     const viewport = viewportRef.current;

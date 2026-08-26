@@ -1,5 +1,6 @@
 import { addBonus } from "@/lib/bonus-hunt";
 import type { BonusTier } from "@/lib/bonus-hunt";
+import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
@@ -31,11 +32,11 @@ export async function POST(request: Request) {
     tier: body.tier,
   });
   if (!result.accepted) {
-    return Response.json(
+    return huntJson(
       { error: result.reason ?? "Could not add bonus", state: result.state },
       { status: 400 },
     );
   }
 
-  return Response.json(result.state);
+  return huntJson(result.state);
 }

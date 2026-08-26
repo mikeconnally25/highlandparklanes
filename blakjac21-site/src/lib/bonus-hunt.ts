@@ -102,6 +102,18 @@ function persistState(state: BonusHuntState) {
   } catch {
     /* ignore */
   }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeRemoteJson } =
+      require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
+    const snapshot = state;
+    pendingRemoteWrite = pendingRemoteWrite
+      .catch(() => undefined)
+      .then(() => writeRemoteJson(STATE_FILE, snapshot))
+      .then(() => undefined);
+  } catch {
+    /* ignore */
+  }
 }
 
 function persistHistory(history: PastHuntResult[]) {
@@ -113,6 +125,63 @@ function persistHistory(history: PastHuntResult[]) {
   } catch {
     /* ignore */
   }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeRemoteJson } =
+      require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
+    const snapshot = history;
+    pendingRemoteWrite = pendingRemoteWrite
+      .catch(() => undefined)
+      .then(() => writeRemoteJson(HISTORY_FILE, snapshot))
+      .then(() => undefined);
+  } catch {
+    /* ignore */
+  }
+}
+
+let pendingRemoteWrite: Promise<void> = Promise.resolve();
+
+export async function flushBonusHuntPersist(): Promise<void> {
+  await pendingRemoteWrite;
+}
+
+function richerState(
+  local: BonusHuntState | undefined,
+  remote: BonusHuntState,
+): BonusHuntState {
+  if (!local) return normalizeState(remote);
+  const localT = Date.parse(local.updatedAt) || 0;
+  const remoteT = Date.parse(remote.updatedAt) || 0;
+  if (remoteT > localT) return normalizeState(remote);
+  if (remoteT < localT) return normalizeState(local);
+  if (remote.bonuses.length > local.bonuses.length) {
+    return normalizeState(remote);
+  }
+  return normalizeState(local);
+}
+
+/** Pull shared remote state (Upstash) into this instance before serving GETs. */
+export async function hydrateBonusHuntFromRemote(): Promise<BonusHuntState> {
+  ensureLoaded();
+  const g = globalThis as StoreGlobal;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readRemoteJson } =
+      require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
+    const remote = await readRemoteJson<BonusHuntState>(STATE_FILE);
+    if (remote && typeof remote === "object") {
+      g.__bonusHuntState = richerState(g.__bonusHuntState, remote);
+    }
+    const history = await readRemoteJson<PastHuntResult[]>(HISTORY_FILE);
+    if (Array.isArray(history)) {
+      const local = g.__bonusHuntHistory ?? [];
+      g.__bonusHuntHistory =
+        history.length >= local.length ? history : local;
+    }
+  } catch {
+    /* keep local */
+  }
+  return getBonusHuntState();
 }
 
 function ensureLoaded() {
@@ -143,6 +212,24 @@ export function getBonusHuntState(): BonusHuntState {
   const g = globalThis as StoreGlobal;
   if (!g.__bonusHuntState) g.__bonusHuntState = createState();
   return normalizeState(g.__bonusHuntState);
+}
+
+/** Replace in-memory board with a client/admin snapshot (keeps provided updatedAt). */
+export function replaceBonusHuntState(incoming: BonusHuntState): BonusHuntState {
+  ensureLoaded();
+  const g = globalThis as StoreGlobal;
+  const next = normalizeState({
+    ...createState(),
+    ...incoming,
+    bonuses: Array.isArray(incoming.bonuses) ? incoming.bonuses : [],
+    slotRequests: Array.isArray(incoming.slotRequests)
+      ? incoming.slotRequests
+      : [],
+  });
+  if (!next.updatedAt) next.updatedAt = new Date().toISOString();
+  g.__bonusHuntState = next;
+  persistState(next);
+  return next;
 }
 
 export function getPastHunts(): PastHuntResult[] {

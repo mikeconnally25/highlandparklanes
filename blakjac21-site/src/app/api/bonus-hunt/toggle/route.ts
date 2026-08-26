@@ -1,7 +1,5 @@
-import {
-  getBonusHuntState,
-  setRequestsOpen,
-} from "@/lib/bonus-hunt";
+import { getBonusHuntState, setRequestsOpen } from "@/lib/bonus-hunt";
+import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
 export async function POST(request: Request) {
@@ -20,7 +18,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "open must be a boolean" }, { status: 400 });
   }
 
-  return Response.json(setRequestsOpen(body.open));
+  return huntJson(setRequestsOpen(body.open));
 }
 
 export async function GET() {

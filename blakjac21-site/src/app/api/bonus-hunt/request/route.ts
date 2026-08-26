@@ -2,6 +2,7 @@ import {
   addSlotRequest,
   parseSlotRequestMessage,
 } from "@/lib/bonus-hunt";
+import { huntJson } from "@/lib/hunt-api";
 import { resolveAllowedStakeSlot } from "@/lib/stake-slots";
 
 export async function POST(request: Request) {
@@ -46,11 +47,11 @@ export async function POST(request: Request) {
 
   const result = addSlotRequest(username, allowed.slot.name);
   if (!result.accepted) {
-    return Response.json(
+    return huntJson(
       { error: result.reason ?? "Request rejected", state: result.state },
       { status: 409 },
     );
   }
 
-  return Response.json(result.state);
+  return huntJson(result.state);
 }
