@@ -1,5 +1,5 @@
 .strip {
-  margin: 0.85rem clamp(1rem, 3vw, 2rem) 0.85rem;
+  margin: 0;
   animation: stripIn 0.65s ease both;
 }
 

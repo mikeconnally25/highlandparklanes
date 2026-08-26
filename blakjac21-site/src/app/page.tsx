@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { AccountHeader } from "@/components/AccountHeader";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FeatureTabs } from "@/components/FeatureTabs";
 import { HomeCommunity } from "@/components/HomeCommunity";
-import { HomeHuntStats } from "@/components/HomeHuntStats";
 import { HomeLiveStrip } from "@/components/HomeLiveStrip";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
@@ -14,19 +12,18 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <div className={styles.shell}>
-        <header className={styles.top}>
-          <BrandLogo size="md" showWordmark priority />
-          <AccountHeader />
-        </header>
+        <div className={styles.topStack}>
+          <header className={styles.top}>
+            <BrandLogo size="md" showWordmark priority />
+            <AccountHeader />
+          </header>
+          <HomeLiveStrip />
+        </div>
 
         <main>
-          <HomeLiveStrip />
-
           <div className={styles.menuStage}>
             <FeatureTabs />
           </div>
-
-          <HomeHuntStats />
 
           <section className={styles.hero} aria-label="Blakjac21">
             <div className={styles.heroGrid}>
@@ -38,9 +35,6 @@ export default function Home() {
                 </p>
                 <div className={styles.ctas}>
                   <WatchCta />
-                  <Link className={styles.secondaryCta} href="#watch">
-                    Watch stream
-                  </Link>
                 </div>
               </div>
 
