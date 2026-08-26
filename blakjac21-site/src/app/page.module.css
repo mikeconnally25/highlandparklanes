@@ -116,7 +116,7 @@
 
 .hero {
   flex: 1;
-  padding: clamp(1.25rem, 2.5vw, 2rem) 0 2rem;
+  padding: 0.35rem 0 1rem;
 }
 
 .heroGrid {

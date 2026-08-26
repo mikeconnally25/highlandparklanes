@@ -21,10 +21,6 @@ export default function Home() {
         </div>
 
         <main>
-          <div className={styles.menuStage}>
-            <FeatureTabs />
-          </div>
-
           <section className={styles.hero} aria-label="Blakjac21">
             <div className={styles.heroGrid}>
               <div className={styles.brandBlock}>
@@ -43,6 +39,10 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          <div className={styles.menuStage}>
+            <FeatureTabs />
+          </div>
 
           <HomeCommunity />
         </main>
