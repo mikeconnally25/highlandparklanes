@@ -533,51 +533,45 @@ export function ActiveHuntPanel() {
         </span>
       </div>
 
-      <section
-        className={styles.block}
-        aria-labelledby="hunt-bankroll-heading"
-      >
-        <div className={styles.blockHeader}>
-          {canManage ? (
-            <label className={styles.huntNumberLabel} htmlFor="hunt-bankroll-heading">
-              <span className={styles.srOnly}>Hunt number</span>
-              <input
-                id="hunt-bankroll-heading"
-                className={styles.huntNumberInput}
-                type="text"
-                value={huntTitle}
-                onFocus={() => {
-                  formFocusedRef.current = true;
-                }}
-                onBlur={() => {
-                  formFocusedRef.current = false;
-                  const next = huntTitle.trim();
-                  if (next !== (state?.title ?? "").trim()) {
-                    void adminRequest("/api/bonus-hunt/admin", {
-                      action: "set-title",
-                      title: next,
-                    });
-                  }
-                }}
-                onChange={(e) => setHuntTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
-                }}
-                placeholder="Hunt #5 bankroll"
-                autoComplete="off"
-                spellCheck={false}
-                disabled={busy}
-                aria-label="Hunt number"
-              />
-            </label>
-          ) : (
-            <h3 id="hunt-bankroll-heading" className={styles.blockTitle}>
-              {state?.title?.trim() || "Hunt bankroll"}
-            </h3>
-          )}
-        </div>
+      {canManage ? (
+        <label className={styles.huntNumberLabel} htmlFor="hunt-number-input">
+          <span className={styles.srOnly}>Hunt number</span>
+          <input
+            id="hunt-number-input"
+            className={styles.huntNumberInput}
+            type="text"
+            value={huntTitle}
+            onFocus={() => {
+              formFocusedRef.current = true;
+            }}
+            onBlur={() => {
+              formFocusedRef.current = false;
+              const next = huntTitle.trim();
+              if (next !== (state?.title ?? "").trim()) {
+                void adminRequest("/api/bonus-hunt/admin", {
+                  action: "set-title",
+                  title: next,
+                });
+              }
+            }}
+            onChange={(e) => setHuntTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.currentTarget.blur();
+              }
+            }}
+            placeholder="Hunt #1"
+            autoComplete="off"
+            spellCheck={false}
+            disabled={busy}
+            aria-label="Hunt number"
+          />
+        </label>
+      ) : state?.title?.trim() ? (
+        <p className={styles.huntTitle}>{state.title}</p>
+      ) : null}
+
+      <section className={styles.block} aria-label="Hunt bankroll">
         <div className={styles.bankrollRow}>
           {canManage ? (
             <>

@@ -76,31 +76,29 @@
 }
 
 .huntNumberLabel {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  width: 100%;
   margin: 0;
 }
 
 .huntNumberInput {
   width: 100%;
   margin: 0;
-  padding: 0.45rem 0.65rem;
+  padding: 0.55rem 0.75rem;
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   background: rgba(0, 0, 0, 0.35);
   color: var(--text);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
   outline: none;
 }
 
 .huntNumberInput::placeholder {
   color: var(--text-dim);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .huntNumberInput:focus {
