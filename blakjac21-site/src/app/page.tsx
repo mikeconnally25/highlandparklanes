@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { AccountHeader } from "@/components/AccountHeader";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FeatureTabs } from "@/components/FeatureTabs";
+import { HomeCommunity } from "@/components/HomeCommunity";
 import { HomeHuntStats } from "@/components/HomeHuntStats";
+import { HomeLiveStrip } from "@/components/HomeLiveStrip";
+import { HomeQuickLinks } from "@/components/HomeQuickLinks";
 import { KickPlayer } from "@/components/KickPlayer";
 import { WatchCta } from "@/components/WatchCta";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
@@ -31,6 +35,9 @@ export default function Home() {
                 </p>
                 <div className={styles.ctas}>
                   <WatchCta />
+                  <Link className={styles.secondaryCta} href="#features">
+                    Explore features
+                  </Link>
                 </div>
               </div>
 
@@ -40,7 +47,10 @@ export default function Home() {
             </div>
           </section>
 
+          <HomeLiveStrip />
+          <HomeQuickLinks />
           <HomeHuntStats />
+          <HomeCommunity />
         </main>
 
         <footer className={styles.footer}>
