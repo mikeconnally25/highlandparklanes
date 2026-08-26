@@ -55,9 +55,12 @@ export type PastHuntResult = {
 type StoreGlobal = typeof globalThis & {
   __bonusHuntState?: BonusHuntState;
   __bonusHuntHistory?: PastHuntResult[];
+  __bonusHuntLoaded?: boolean;
 };
 
 const MAX_PAST_HUNTS = 50;
+const STATE_FILE = "bonus-hunt-state.json";
+const HISTORY_FILE = "bonus-hunt-history.json";
 
 function createState(): BonusHuntState {
   return {
@@ -68,34 +71,83 @@ function createState(): BonusHuntState {
     bonuses: [],
     slotRequests: [],
     startedAt: null,
-    updatedAt: new Date().toISOString(),
+    // Epoch so empty cold instances lose to real persisted/mutated state
+    updatedAt: new Date(0).toISOString(),
   };
 }
 
-export function getBonusHuntState(): BonusHuntState {
-  const g = globalThis as StoreGlobal;
-  if (!g.__bonusHuntState) g.__bonusHuntState = createState();
-
-  const state = g.__bonusHuntState;
+function normalizeState(state: BonusHuntState): BonusHuntState {
   if (state.startAmount === undefined) state.startAmount = null;
   if (state.startedAt === undefined) state.startedAt = null;
-  state.bonuses = state.bonuses.map((bonus) => ({
+  state.bonuses = (state.bonuses ?? []).map((bonus) => ({
     ...bonus,
     winAmount: bonus.winAmount ?? null,
     requestedBy: bonus.requestedBy ?? null,
+    tier: bonus.tier ?? "normal",
   }));
-  state.slotRequests = state.slotRequests.map((req) => ({
+  state.slotRequests = (state.slotRequests ?? []).map((req) => ({
     ...req,
     slotName: req.slotName?.trim() || "—",
   }));
-
+  if (!state.updatedAt) state.updatedAt = new Date(0).toISOString();
   return state;
 }
 
+function persistState(state: BonusHuntState) {
+  if (typeof window !== "undefined") return;
+  void import("@/lib/json-store")
+    .then(({ writeJsonFile }) => writeJsonFile(STATE_FILE, state))
+    .catch(() => undefined);
+}
+
+function persistHistory(history: PastHuntResult[]) {
+  if (typeof window !== "undefined") return;
+  void import("@/lib/json-store")
+    .then(({ writeJsonFile }) => writeJsonFile(HISTORY_FILE, history))
+    .catch(() => undefined);
+}
+
+function ensureLoaded() {
+  const g = globalThis as StoreGlobal;
+  if (g.__bonusHuntLoaded) return;
+  g.__bonusHuntLoaded = true;
+  if (typeof window !== "undefined") return;
+
+  try {
+    // Sync read on server so the first request sees persisted state.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readJsonFile } = require("@/lib/json-store") as typeof import("@/lib/json-store");
+    const saved = readJsonFile<BonusHuntState>(STATE_FILE);
+    if (saved && typeof saved === "object") {
+      g.__bonusHuntState = normalizeState({ ...createState(), ...saved });
+    }
+    const history = readJsonFile<PastHuntResult[]>(HISTORY_FILE);
+    if (Array.isArray(history)) {
+      g.__bonusHuntHistory = history;
+    }
+  } catch {
+    /* keep memory defaults */
+  }
+}
+
+export function getBonusHuntState(): BonusHuntState {
+  ensureLoaded();
+  const g = globalThis as StoreGlobal;
+  if (!g.__bonusHuntState) g.__bonusHuntState = createState();
+  return normalizeState(g.__bonusHuntState);
+}
+
 export function getPastHunts(): PastHuntResult[] {
+  ensureLoaded();
   const g = globalThis as StoreGlobal;
   if (!g.__bonusHuntHistory) g.__bonusHuntHistory = [];
   return g.__bonusHuntHistory;
+}
+
+function touch(state: BonusHuntState): BonusHuntState {
+  state.updatedAt = new Date().toISOString();
+  persistState(state);
+  return state;
 }
 
 function markHuntStarted(state: BonusHuntState) {
@@ -112,8 +164,7 @@ export function setHuntActive(active: boolean): BonusHuntState {
   } else {
     state.requestsOpen = false;
   }
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 /** Archive the current hunt into past results and reset the active board. */
@@ -149,8 +200,12 @@ export function endAndArchiveHunt(): {
   }
 
   const g = globalThis as StoreGlobal;
-  g.__bonusHuntState = createState();
-  return { accepted: true, state: getBonusHuntState(), archived };
+  const reset = createState();
+  reset.updatedAt = new Date().toISOString();
+  g.__bonusHuntState = reset;
+  persistState(reset);
+  persistHistory(getPastHunts());
+  return { accepted: true, state: reset, archived };
 }
 
 export function getPastHunt(id: string): PastHuntResult | null {
@@ -160,6 +215,7 @@ export function getPastHunt(id: string): PastHuntResult | null {
 export function clearPastHunts(): PastHuntResult[] {
   const g = globalThis as StoreGlobal;
   g.__bonusHuntHistory = [];
+  persistHistory(g.__bonusHuntHistory);
   return g.__bonusHuntHistory;
 }
 
@@ -182,8 +238,7 @@ export function setHuntTitle(title: string): BonusHuntState {
     state.huntActive = true;
     markHuntStarted(state);
   }
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 export function setStartAmount(
@@ -198,8 +253,7 @@ export function setStartAmount(
 
   if (!hasInput) {
     state.startAmount = null;
-    state.updatedAt = new Date().toISOString();
-    return { accepted: true, state };
+    return { accepted: true, state: touch(state) };
   }
 
   const amount = parseMoneyAmount(value, { allowZero: false });
@@ -210,8 +264,7 @@ export function setStartAmount(
   state.startAmount = amount;
   state.huntActive = true;
   markHuntStarted(state);
-  state.updatedAt = new Date().toISOString();
-  return { accepted: true, state };
+  return { accepted: true, state: touch(state) };
 }
 
 export function setRequestsOpen(open: boolean): BonusHuntState {
@@ -221,8 +274,7 @@ export function setRequestsOpen(open: boolean): BonusHuntState {
     state.huntActive = true;
     markHuntStarted(state);
   }
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 export function parseMoneyAmount(
@@ -436,8 +488,7 @@ export function addBonus(input: {
     createdAt: new Date().toISOString(),
   });
   markHuntStarted(state);
-  state.updatedAt = new Date().toISOString();
-  return { accepted: true, state };
+  return { accepted: true, state: touch(state) };
 }
 
 /** Move a chat slot request onto the bonus list, then drop it from the queue. */
@@ -469,7 +520,7 @@ export function promoteSlotRequestToBonus(input: {
   result.state.slotRequests = result.state.slotRequests.filter(
     (req) => req.id !== input.requestId,
   );
-  result.state.updatedAt = new Date().toISOString();
+  touch(result.state);
   return result;
 }
 
@@ -491,8 +542,7 @@ export function setBonusWinAmount(input: {
     input.winAmount != null && String(input.winAmount).trim() !== "";
   if (!hasInput) {
     bonus.winAmount = null;
-    state.updatedAt = new Date().toISOString();
-    return { accepted: true, state };
+    return { accepted: true, state: touch(state) };
   }
 
   const winAmount = parseMoneyAmount(input.winAmount, { allowZero: true });
@@ -501,22 +551,19 @@ export function setBonusWinAmount(input: {
   }
 
   bonus.winAmount = winAmount;
-  state.updatedAt = new Date().toISOString();
-  return { accepted: true, state };
+  return { accepted: true, state: touch(state) };
 }
 
 export function removeBonus(id: string): BonusHuntState {
   const state = getBonusHuntState();
   state.bonuses = state.bonuses.filter((bonus) => bonus.id !== id);
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 export function clearBonuses(): BonusHuntState {
   const state = getBonusHuntState();
   state.bonuses = [];
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 const MAX_SLOT_REQUESTS_PER_USER = 3;
@@ -587,22 +634,19 @@ export function addSlotRequest(
     state.slotRequests = state.slotRequests.slice(-200);
   }
 
-  state.updatedAt = new Date().toISOString();
-  return { accepted: true, state };
+  return { accepted: true, state: touch(state) };
 }
 
 export function clearSlotRequests(): BonusHuntState {
   const state = getBonusHuntState();
   state.slotRequests = [];
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 export function removeSlotRequest(id: string): BonusHuntState {
   const state = getBonusHuntState();
   state.slotRequests = state.slotRequests.filter((req) => req.id !== id);
-  state.updatedAt = new Date().toISOString();
-  return state;
+  return touch(state);
 }
 
 /** Parse `!s Slot Name` — null if missing a slot name. */

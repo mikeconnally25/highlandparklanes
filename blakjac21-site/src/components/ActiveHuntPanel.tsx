@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
@@ -37,18 +37,34 @@ function tierLabel(tier: BonusTier): string {
   return "Normal";
 }
 
+function preferState(
+  local: BonusHuntState | null,
+  remote: BonusHuntState,
+  guardUntil: number,
+): BonusHuntState {
+  if (!local) return remote;
+  const localT = Date.parse(local.updatedAt) || 0;
+  const remoteT = Date.parse(remote.updatedAt) || 0;
+  const guarded = Date.now() < guardUntil;
+
+  // Ignore empty/cold remote snapshots while we still have fresher local edits
+  if (guarded && remoteT < localT) return local;
+  if (guarded && remote.bonuses.length < local.bonuses.length && remoteT <= localT) {
+    return local;
+  }
+  if (remoteT < localT) return local;
+  return remote;
+}
+
 export function ActiveHuntPanel() {
-  const { isAdmin, ready: sessionReady } = useSiteSession();
+  const { isAdmin, ready: sessionReady, user } = useSiteSession();
+  const canManage = Boolean(user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [bonusName, setBonusName] = useState("");
-
-  useEffect(() => {
-    if (isAdmin) setShowAdmin(true);
-  }, [isAdmin]);
   const [betSize, setBetSize] = useState("");
   const [winAmount, setWinAmount] = useState("");
   const [startAmountInput, setStartAmountInput] = useState("");
@@ -62,6 +78,17 @@ export function ActiveHuntPanel() {
   const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
     null,
   );
+  const [formFocused, setFormFocused] = useState(false);
+  const guardUntilRef = useRef(0);
+  const stateRef = useRef<BonusHuntState | null>(null);
+
+  useEffect(() => {
+    if (canManage) setShowAdmin(true);
+  }, [canManage]);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
@@ -75,27 +102,35 @@ export function ActiveHuntPanel() {
     async function load() {
       try {
         const next = await fetchState();
-        if (!cancelled) {
-          setState(next);
-          setHuntTitle((current) => (current ? current : next.title));
-          setStartAmountInput((current) =>
-            current
-              ? current
-              : next.startAmount != null
-                ? String(next.startAmount)
-                : "",
-          );
-          setWinDrafts((current) => {
-            const nextDrafts = { ...current };
-            for (const bonus of next.bonuses) {
-              if (nextDrafts[bonus.id] === undefined) {
-                nextDrafts[bonus.id] =
-                  bonus.winAmount != null ? String(bonus.winAmount) : "";
+        if (cancelled) return;
+        setState((prev) => {
+          const merged = preferState(prev, next, guardUntilRef.current);
+          // Don't clobber in-progress form drafts from a poll while typing
+          if (formFocused && prev && merged !== next) {
+            return prev;
+          }
+          if (merged === next) {
+            setHuntTitle((current) => (current ? current : next.title));
+            setStartAmountInput((current) =>
+              current
+                ? current
+                : next.startAmount != null
+                  ? String(next.startAmount)
+                  : "",
+            );
+            setWinDrafts((current) => {
+              const nextDrafts = { ...current };
+              for (const bonus of next.bonuses) {
+                if (nextDrafts[bonus.id] === undefined) {
+                  nextDrafts[bonus.id] =
+                    bonus.winAmount != null ? String(bonus.winAmount) : "";
+                }
               }
-            }
-            return nextDrafts;
-          });
-        }
+              return nextDrafts;
+            });
+          }
+          return merged;
+        });
       } catch {
         /* ignore */
       }
@@ -107,7 +142,7 @@ export function ActiveHuntPanel() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [formFocused]);
 
   useEffect(() => {
     let cancelled = false;
@@ -210,6 +245,7 @@ export function ActiveHuntPanel() {
       const next = (await res.json()) as BonusHuntState & {
         archived?: unknown;
       };
+      guardUntilRef.current = Date.now() + 20_000;
       setState(next);
       if (url.includes("/api/bonus-hunt/admin") && body && "action" in body) {
         const action = (body as { action?: string }).action;
@@ -396,7 +432,7 @@ export function ActiveHuntPanel() {
           </h3>
         </div>
         <div className={styles.bankrollRow}>
-          {sessionReady && isAdmin ? (
+          {canManage ? (
             <>
               <label className={styles.label}>
                 Started with
@@ -405,6 +441,8 @@ export function ActiveHuntPanel() {
                   type="text"
                   inputMode="decimal"
                   value={startAmountInput}
+                  onFocus={() => setFormFocused(true)}
+                  onBlur={() => setFormFocused(false)}
                   onChange={(e) => setStartAmountInput(e.target.value)}
                   placeholder="e.g. 500 or $1,000"
                   autoComplete="off"
@@ -488,7 +526,7 @@ export function ActiveHuntPanel() {
                 const selected = selectedRequestId === req.id;
                 return (
                   <li key={req.id}>
-                    {sessionReady && isAdmin ? (
+                    {canManage ? (
                       <button
                         type="button"
                         className={styles.requestRow}
@@ -515,7 +553,7 @@ export function ActiveHuntPanel() {
                         </span>
                       </div>
                     )}
-                    {sessionReady && isAdmin ? (
+                    {canManage ? (
                       <button
                         type="button"
                         className={styles.removeBtn}
@@ -542,8 +580,17 @@ export function ActiveHuntPanel() {
           )}
         </div>
 
-        {sessionReady && isAdmin ? (
-        <form className={styles.addForm} onSubmit={handleAddBonus}>
+        {canManage ? (
+        <form
+          className={styles.addForm}
+          onSubmit={handleAddBonus}
+          onFocusCapture={() => setFormFocused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+              setFormFocused(false);
+            }
+          }}
+        >
           <div className={styles.formGridThree}>
             <label className={styles.label}>
               Bonus name
@@ -669,7 +716,7 @@ export function ActiveHuntPanel() {
                         {formatBetSize(bonus.betSize)}
                       </td>
                       <td className={styles.colWin}>
-                        {sessionReady && isAdmin ? (
+                        {canManage ? (
                           <div className={styles.winEditor}>
                             <input
                               className={styles.winInput}
@@ -714,7 +761,7 @@ export function ActiveHuntPanel() {
                         )}
                       </td>
                       <td className={styles.colAction}>
-                        {sessionReady && isAdmin ? (
+                        {canManage ? (
                           <button
                             type="button"
                             className={styles.removeBtn}
@@ -739,7 +786,7 @@ export function ActiveHuntPanel() {
         </div>
       </section>
 
-      {sessionReady && isAdmin ? (
+      {canManage ? (
         <div className={styles.admin}>
           <button
             type="button"

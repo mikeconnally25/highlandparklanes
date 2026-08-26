@@ -51,7 +51,7 @@ export function SiteSessionProvider({ children }: { children: ReactNode }) {
       const data = (await res.json()) as SessionPayload;
       setUser(normalizeUser(data.user, data.isAdmin));
     } catch {
-      setUser(null);
+      /* keep previous session on transient errors */
     } finally {
       setReady(true);
     }
@@ -69,7 +69,7 @@ export function SiteSessionProvider({ children }: { children: ReactNode }) {
         const data = (await res.json()) as SessionPayload;
         if (!cancelled) setUser(normalizeUser(data.user, data.isAdmin));
       } catch {
-        if (!cancelled) setUser(null);
+        /* keep previous session on transient errors */
       } finally {
         if (!cancelled) setReady(true);
       }
