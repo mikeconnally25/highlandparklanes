@@ -14,16 +14,37 @@ export function readHuntCache(): BonusHuntState | null {
   }
 }
 
+export function preferHuntBoard(
+  local: BonusHuntState | null,
+  remote: BonusHuntState,
+): BonusHuntState {
+  if (!local) return remote;
+  const localT = Date.parse(local.updatedAt) || 0;
+  const remoteT = Date.parse(remote.updatedAt) || 0;
+
+  // Never replace a populated board with an empty serverless response
+  if (local.bonuses.length > 0 && remote.bonuses.length === 0) return local;
+  if (remote.bonuses.length < local.bonuses.length && remoteT <= localT + 2000) {
+    return local;
+  }
+  if (remoteT < localT && local.bonuses.length >= remote.bonuses.length) {
+    return local;
+  }
+  return remote;
+}
+
 export function writeHuntCache(state: BonusHuntState) {
   if (typeof window === "undefined") return;
+  const existing = readHuntCache();
+  const toStore = preferHuntBoard(existing, state);
   try {
-    window.localStorage.setItem(HUNT_CACHE_KEY, JSON.stringify(state));
+    window.localStorage.setItem(HUNT_CACHE_KEY, JSON.stringify(toStore));
   } catch {
     /* ignore quota */
   }
   try {
     window.dispatchEvent(
-      new CustomEvent<BonusHuntState>(HUNT_LIVE_EVENT, { detail: state }),
+      new CustomEvent<BonusHuntState>(HUNT_LIVE_EVENT, { detail: toStore }),
     );
   } catch {
     /* ignore */
@@ -54,22 +75,4 @@ export function buildOverlayUrl(origin: string, state: BonusHuntState | null) {
   } catch {
     return base;
   }
-}
-
-export function preferHuntBoard(
-  local: BonusHuntState | null,
-  remote: BonusHuntState,
-): BonusHuntState {
-  if (!local) return remote;
-  const localT = Date.parse(local.updatedAt) || 0;
-  const remoteT = Date.parse(remote.updatedAt) || 0;
-
-  if (local.bonuses.length > 0 && remote.bonuses.length === 0) return local;
-  if (remote.bonuses.length < local.bonuses.length && remoteT <= localT) {
-    return local;
-  }
-  if (remoteT < localT && local.bonuses.length >= remote.bonuses.length) {
-    return local;
-  }
-  return remote;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
 import { BonusOverlayWidget } from "@/components/BonusOverlayWidget";
+import { HuntBoardProvider } from "@/components/HuntBoardContext";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { PastHuntsPanel } from "@/components/PastHuntsPanel";
 import { useSiteSession } from "@/hooks/useSiteSession";
@@ -63,7 +64,7 @@ export function BonusHuntsBoard() {
   }, []);
 
   return (
-    <>
+    <HuntBoardProvider>
       <section className={styles.section} aria-labelledby="active-hunt">
         <button
           type="button"
@@ -139,6 +140,6 @@ export function BonusHuntsBoard() {
           </div>
         ) : null}
       </section>
-    </>
+    </HuntBoardProvider>
   );
 }

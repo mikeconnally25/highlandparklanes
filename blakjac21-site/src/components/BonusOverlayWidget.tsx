@@ -10,6 +10,7 @@ import {
   getHuntStats,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
+import { useHuntBoardState } from "@/components/HuntBoardContext";
 import {
   HUNT_LIVE_EVENT,
   preferHuntBoard,
@@ -104,6 +105,7 @@ export function BonusOverlayWidget({
   limit,
 }: BonusOverlayWidgetProps) {
   const effectiveLimit = limit ?? (mode === "obs" ? 100 : 12);
+  const liveBoard = useHuntBoardState();
   const [board, setBoard] = useState<BonusHuntState | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
@@ -138,8 +140,16 @@ export function BonusOverlayWidget({
     fingerprintRef.current = fp;
     boardRef.current = merged;
     setBoard(merged);
-    if (opts?.persist !== false) writeHuntCache(merged);
+    // Preview never overwrites cache with polled empties
+    if (opts?.persist && mode !== "preview") writeHuntCache(merged);
   }
+
+  // Preview: mirror the Active Hunt panel via shared context (no API poll)
+  useEffect(() => {
+    if (mode !== "preview" || !liveBoard) return;
+    applyBoard(liveBoard, { persist: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, liveBoard]);
 
   useEffect(() => {
     const seeded = readHuntHashSeed() ?? readHuntCache();
@@ -162,7 +172,10 @@ export function BonusOverlayWidget({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // OBS page only: poll API. Preview relies on context/events.
   useEffect(() => {
+    if (mode === "preview") return;
+
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -172,7 +185,7 @@ export function BonusOverlayWidget({
         if (!res.ok) throw new Error("Failed to load");
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
-        applyBoard(data);
+        applyBoard(data, { persist: false });
       } catch {
         /* ignore transient errors */
       } finally {
@@ -187,7 +200,7 @@ export function BonusOverlayWidget({
       if (timer) clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveLimit]);
+  }, [effectiveLimit, mode]);
 
   const bonuses = sortBonusesForDisplay(board?.bonuses ?? []).slice(
     0,

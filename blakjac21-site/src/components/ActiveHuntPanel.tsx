@@ -14,9 +14,9 @@ import {
 import { useKickChat } from "@/hooks/useKickChat";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
+import { useHuntBoard } from "@/components/HuntBoardContext";
 import {
   readHuntCache,
-  writeHuntCache,
 } from "@/lib/hunt-client-sync";
 import styles from "./ActiveHuntPanel.module.css";
 
@@ -109,6 +109,7 @@ async function pushHuntSync(state: BonusHuntState) {
 
 export function ActiveHuntPanel() {
   const { isAdmin, user } = useSiteSession();
+  const { publishBoard } = useHuntBoard();
   const canManage = Boolean(user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
@@ -148,6 +149,7 @@ export function ActiveHuntPanel() {
     stateRef.current = cached;
     const frame = window.requestAnimationFrame(() => {
       setState(cached);
+      publishBoard(cached);
       setHuntTitle((current) => current || cached.title);
       setStartAmountInput((current) =>
         current
@@ -168,7 +170,7 @@ export function ActiveHuntPanel() {
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [publishBoard]);
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
@@ -183,7 +185,7 @@ export function ActiveHuntPanel() {
     if (fp === fingerprintRef.current) return;
 
     fingerprintRef.current = fp;
-    writeHuntCache(merged);
+    publishBoard(merged);
     stateRef.current = merged;
     setState(merged);
 
@@ -217,7 +219,7 @@ export function ActiveHuntPanel() {
       }
       return draftsChanged ? copy : current;
     });
-  }, [canManage]);
+  }, [canManage, publishBoard]);
 
   useEffect(() => {
     stateRef.current = state;
@@ -303,7 +305,7 @@ export function ActiveHuntPanel() {
         if (res.ok) {
           const next = (await res.json()) as BonusHuntState;
           fingerprintRef.current = huntFingerprint(next);
-          writeHuntCache(next);
+          publishBoard(next);
           setState(next);
         }
       } catch {
@@ -351,7 +353,7 @@ export function ActiveHuntPanel() {
       };
       guardUntilRef.current = nowMs() + 20_000;
       fingerprintRef.current = huntFingerprint(next);
-      writeHuntCache(next);
+      publishBoard(next);
       stateRef.current = next;
       setState(next);
       if (canManage) void pushHuntSync(next);
@@ -531,13 +533,50 @@ export function ActiveHuntPanel() {
         </span>
       </div>
 
-      {state?.title ? <p className={styles.huntTitle}>{state.title}</p> : null}
-
-      <section className={styles.block} aria-labelledby="hunt-bankroll-heading">
+      <section
+        className={styles.block}
+        aria-labelledby="hunt-bankroll-heading"
+      >
         <div className={styles.blockHeader}>
-          <h3 id="hunt-bankroll-heading" className={styles.blockTitle}>
-            Hunt bankroll
-          </h3>
+          {canManage ? (
+            <label className={styles.huntNumberLabel} htmlFor="hunt-bankroll-heading">
+              <span className={styles.srOnly}>Hunt number</span>
+              <input
+                id="hunt-bankroll-heading"
+                className={styles.huntNumberInput}
+                type="text"
+                value={huntTitle}
+                onFocus={() => {
+                  formFocusedRef.current = true;
+                }}
+                onBlur={() => {
+                  formFocusedRef.current = false;
+                  const next = huntTitle.trim();
+                  if (next !== (state?.title ?? "").trim()) {
+                    void adminRequest("/api/bonus-hunt/admin", {
+                      action: "set-title",
+                      title: next,
+                    });
+                  }
+                }}
+                onChange={(e) => setHuntTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="Hunt #5 bankroll"
+                autoComplete="off"
+                spellCheck={false}
+                disabled={busy}
+                aria-label="Hunt number"
+              />
+            </label>
+          ) : (
+            <h3 id="hunt-bankroll-heading" className={styles.blockTitle}>
+              {state?.title?.trim() || "Hunt bankroll"}
+            </h3>
+          )}
         </div>
         <div className={styles.bankrollRow}>
           {canManage ? (
@@ -932,33 +971,6 @@ export function ActiveHuntPanel() {
 
           {showAdmin ? (
             <div className={styles.adminPanel}>
-              <label className={styles.label}>
-                Hunt title
-                <div className={styles.titleRow}>
-                  <input
-                    className={styles.input}
-                    type="text"
-                    value={huntTitle}
-                    onChange={(e) => setHuntTitle(e.target.value)}
-                    placeholder="e.g. Sunday sub day hunt"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    className={styles.adminBtnSecondary}
-                    disabled={busy}
-                    onClick={() =>
-                      adminRequest("/api/bonus-hunt/admin", {
-                        action: "set-title",
-                        title: huntTitle,
-                      })
-                    }
-                  >
-                    Save
-                  </button>
-                </div>
-              </label>
-
               <div className={styles.adminActions}>
                 <button
                   type="button"
