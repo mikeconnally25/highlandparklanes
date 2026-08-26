@@ -28,12 +28,18 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
 
   useEffect(() => {
     if (isAdmin) setShowAdmin(true);
+    else {
+      setActualBalanceInput("");
+      setShowClosest(false);
+    }
   }, [isAdmin]);
 
-  const actualBalance = parseBalanceGuess(actualBalanceInput);
-  const canRevealClosest = actualBalance !== null && (state?.guesses.length ?? 0) > 0;
+  const canManage = sessionReady && isAdmin;
+  const actualBalance = canManage ? parseBalanceGuess(actualBalanceInput) : null;
+  const canRevealClosest =
+    canManage && actualBalance !== null && (state?.guesses.length ?? 0) > 0;
   const closestGuesses =
-    actualBalance !== null && showClosest
+    canManage && actualBalance !== null && showClosest
       ? getClosestGuesses(state?.guesses ?? [], actualBalance, 3)
       : [];
 
@@ -161,6 +167,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
   }
 
   function handleActualBalanceChange(value: string) {
+    if (!canManage) return;
     setActualBalanceInput(value);
     setShowClosest(false);
   }
@@ -192,36 +199,38 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
         One guess per username — resubmitting updates your entry.
       </p>
 
-      <div className={styles.reveal}>
-        <p className={styles.revealHeading}>Reveal winner</p>
-        <label className={styles.label}>
-          Actual balance
-          <input
-            className={styles.input}
-            type="text"
-            inputMode="decimal"
-            value={actualBalanceInput}
-            onChange={(e) => handleActualBalanceChange(e.target.value)}
-            placeholder="e.g. 1234 or $1,234.50"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
-        {canRevealClosest ? (
-          <button
-            type="button"
-            className={styles.revealBtn}
-            onClick={() => setShowClosest(true)}
-          >
-            Show 3 closest guesses
-          </button>
-        ) : null}
-        {actualBalanceInput.trim() && actualBalance === null ? (
-          <p className={styles.revealHint}>Enter a valid balance amount.</p>
-        ) : null}
-      </div>
+      {canManage ? (
+        <div className={styles.reveal}>
+          <p className={styles.revealHeading}>Reveal winner</p>
+          <label className={styles.label}>
+            Actual balance
+            <input
+              className={styles.input}
+              type="text"
+              inputMode="decimal"
+              value={actualBalanceInput}
+              onChange={(e) => handleActualBalanceChange(e.target.value)}
+              placeholder="e.g. 1234 or $1,234.50"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          {canRevealClosest ? (
+            <button
+              type="button"
+              className={styles.revealBtn}
+              onClick={() => setShowClosest(true)}
+            >
+              Show 3 closest guesses
+            </button>
+          ) : null}
+          {actualBalanceInput.trim() && actualBalance === null ? (
+            <p className={styles.revealHint}>Enter a valid balance amount.</p>
+          ) : null}
+        </div>
+      ) : null}
 
-      {showClosest && actualBalance !== null ? (
+      {canManage && showClosest && actualBalance !== null ? (
         <div className={styles.closestList} aria-live="polite">
           <p className={styles.guessHeading}>
             Closest to {formatUsd(actualBalance)}
@@ -270,7 +279,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
         )}
       </div>
 
-      {sessionReady && isAdmin ? (
+      {canManage ? (
         <div className={styles.admin}>
           <button
             type="button"
