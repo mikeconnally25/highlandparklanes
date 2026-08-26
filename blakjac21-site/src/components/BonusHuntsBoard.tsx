@@ -5,10 +5,13 @@ import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
 import { BonusOverlayWidget } from "@/components/BonusOverlayWidget";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { PastHuntsPanel } from "@/components/PastHuntsPanel";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import type { BonusHuntState } from "@/lib/bonus-hunt";
 import styles from "@/app/bonus-hunts/page.module.css";
 
 export function BonusHuntsBoard() {
+  const { isAdmin, ready: sessionReady } = useSiteSession();
+  const canManage = sessionReady && isAdmin;
   const [activeOpen, setActiveOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(false);
   const [activeLabel, setActiveLabel] = useState("Active hunt");
@@ -71,7 +74,9 @@ export function BonusHuntsBoard() {
         >
           <span className={styles.dropdownTitle}>{activeLabel}</span>
           <span className={styles.dropdownHint}>
-            Live board, chat requests, OBS widget
+            {canManage
+              ? "Live board, chat requests, OBS widget"
+              : "Live board and chat requests"}
           </span>
           <span
             className={styles.dropdownChevron}
@@ -82,18 +87,23 @@ export function BonusHuntsBoard() {
 
         {activeOpen ? (
           <div className={styles.dropdownBody}>
-            <div className={styles.huntLayout}>
+            <div
+              className={styles.huntLayout}
+              data-admin={canManage || undefined}
+            >
               <div className={styles.card}>
                 <ActiveHuntPanel />
               </div>
-              <aside
-                className={styles.widgetColumn}
-                aria-label="OBS bonus widget preview"
-              >
-                <p className={styles.widgetLabel}>OBS widget preview</p>
-                <BonusOverlayWidget mode="preview" />
-                <ObsOverlayLink />
-              </aside>
+              {canManage ? (
+                <aside
+                  className={styles.widgetColumn}
+                  aria-label="OBS bonus widget preview"
+                >
+                  <p className={styles.widgetLabel}>OBS widget preview</p>
+                  <BonusOverlayWidget mode="preview" />
+                  <ObsOverlayLink />
+                </aside>
+              ) : null}
             </div>
           </div>
         ) : null}

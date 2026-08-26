@@ -27,8 +27,8 @@ export default function BonusHuntsPage() {
         <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Bonus Hunts</h1>
         <p className={styles.lead}>
-          Use the Active hunt dropdown for the live board and OBS widget. End a
-          hunt to archive it under Past hunt results.
+          Use the Active hunt dropdown for the live board. End a hunt to archive
+          it under Past hunt results.
         </p>
 
         <BonusHuntsBoard />

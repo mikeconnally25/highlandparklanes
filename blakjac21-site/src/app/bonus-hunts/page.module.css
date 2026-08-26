@@ -193,6 +193,10 @@
   align-items: start;
 }
 
+.huntLayout:not([data-admin]) {
+  grid-template-columns: 1fr;
+}
+
 .widgetColumn {
   position: sticky;
   top: 1rem;
