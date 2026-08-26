@@ -6,6 +6,13 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Bake admin allowlist into the server runtime for temporary/prebuilt deploys
+  env: {
+    ADMIN_KICK_USERNAME:
+      process.env.ADMIN_KICK_USERNAME ||
+      process.env.KICK_CHANNEL_SLUG ||
+      "Blakjac21",
+  },
   turbopack: {
     root,
   },

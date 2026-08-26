@@ -13,6 +13,7 @@ import {
 } from "@/lib/bonus-hunt";
 import { useKickChat } from "@/hooks/useKickChat";
 import { useSiteSession } from "@/hooks/useSiteSession";
+import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import styles from "./ActiveHuntPanel.module.css";
 
 type SlotCatalogSummary = {
@@ -866,6 +867,12 @@ export function ActiveHuntPanel() {
                   {adminError}
                 </p>
               ) : null}
+              <div className={styles.obsBlock}>
+                <p className={styles.adminHint}>
+                  OBS overlay for this hunt board (admin only):
+                </p>
+                <ObsOverlayLink />
+              </div>
               <p className={styles.adminHint}>
                 Signed in as admin via Kick. Toggle Super or Epic before adding a
                 bonus to tag it.

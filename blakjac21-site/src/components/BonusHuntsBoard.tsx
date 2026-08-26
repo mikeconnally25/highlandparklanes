@@ -11,7 +11,7 @@ import styles from "@/app/bonus-hunts/page.module.css";
 
 export function BonusHuntsBoard() {
   const { isAdmin, ready: sessionReady } = useSiteSession();
-  const canManage = sessionReady && isAdmin;
+  const showObs = isAdmin;
   const [activeOpen, setActiveOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(false);
   const [activeLabel, setActiveLabel] = useState("Active hunt");
@@ -74,7 +74,7 @@ export function BonusHuntsBoard() {
         >
           <span className={styles.dropdownTitle}>{activeLabel}</span>
           <span className={styles.dropdownHint}>
-            {canManage
+            {showObs
               ? "Live board, chat requests, OBS widget"
               : "Live board and chat requests"}
           </span>
@@ -89,12 +89,12 @@ export function BonusHuntsBoard() {
           <div className={styles.dropdownBody}>
             <div
               className={styles.huntLayout}
-              data-admin={canManage || undefined}
+              data-admin={showObs || undefined}
             >
               <div className={styles.card}>
                 <ActiveHuntPanel />
               </div>
-              {canManage ? (
+              {sessionReady && showObs ? (
                 <aside
                   className={styles.widgetColumn}
                   aria-label="OBS bonus widget preview"

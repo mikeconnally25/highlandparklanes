@@ -13,6 +13,7 @@ import type { PublicSiteUser } from "@/lib/site-auth";
 
 type SessionPayload = {
   user?: PublicSiteUser | null;
+  isAdmin?: boolean;
   kickConfigured?: boolean;
 };
 
@@ -26,6 +27,17 @@ type SiteSessionValue = {
 
 const SiteSessionContext = createContext<SiteSessionValue | null>(null);
 
+function normalizeUser(
+  user: PublicSiteUser | null | undefined,
+  isAdminFlag?: boolean,
+): PublicSiteUser | null {
+  if (!user) return null;
+  return {
+    ...user,
+    isAdmin: Boolean(user.isAdmin || isAdminFlag),
+  };
+}
+
 export function SiteSessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicSiteUser | null>(null);
   const [ready, setReady] = useState(false);
@@ -37,7 +49,7 @@ export function SiteSessionProvider({ children }: { children: ReactNode }) {
         credentials: "same-origin",
       });
       const data = (await res.json()) as SessionPayload;
-      setUser(data.user ?? null);
+      setUser(normalizeUser(data.user, data.isAdmin));
     } catch {
       setUser(null);
     } finally {
@@ -55,7 +67,7 @@ export function SiteSessionProvider({ children }: { children: ReactNode }) {
           credentials: "same-origin",
         });
         const data = (await res.json()) as SessionPayload;
-        if (!cancelled) setUser(data.user ?? null);
+        if (!cancelled) setUser(normalizeUser(data.user, data.isAdmin));
       } catch {
         if (!cancelled) setUser(null);
       } finally {
