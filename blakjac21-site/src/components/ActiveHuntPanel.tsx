@@ -31,10 +31,29 @@ async function fetchState(): Promise<BonusHuntState> {
   return (await res.json()) as BonusHuntState;
 }
 
+const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
+
 function tierLabel(tier: BonusTier): string {
   if (tier === "super") return "Super";
   if (tier === "epic") return "Epic";
   return "Normal";
+}
+
+function huntFingerprint(state: BonusHuntState): string {
+  return [
+    state.updatedAt,
+    state.huntActive ? "1" : "0",
+    state.requestsOpen ? "1" : "0",
+    state.title,
+    String(state.startAmount ?? ""),
+    state.bonuses
+      .map(
+        (bonus) =>
+          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}`,
+      )
+      .join("|"),
+    state.slotRequests.map((req) => `${req.id}:${req.slotName}`).join("|"),
+  ].join("::");
 }
 
 function preferState(
@@ -43,21 +62,59 @@ function preferState(
   guardUntil: number,
 ): BonusHuntState {
   if (!local) return remote;
+
+  const localFp = huntFingerprint(local);
+  const remoteFp = huntFingerprint(remote);
+  if (localFp === remoteFp) return local;
+
   const localT = Date.parse(local.updatedAt) || 0;
   const remoteT = Date.parse(remote.updatedAt) || 0;
-  const guarded = Date.now() < guardUntil;
+  const guarded = nowMs() < guardUntil;
+  const localIds = new Set(local.bonuses.map((bonus) => bonus.id));
+  const remoteIsSubset =
+    remote.bonuses.length > 0 &&
+    remote.bonuses.every((bonus) => localIds.has(bonus.id));
 
-  // Ignore empty/cold remote snapshots while we still have fresher local edits
-  if (guarded && remoteT < localT) return local;
-  if (guarded && remote.bonuses.length < local.bonuses.length && remoteT <= localT) {
-    return local;
-  }
+  // Never flash an empty board over a populated one (serverless cold/stale)
+  if (local.bonuses.length > 0 && remote.bonuses.length === 0) return local;
   if (remoteT < localT) return local;
+
+  // Divergent instance with fewer/different rows — keep the richer local board
+  if (remote.bonuses.length < local.bonuses.length) {
+    if (guarded) return local;
+    if (!remoteIsSubset) return local;
+    if (remoteT <= localT + 1500) return local;
+  }
+
   return remote;
 }
 
+function readHuntCache(): BonusHuntState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(HUNT_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as BonusHuntState;
+  } catch {
+    return null;
+  }
+}
+
+function writeHuntCache(state: BonusHuntState) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HUNT_CACHE_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function nowMs() {
+  return Date.now();
+}
+
 export function ActiveHuntPanel() {
-  const { isAdmin, ready: sessionReady, user } = useSiteSession();
+  const { isAdmin, user } = useSiteSession();
   const canManage = Boolean(user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
@@ -78,17 +135,46 @@ export function ActiveHuntPanel() {
   const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
     null,
   );
-  const [formFocused, setFormFocused] = useState(false);
   const guardUntilRef = useRef(0);
+  const formFocusedRef = useRef(false);
+  const busyRef = useRef(false);
+  const fingerprintRef = useRef<string>("");
   const stateRef = useRef<BonusHuntState | null>(null);
 
   useEffect(() => {
-    if (canManage) setShowAdmin(true);
-  }, [canManage]);
+    busyRef.current = busy;
+  }, [busy]);
 
+  // Restore last known board immediately so serverless empties don't flash
   useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+    const cached = readHuntCache();
+    if (!cached) return;
+    fingerprintRef.current = huntFingerprint(cached);
+    guardUntilRef.current = nowMs() + 8_000;
+    stateRef.current = cached;
+    const frame = window.requestAnimationFrame(() => {
+      setState(cached);
+      setHuntTitle((current) => current || cached.title);
+      setStartAmountInput((current) =>
+        current
+          ? current
+          : cached.startAmount != null
+            ? String(cached.startAmount)
+            : "",
+      );
+      setWinDrafts((current) => {
+        const nextDrafts = { ...current };
+        for (const bonus of cached.bonuses) {
+          if (nextDrafts[bonus.id] === undefined) {
+            nextDrafts[bonus.id] =
+              bonus.winAmount != null ? String(bonus.winAmount) : "";
+          }
+        }
+        return nextDrafts;
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
@@ -96,53 +182,64 @@ export function ActiveHuntPanel() {
   const selectedTier: BonusTier =
     epicTier ? "epic" : superTier ? "super" : "normal";
 
+  const applyRemoteState = useCallback((next: BonusHuntState) => {
+    const prev = stateRef.current;
+    const merged = preferState(prev, next, guardUntilRef.current);
+    const fp = huntFingerprint(merged);
+    if (fp === fingerprintRef.current) return;
+
+    fingerprintRef.current = fp;
+    writeHuntCache(merged);
+    stateRef.current = merged;
+    setState(merged);
+
+    setHuntTitle((current) => current || merged.title);
+    setStartAmountInput((current) =>
+      current
+        ? current
+        : merged.startAmount != null
+          ? String(merged.startAmount)
+          : "",
+    );
+    setWinDrafts((current) => {
+      let draftsChanged = false;
+      const copy = { ...current };
+      for (const bonus of merged.bonuses) {
+        if (copy[bonus.id] === undefined) {
+          copy[bonus.id] =
+            bonus.winAmount != null ? String(bonus.winAmount) : "";
+          draftsChanged = true;
+        }
+      }
+      return draftsChanged ? copy : current;
+    });
+  }, []);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
+      if (formFocusedRef.current || busyRef.current) return;
       try {
         const next = await fetchState();
         if (cancelled) return;
-        setState((prev) => {
-          const merged = preferState(prev, next, guardUntilRef.current);
-          // Don't clobber in-progress form drafts from a poll while typing
-          if (formFocused && prev && merged !== next) {
-            return prev;
-          }
-          if (merged === next) {
-            setHuntTitle((current) => (current ? current : next.title));
-            setStartAmountInput((current) =>
-              current
-                ? current
-                : next.startAmount != null
-                  ? String(next.startAmount)
-                  : "",
-            );
-            setWinDrafts((current) => {
-              const nextDrafts = { ...current };
-              for (const bonus of next.bonuses) {
-                if (nextDrafts[bonus.id] === undefined) {
-                  nextDrafts[bonus.id] =
-                    bonus.winAmount != null ? String(bonus.winAmount) : "";
-                }
-              }
-              return nextDrafts;
-            });
-          }
-          return merged;
-        });
+        applyRemoteState(next);
       } catch {
         /* ignore */
       }
     }
 
     load();
-    const timer = setInterval(load, 2500);
+    const timer = setInterval(load, 4000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [formFocused]);
+  }, [applyRemoteState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,6 +298,8 @@ export function ActiveHuntPanel() {
         });
         if (res.ok) {
           const next = (await res.json()) as BonusHuntState;
+          fingerprintRef.current = huntFingerprint(next);
+          writeHuntCache(next);
           setState(next);
         }
       } catch {
@@ -221,6 +320,7 @@ export function ActiveHuntPanel() {
     body?: object,
   ): Promise<BonusHuntState | null> {
     setAdminError(null);
+    busyRef.current = true;
     setBusy(true);
 
     try {
@@ -245,7 +345,10 @@ export function ActiveHuntPanel() {
       const next = (await res.json()) as BonusHuntState & {
         archived?: unknown;
       };
-      guardUntilRef.current = Date.now() + 20_000;
+      guardUntilRef.current = nowMs() + 20_000;
+      fingerprintRef.current = huntFingerprint(next);
+      writeHuntCache(next);
+      stateRef.current = next;
       setState(next);
       if (url.includes("/api/bonus-hunt/admin") && body && "action" in body) {
         const action = (body as { action?: string }).action;
@@ -265,6 +368,7 @@ export function ActiveHuntPanel() {
       setAdminError("Could not reach server");
       return null;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
@@ -372,12 +476,11 @@ export function ActiveHuntPanel() {
   const bonuses = sortBonusesForDisplay(state?.bonuses ?? []);
   const slotRequests = state?.slotRequests ?? [];
   const stats = state ? getHuntStats(state) : null;
-
-  useEffect(() => {
-    if (!selectedRequestId) return;
-    if (slotRequests.some((req) => req.id === selectedRequestId)) return;
-    setSelectedRequestId(null);
-  }, [selectedRequestId, slotRequests]);
+  const activeSelectedRequestId =
+    selectedRequestId &&
+    slotRequests.some((req) => req.id === selectedRequestId)
+      ? selectedRequestId
+      : null;
 
   async function saveStartAmount() {
     await adminRequest("/api/bonus-hunt/admin", {
@@ -441,8 +544,12 @@ export function ActiveHuntPanel() {
                   type="text"
                   inputMode="decimal"
                   value={startAmountInput}
-                  onFocus={() => setFormFocused(true)}
-                  onBlur={() => setFormFocused(false)}
+                  onFocus={() => {
+                    formFocusedRef.current = true;
+                  }}
+                  onBlur={() => {
+                    formFocusedRef.current = false;
+                  }}
                   onChange={(e) => setStartAmountInput(e.target.value)}
                   placeholder="e.g. 500 or $1,000"
                   autoComplete="off"
@@ -523,7 +630,7 @@ export function ActiveHuntPanel() {
           ) : (
             <ul className={styles.requestList}>
               {slotRequests.map((req, index) => {
-                const selected = selectedRequestId === req.id;
+                const selected = activeSelectedRequestId === req.id;
                 return (
                   <li key={req.id}>
                     {canManage ? (
@@ -584,10 +691,16 @@ export function ActiveHuntPanel() {
         <form
           className={styles.addForm}
           onSubmit={handleAddBonus}
-          onFocusCapture={() => setFormFocused(true)}
+          onFocusCapture={() => {
+            formFocusedRef.current = true;
+          }}
           onBlurCapture={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-              setFormFocused(false);
+            if (
+              !event.currentTarget.contains(
+                event.relatedTarget as Node | null,
+              )
+            ) {
+              formFocusedRef.current = false;
             }
           }}
         >
@@ -672,7 +785,21 @@ export function ActiveHuntPanel() {
         </form>
         ) : null}
 
-        <div className={styles.subBlock}>
+        <div
+          className={styles.subBlock}
+          onFocusCapture={() => {
+            formFocusedRef.current = true;
+          }}
+          onBlurCapture={(event) => {
+            if (
+              !event.currentTarget.contains(
+                event.relatedTarget as Node | null,
+              )
+            ) {
+              formFocusedRef.current = false;
+            }
+          }}
+        >
           <div className={styles.subHeader}>
             <h4 className={styles.subTitle}>Hunt list</h4>
             <span className={styles.subCount}>{bonuses.length}</span>

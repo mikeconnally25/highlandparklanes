@@ -95,16 +95,24 @@ function normalizeState(state: BonusHuntState): BonusHuntState {
 
 function persistState(state: BonusHuntState) {
   if (typeof window !== "undefined") return;
-  void import("@/lib/json-store")
-    .then(({ writeJsonFile }) => writeJsonFile(STATE_FILE, state))
-    .catch(() => undefined);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeJsonFile } = require("@/lib/json-store") as typeof import("@/lib/json-store");
+    writeJsonFile(STATE_FILE, state);
+  } catch {
+    /* ignore */
+  }
 }
 
 function persistHistory(history: PastHuntResult[]) {
   if (typeof window !== "undefined") return;
-  void import("@/lib/json-store")
-    .then(({ writeJsonFile }) => writeJsonFile(HISTORY_FILE, history))
-    .catch(() => undefined);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeJsonFile } = require("@/lib/json-store") as typeof import("@/lib/json-store");
+    writeJsonFile(HISTORY_FILE, history);
+  } catch {
+    /* ignore */
+  }
 }
 
 function ensureLoaded() {

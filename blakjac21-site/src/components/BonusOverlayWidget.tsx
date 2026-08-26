@@ -13,11 +13,38 @@ import {
 import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
+const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
 
 function tierLabel(tier: BonusTier): string {
   if (tier === "super") return "SUPER";
   if (tier === "epic") return "EPIC";
   return "";
+}
+
+function huntFingerprint(state: BonusHuntState): string {
+  return [
+    state.updatedAt,
+    state.huntActive ? "1" : "0",
+    state.title,
+    String(state.startAmount ?? ""),
+    state.bonuses
+      .map(
+        (bonus) =>
+          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}`,
+      )
+      .join("|"),
+  ].join("::");
+}
+
+function readHuntCache(): BonusHuntState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(HUNT_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as BonusHuntState;
+  } catch {
+    return null;
+  }
 }
 
 type BonusOverlayWidgetProps = {
@@ -42,6 +69,7 @@ function BonusRows({
           className={styles.row}
           data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
           data-flash={!ariaHidden && flashId === bonus.id ? true : undefined}
+          data-enter={!ariaHidden && flashId === bonus.id ? true : undefined}
           style={
             ariaHidden
               ? undefined
@@ -93,8 +121,24 @@ export function BonusOverlayWidget({
   const [shouldScroll, setShouldScroll] = useState(false);
   const knownIdsRef = useRef<Set<string>>(new Set());
   const primedRef = useRef(false);
+  const fingerprintRef = useRef("");
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const cached = readHuntCache();
+    if (!cached) return;
+    const next = sortBonusesForDisplay(cached.bonuses).slice(0, effectiveLimit);
+    knownIdsRef.current = new Set(next.map((bonus) => bonus.id));
+    primedRef.current = true;
+    fingerprintRef.current = huntFingerprint(cached);
+    const frame = window.requestAnimationFrame(() => {
+      setBonuses(next);
+      setTitle(cached.title);
+      setStats(getHuntStats(cached));
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [effectiveLimit]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +150,15 @@ export function BonusOverlayWidget({
         if (!res.ok) throw new Error("Failed to load");
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
+
+        // Ignore empty cold responses when we already have a board
+        if (data.bonuses.length === 0 && knownIdsRef.current.size > 0) {
+          return;
+        }
+
+        const fp = huntFingerprint(data);
+        if (fp === fingerprintRef.current) return;
+        fingerprintRef.current = fp;
 
         const next = sortBonusesForDisplay(data.bonuses).slice(
           0,

@@ -143,6 +143,9 @@
     rgba(8, 28, 42, 0.72) 100%
   );
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.row[data-enter] {
   animation: slideIn 0.45s ease both;
 }
 
