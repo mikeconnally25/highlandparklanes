@@ -20,11 +20,15 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
   const { isAdmin, ready: sessionReady } = useSiteSession();
   const [state, setState] = useState<GuessBalanceState | null>(null);
   const [chatroomId, setChatroomId] = useState<number | null>(null);
-  const [showAdmin, setShowAdmin] = useState(fullPage);
+  const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actualBalanceInput, setActualBalanceInput] = useState("");
   const [showClosest, setShowClosest] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) setShowAdmin(true);
+  }, [isAdmin]);
 
   const actualBalance = parseBalanceGuess(actualBalanceInput);
   const canRevealClosest = actualBalance !== null && (state?.guesses.length ?? 0) > 0;

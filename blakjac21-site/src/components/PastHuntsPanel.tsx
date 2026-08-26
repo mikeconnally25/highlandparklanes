@@ -32,9 +32,13 @@ export function PastHuntsPanel() {
   const { isAdmin, ready: sessionReady } = useSiteSession();
   const [hunts, setHunts] = useState<PastHuntResult[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [showDeleteControls, setShowDeleteControls] = useState(false);
+  const [showDeleteControls, setShowDeleteControls] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAdmin) setShowDeleteControls(true);
+  }, [isAdmin]);
 
   useEffect(() => {
     let cancelled = false;

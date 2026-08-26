@@ -44,6 +44,10 @@ export function ActiveHuntPanel() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [bonusName, setBonusName] = useState("");
+
+  useEffect(() => {
+    if (isAdmin) setShowAdmin(true);
+  }, [isAdmin]);
   const [betSize, setBetSize] = useState("");
   const [winAmount, setWinAmount] = useState("");
   const [startAmountInput, setStartAmountInput] = useState("");

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Syne } from "next/font/google";
+import { SiteSessionProvider } from "@/hooks/useSiteSession";
 import "./globals.css";
 
 const display = Syne({
@@ -43,7 +44,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <SiteSessionProvider>{children}</SiteSessionProvider>
+      </body>
     </html>
   );
 }

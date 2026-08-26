@@ -96,7 +96,21 @@ function sign(payload: string) {
     .digest("base64url");
 }
 
-function verifyToken(token: string): { userId: string; exp: number } | null {
+type SessionToken = {
+  userId: string;
+  exp: number;
+  /** Snapshot so sessions survive serverless cold starts / new instances. */
+  user?: {
+    id: string;
+    kickUserId: string;
+    username: string;
+    email: string | null;
+    profilePicture: string | null;
+    createdAt: string;
+  };
+};
+
+function verifyToken(token: string): SessionToken | null {
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return null;
 
@@ -105,7 +119,7 @@ function verifyToken(token: string): { userId: string; exp: number } | null {
   const b = Buffer.from(expected);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
 
-  const data = decodePayload<{ userId: string; exp: number }>(payload);
+  const data = decodePayload<SessionToken>(payload);
   if (!data?.userId || !data.exp) return null;
   if (Date.now() > data.exp) return null;
   return data;
@@ -181,16 +195,39 @@ function findById(id: string): SiteUser | undefined {
   return users().find((user) => user.id === id);
 }
 
-export async function createSession(userId: string) {
+function upsertMemoryUser(snapshot: SiteUser): SiteUser {
+  const existing = findById(snapshot.id) || findByKickUserId(snapshot.kickUserId);
+  if (existing) {
+    existing.username = snapshot.username;
+    existing.email = snapshot.email;
+    existing.profilePicture = snapshot.profilePicture;
+    existing.kickUserId = snapshot.kickUserId;
+    existing.lastLoginAt = snapshot.lastLoginAt;
+    return existing;
+  }
+  users().push(snapshot);
+  return snapshot;
+}
+
+export async function createSession(user: SiteUser) {
   const payload = encodePayload({
-    userId,
+    userId: user.id,
     exp: Date.now() + MAX_AGE_SEC * 1000,
-  });
+    user: {
+      id: user.id,
+      kickUserId: user.kickUserId,
+      username: user.username,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      createdAt: user.createdAt,
+    },
+  } satisfies SessionToken);
   const token = `${payload}.${sign(payload)}`;
   const jar = await cookies();
   jar.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
+    // Always secure in production/deployed HTTPS; keep false for local http
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: MAX_AGE_SEC,
@@ -216,8 +253,20 @@ export async function getSessionUser(): Promise<PublicSiteUser | null> {
   const data = verifyToken(token);
   if (!data) return null;
 
-  const user = findById(data.userId);
-  return user ? toPublic(user) : null;
+  let user = findById(data.userId);
+  if (!user && data.user) {
+    user = upsertMemoryUser({
+      id: data.user.id,
+      kickUserId: data.user.kickUserId,
+      username: data.user.username,
+      email: data.user.email,
+      profilePicture: data.user.profilePicture,
+      createdAt: data.user.createdAt,
+      lastLoginAt: new Date().toISOString(),
+    });
+  }
+  if (!user) return null;
+  return toPublic(user);
 }
 
 export class SiteAuthError extends Error {
@@ -402,6 +451,6 @@ export async function completeKickOAuthLogin(input: {
     users().push(user);
   }
 
-  await createSession(user.id);
+  await createSession(user);
   return toPublic(user);
 }

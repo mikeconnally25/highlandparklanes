@@ -45,6 +45,10 @@ export function GiveawayPanel() {
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) setShowAdmin(true);
+  }, [isAdmin]);
   const [rotationDeg, setRotationDeg] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
