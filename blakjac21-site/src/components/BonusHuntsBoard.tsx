@@ -2,19 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
-import { HuntBoardProvider } from "@/components/HuntBoardContext";
+import {
+  HuntBoardProvider,
+  useHuntBoardState,
+} from "@/components/HuntBoardContext";
 import { PastHuntsPanel } from "@/components/PastHuntsPanel";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import type { BonusHuntState } from "@/lib/bonus-hunt";
+import { readHuntCache } from "@/lib/hunt-client-sync";
 import styles from "@/app/bonus-hunts/page.module.css";
 
-export function BonusHuntsBoard() {
+function labelFromState(state: BonusHuntState | null | undefined): string {
+  const title = state?.title?.trim() ?? "";
+  if (title) return `Active hunt · ${title}`;
+  if (state?.huntActive) return "Active hunt";
+  return "Active hunt · idle";
+}
+
+function BonusHuntsBoardInner() {
   const { isAdmin } = useSiteSession();
   const showAdminHint = isAdmin;
+  const board = useHuntBoardState();
   const [activeOpen, setActiveOpen] = useState(true);
   const [pastOpen, setPastOpen] = useState(false);
-  const [activeLabel, setActiveLabel] = useState("Active hunt");
+  const [activeLabel, setActiveLabel] = useState(() =>
+    labelFromState(readHuntCache()),
+  );
   const [pastCount, setPastCount] = useState(0);
+
+  // Prefer the live published board (includes hunt # typed in the panel).
+  useEffect(() => {
+    if (!board) return;
+    setActiveLabel(labelFromState(board));
+  }, [board]);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,14 +48,14 @@ export function BonusHuntsBoard() {
         if (stateRes.ok) {
           const state = (await stateRes.json()) as BonusHuntState;
           if (!cancelled) {
-            const title = state.title.trim();
-            setActiveLabel(
-              title
-                ? `Active hunt · ${title}`
-                : state.huntActive
-                  ? "Active hunt"
-                  : "Active hunt · idle",
-            );
+            // Don't let a colder/empty server wipe a live typed title.
+            const liveTitle = board?.title?.trim() ?? "";
+            const remoteTitle = state.title.trim();
+            if (liveTitle && !remoteTitle) {
+              setActiveLabel(labelFromState(board));
+            } else {
+              setActiveLabel(labelFromState(state));
+            }
           }
         }
         if (historyRes.ok) {
@@ -59,10 +79,10 @@ export function BonusHuntsBoard() {
       clearInterval(timer);
       window.removeEventListener("bonus-hunt-history-changed", onHistory);
     };
-  }, []);
+  }, [board]);
 
   return (
-    <HuntBoardProvider>
+    <>
       <section className={styles.section} aria-labelledby="active-hunt">
         <button
           type="button"
@@ -124,6 +144,14 @@ export function BonusHuntsBoard() {
           </div>
         ) : null}
       </section>
+    </>
+  );
+}
+
+export function BonusHuntsBoard() {
+  return (
+    <HuntBoardProvider>
+      <BonusHuntsBoardInner />
     </HuntBoardProvider>
   );
 }

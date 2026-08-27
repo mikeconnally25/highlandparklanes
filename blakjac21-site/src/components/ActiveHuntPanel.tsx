@@ -822,7 +822,22 @@ export function ActiveHuntPanel() {
                 });
               }
             }}
-            onChange={(e) => setHuntTitle(e.target.value)}
+            onChange={(e) => {
+              const nextTitle = e.target.value;
+              setHuntTitle(nextTitle);
+              const base = stateRef.current;
+              if (!base) return;
+              const next: BonusHuntState = {
+                ...base,
+                title: nextTitle,
+                huntActive: base.huntActive || Boolean(nextTitle.trim()),
+                updatedAt: new Date().toISOString(),
+              };
+              fingerprintRef.current = huntFingerprint(next);
+              stateRef.current = next;
+              setState(next);
+              publishBoard(next);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.currentTarget.blur();
