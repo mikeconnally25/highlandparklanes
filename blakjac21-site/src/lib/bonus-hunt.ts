@@ -267,6 +267,8 @@ export function setHuntActive(active: boolean): BonusHuntState {
   const state = getBonusHuntState();
   state.huntActive = active;
   if (active) {
+    // Turning hunt Active also opens slot requests so !s starts immediately.
+    state.requestsOpen = true;
     markHuntStarted(state);
   } else {
     state.requestsOpen = false;
