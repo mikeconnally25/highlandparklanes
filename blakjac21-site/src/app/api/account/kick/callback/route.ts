@@ -1,17 +1,12 @@
 import { completeKickOAuthLogin, SiteAuthError } from "@/lib/site-auth";
-
-function siteOrigin(request: Request) {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-  return new URL(request.url).origin;
-}
+import { getRequestOrigin } from "@/lib/site-url";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code")?.trim() ?? "";
   const state = url.searchParams.get("state")?.trim() ?? "";
   const oauthError = url.searchParams.get("error");
-  const origin = siteOrigin(request);
+  const origin = getRequestOrigin(request);
 
   if (oauthError) {
     const target = new URL("/account", origin);

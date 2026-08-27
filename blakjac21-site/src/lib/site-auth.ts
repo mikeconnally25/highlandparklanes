@@ -64,10 +64,7 @@ export function getKickOAuthConfig() {
   const missing: string[] = [];
   if (!clientId) missing.push("KICK_CLIENT_ID");
   if (!clientSecret) missing.push("KICK_CLIENT_SECRET");
-  // Redirect can also be inferred from the request origin at login time.
-  if (!redirectUri && !process.env.NEXT_PUBLIC_SITE_URL?.trim()) {
-    missing.push("KICK_REDIRECT_URI or NEXT_PUBLIC_SITE_URL");
-  }
+  // Redirect URI is derived from the request origin at login time when unset.
 
   return {
     clientId,

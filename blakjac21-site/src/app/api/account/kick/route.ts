@@ -1,12 +1,12 @@
 import { beginKickOAuthLogin, SiteAuthError } from "@/lib/site-auth";
+import { getKickCallbackUrl, getRequestOrigin } from "@/lib/site-url";
 
 export async function GET(request: Request) {
-  const origin = new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   try {
-    const redirectUri =
-      process.env.KICK_REDIRECT_URI?.trim() ||
-      `${origin}/api/account/kick/callback`;
-    const url = await beginKickOAuthLogin({ redirectUri });
+    const url = await beginKickOAuthLogin({
+      redirectUri: getKickCallbackUrl(request),
+    });
     return Response.redirect(url, 302);
   } catch (err) {
     const target = new URL("/account", origin);

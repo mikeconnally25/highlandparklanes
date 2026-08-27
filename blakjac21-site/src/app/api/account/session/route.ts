@@ -4,8 +4,9 @@ import {
   getKickOAuthConfig,
   getSessionUser,
 } from "@/lib/site-auth";
+import { getKickCallbackUrl } from "@/lib/site-url";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getSessionUser();
   const kick = getKickOAuthConfig();
   return Response.json(
@@ -15,7 +16,7 @@ export async function GET() {
       adminUsernames: getAdminKickUsernames(),
       kickConfigured: kick.configured,
       kickMissing: kick.missing,
-      kickRedirectUri: kick.redirectUri || null,
+      kickRedirectUri: getKickCallbackUrl(request),
     },
     { headers: { "Cache-Control": "no-store" } },
   );
