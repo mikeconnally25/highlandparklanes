@@ -26,8 +26,8 @@ export default function BonusHuntsPage() {
       <main className={styles.main}>
         <h1 className={styles.title}>Bonus Hunts</h1>
         <p className={styles.lead}>
-          Use the Active hunt dropdown for the live board. End a hunt to archive
-          it under Past hunt results.
+          Run the live board below. End a hunt to archive it under Past hunt
+          results.
         </p>
 
         <BonusHuntsBoard />

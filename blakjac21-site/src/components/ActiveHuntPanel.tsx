@@ -144,8 +144,7 @@ async function pushHuntSync(state: BonusHuntState) {
 export function ActiveHuntPanel() {
   const { isAdmin, user, ready: sessionReady } = useSiteSession();
   const { publishBoard } = useHuntBoard();
-  const { chatroomId, connectionState: chatConnection, reconnectChat } =
-    useKickChatContext();
+  const { reconnectChat } = useKickChatContext();
   const canManage = Boolean(sessionReady && user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
