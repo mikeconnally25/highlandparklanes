@@ -1,5 +1,10 @@
-import { addBonus, hydrateBonusHuntFromRemote } from "@/lib/bonus-hunt";
-import type { BonusTier } from "@/lib/bonus-hunt";
+import {
+  addBonus,
+  hydrateBonusHuntFromRemote,
+  seedBonusHuntFromClient,
+  type BonusHuntState,
+  type BonusTier,
+} from "@/lib/bonus-hunt";
 import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
@@ -15,6 +20,7 @@ export async function POST(request: Request) {
     betSize?: string | number | null;
     winAmount?: string | number | null;
     tier?: BonusTier;
+    board?: BonusHuntState;
   };
   try {
     body = (await request.json()) as {
@@ -22,10 +28,14 @@ export async function POST(request: Request) {
       betSize?: string | number | null;
       winAmount?: string | number | null;
       tier?: BonusTier;
+      board?: BonusHuntState;
     };
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  // Client board seeds this instance so adds accumulate across serverless splits.
+  seedBonusHuntFromClient(body.board);
 
   const result = addBonus({
     name: body.name ?? "",

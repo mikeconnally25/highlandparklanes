@@ -8,6 +8,7 @@ import {
   formatMultiplier,
   getHuntStats,
   appendSlotRequestToState,
+  mergeHuntBoards,
   parseSlotRequestMessage,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
@@ -80,10 +81,6 @@ function preferState(
   const localT = Date.parse(local.updatedAt) || 0;
   const remoteT = Date.parse(remote.updatedAt) || 0;
   const guarded = nowMs() < guardUntil;
-  const localIds = new Set(local.bonuses.map((bonus) => bonus.id));
-  const remoteIsSubset =
-    remote.bonuses.length > 0 &&
-    remote.bonuses.every((bonus) => localIds.has(bonus.id));
 
   const remoteReset =
     remoteT > 0 &&
@@ -97,36 +94,21 @@ function preferState(
   // Intentional end/clear must win when it's newer.
   if (remoteReset && remoteT >= localT) return remote;
 
-  // Cold/empty serverless responses should not wipe a populated board.
-  if (
-    local.bonuses.length > 0 &&
-    remote.bonuses.length === 0 &&
-    remoteT <= localT
-  ) {
-    return local;
-  }
-  if (
-    local.slotRequests.length > 0 &&
-    remote.slotRequests.length === 0 &&
-    remoteT <= localT
-  ) {
-    return local;
+  // Union merge so a cold instance that only saw the newest bonus can't wipe older rows.
+  const merged = linkHuntLiveFlags(mergeHuntBoards(local, remote));
+
+  // While guarded after a local write, keep local flags if remote is older.
+  if (guarded && remoteT < localT) {
+    return {
+      ...merged,
+      huntActive: local.huntActive,
+      requestsOpen: local.requestsOpen,
+      title: local.title.trim() ? local.title : merged.title,
+      startAmount: local.startAmount ?? merged.startAmount,
+    };
   }
 
-  // Trust newer remote for flag flips (open/close requests, idle/active).
-  if (remoteT > localT) return remote;
-  if (remoteT < localT) return local;
-
-  // Same timestamp: keep richer local board while guarded.
-  if (remote.bonuses.length < local.bonuses.length) {
-    if (guarded) return local;
-    if (!remoteIsSubset) return local;
-  }
-  if (remote.slotRequests.length < local.slotRequests.length) {
-    if (guarded) return local;
-  }
-
-  return remote;
+  return merged;
 }
 
 function nowMs() {
@@ -483,35 +465,42 @@ export function ActiveHuntPanel() {
       const next = (await res.json()) as BonusHuntState & {
         archived?: unknown;
       };
+      const action =
+        url.includes("/api/bonus-hunt/admin") && body && "action" in body
+          ? (body as { action?: string }).action
+          : null;
+      const clearing =
+        action === "end-hunt" ||
+        (url.includes("/api/bonus-hunt/bonus/remove") &&
+          body &&
+          "all" in body &&
+          Boolean((body as { all?: boolean }).all));
+
+      const merged = clearing
+        ? next
+        : preferState(stateRef.current, next, nowMs() + 20_000);
+
       guardUntilRef.current = nowMs() + 20_000;
-      fingerprintRef.current = huntFingerprint(next);
-      publishBoard(next);
-      stateRef.current = next;
-      setState(next);
-      if (canManage) void pushHuntSync(next);
-      if (url.includes("/api/bonus-hunt/admin") && body && "action" in body) {
-        const action = (body as { action?: string }).action;
-        if (action === "end-hunt") {
-          setWinDrafts({});
-          setSelectedRequestId(null);
-          setBonusName("");
-          setBetSize("");
-          setWinAmount("");
-          setHuntTitle("");
-          setStartAmountInput("");
-          window.dispatchEvent(new Event("bonus-hunt-history-changed"));
-        }
+      fingerprintRef.current = huntFingerprint(merged);
+      publishBoard(merged);
+      stateRef.current = merged;
+      setState(merged);
+      if (canManage) void pushHuntSync(merged);
+      if (action === "end-hunt") {
+        setWinDrafts({});
+        setSelectedRequestId(null);
+        setBonusName("");
+        setBetSize("");
+        setWinAmount("");
+        setHuntTitle("");
+        setStartAmountInput("");
+        window.dispatchEvent(new Event("bonus-hunt-history-changed"));
       }
-      if (
-        url.includes("/api/bonus-hunt/bonus/remove") &&
-        body &&
-        "all" in body &&
-        (body as { all?: boolean }).all
-      ) {
+      if (clearing && action !== "end-hunt") {
         setWinDrafts({});
         setSelectedRequestId(null);
       }
-      return next;
+      return merged;
     } catch {
       setAdminError("Could not reach server");
       return null;
@@ -565,6 +554,7 @@ export function ActiveHuntPanel() {
         betSize,
         winAmount,
         tier: selectedTier,
+        board: stateRef.current ?? undefined,
       });
       if (next) {
         setSelectedRequestId(null);
@@ -592,6 +582,7 @@ export function ActiveHuntPanel() {
       betSize,
       winAmount,
       tier: selectedTier,
+      board: stateRef.current ?? undefined,
     });
     if (next) {
       setBonusName("");
@@ -599,6 +590,16 @@ export function ActiveHuntPanel() {
       setWinAmount("");
       setSuperTier(false);
       setEpicTier(false);
+      setWinDrafts((current) => {
+        const nextDrafts = { ...current };
+        for (const bonus of next.bonuses) {
+          if (nextDrafts[bonus.id] === undefined) {
+            nextDrafts[bonus.id] =
+              bonus.winAmount != null ? String(bonus.winAmount) : "";
+          }
+        }
+        return nextDrafts;
+      });
     }
   }
 
@@ -1113,13 +1114,23 @@ export function ActiveHuntPanel() {
               <table className={`${styles.table} ${styles.tableHeadTable}`}>
                 <thead>
                   <tr>
-                    <th scope="col">Hunt #</th>
-                    <th scope="col">Break even x</th>
-                    <th scope="col">Slot name</th>
-                    <th scope="col">Bet size</th>
-                    <th scope="col">Win amount</th>
+                    <th scope="col" className={styles.colHunt}>
+                      Hunt #
+                    </th>
+                    <th scope="col" className={styles.colBreakEven}>
+                      Break even x
+                    </th>
+                    <th scope="col" className={styles.colName}>
+                      Slot name
+                    </th>
+                    <th scope="col" className={styles.colBet}>
+                      Bet size
+                    </th>
+                    <th scope="col" className={styles.colWin}>
+                      Win amount
+                    </th>
                     {canManage ? (
-                      <th scope="col">
+                      <th scope="col" className={styles.colAction}>
                         <span className={styles.srOnly}>Remove</span>
                       </th>
                     ) : null}
@@ -1211,6 +1222,7 @@ export function ActiveHuntPanel() {
                                       "/api/bonus-hunt/bonus/remove",
                                       {
                                         id: bonus.id,
+                                        board: stateRef.current ?? undefined,
                                       },
                                     )
                                   }

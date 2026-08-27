@@ -1,4 +1,5 @@
 import type { BonusHuntState } from "@/lib/bonus-hunt";
+import { mergeHuntBoards } from "@/lib/bonus-hunt";
 
 export const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
 export const HUNT_LIVE_EVENT = "bonus-hunt-live-state";
@@ -39,28 +40,7 @@ export function preferHuntBoard(
   // End hunt / clear must win even when remote is empty.
   if (isIntentionalReset(remote) && remoteT >= localT) return remote;
 
-  // Never replace a populated board with an empty serverless cold response
-  if (
-    local.bonuses.length > 0 &&
-    remote.bonuses.length === 0 &&
-    remoteT <= localT
-  ) {
-    return local;
-  }
-  if (
-    local.slotRequests.length > 0 &&
-    remote.slotRequests.length === 0 &&
-    remoteT <= localT
-  ) {
-    return local;
-  }
-  if (remote.bonuses.length < local.bonuses.length && remoteT <= localT + 2000) {
-    return local;
-  }
-  if (remoteT < localT && local.bonuses.length >= remote.bonuses.length) {
-    return local;
-  }
-  return remote;
+  return mergeHuntBoards(local, remote);
 }
 
 export function writeHuntCache(state: BonusHuntState) {

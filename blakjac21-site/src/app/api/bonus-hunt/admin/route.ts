@@ -6,12 +6,13 @@ import {
   promoteSlotRequestToBonus,
   removePastHunt,
   removeSlotRequest,
+  seedBonusHuntFromClient,
   setBonusWinAmount,
   setHuntActive,
   setHuntTitle,
   setStartAmount,
 } from "@/lib/bonus-hunt";
-import type { BonusTier } from "@/lib/bonus-hunt";
+import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
 import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
@@ -42,11 +43,23 @@ export async function POST(request: Request) {
     winAmount?: string | number | null;
     betSize?: string | number | null;
     tier?: BonusTier;
+    board?: BonusHuntState;
   };
   try {
     body = (await request.json()) as typeof body;
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  if (
+    body.action === "promote-request" ||
+    body.action === "set-win-amount" ||
+    body.action === "set-start-amount" ||
+    body.action === "set-title" ||
+    body.action === "remove-request" ||
+    body.action === "clear-requests"
+  ) {
+    seedBonusHuntFromClient(body.board);
   }
 
   switch (body.action) {

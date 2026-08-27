@@ -2,6 +2,8 @@ import {
   clearBonuses,
   hydrateBonusHuntFromRemote,
   removeBonus,
+  seedBonusHuntFromClient,
+  type BonusHuntState,
 } from "@/lib/bonus-hunt";
 import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
@@ -13,9 +15,13 @@ export async function POST(request: Request) {
 
   await hydrateBonusHuntFromRemote();
 
-  let body: { id?: string; all?: boolean };
+  let body: { id?: string; all?: boolean; board?: BonusHuntState };
   try {
-    body = (await request.json()) as { id?: string; all?: boolean };
+    body = (await request.json()) as {
+      id?: string;
+      all?: boolean;
+      board?: BonusHuntState;
+    };
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -28,5 +34,6 @@ export async function POST(request: Request) {
     return Response.json({ error: "id is required" }, { status: 400 });
   }
 
+  seedBonusHuntFromClient(body.board);
   return huntJson(removeBonus(body.id));
 }

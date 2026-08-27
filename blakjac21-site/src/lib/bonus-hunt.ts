@@ -150,14 +150,79 @@ function richerState(
   remote: BonusHuntState,
 ): BonusHuntState {
   if (!local) return normalizeState(remote);
+  return mergeHuntBoards(local, remote);
+}
+
+/** Union bonuses/requests from two boards so cold instances can't wipe rows. */
+export function mergeHuntBoards(
+  local: BonusHuntState,
+  remote: BonusHuntState,
+): BonusHuntState {
   const localT = Date.parse(local.updatedAt) || 0;
   const remoteT = Date.parse(remote.updatedAt) || 0;
-  if (remoteT > localT) return normalizeState(remote);
-  if (remoteT < localT) return normalizeState(local);
-  if (remote.bonuses.length > local.bonuses.length) {
-    return normalizeState(remote);
+
+  const remoteReset =
+    remoteT > 0 &&
+    !remote.huntActive &&
+    !remote.requestsOpen &&
+    remote.bonuses.length === 0 &&
+    remote.slotRequests.length === 0 &&
+    !remote.title.trim() &&
+    remote.startAmount == null;
+  const localReset =
+    localT > 0 &&
+    !local.huntActive &&
+    !local.requestsOpen &&
+    local.bonuses.length === 0 &&
+    local.slotRequests.length === 0 &&
+    !local.title.trim() &&
+    local.startAmount == null;
+
+  if (remoteReset && remoteT >= localT) return normalizeState(remote);
+  if (localReset && localT > remoteT) return normalizeState(local);
+
+  const bonusById = new Map<string, BonusItem>();
+  for (const bonus of local.bonuses) bonusById.set(bonus.id, bonus);
+  for (const bonus of remote.bonuses) bonusById.set(bonus.id, bonus);
+
+  const requestById = new Map<string, SlotRequest>();
+  for (const req of local.slotRequests) requestById.set(req.id, req);
+  for (const req of remote.slotRequests) requestById.set(req.id, req);
+
+  const newer = remoteT >= localT ? remote : local;
+  const older = newer === remote ? local : remote;
+
+  return normalizeState({
+    ...newer,
+    title: newer.title.trim() || older.title,
+    startAmount: newer.startAmount ?? older.startAmount,
+    startedAt: newer.startedAt ?? older.startedAt,
+    huntActive: newer.huntActive,
+    requestsOpen: newer.requestsOpen,
+    bonuses: [...bonusById.values()].sort(
+      (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+    ),
+    slotRequests: [...requestById.values()].sort(
+      (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+    ),
+    updatedAt: new Date(Math.max(localT, remoteT, Date.now())).toISOString(),
+  });
+}
+
+/** Seed this instance from a trusted client board before mutating. */
+export function seedBonusHuntFromClient(
+  incoming: BonusHuntState | null | undefined,
+): BonusHuntState {
+  ensureLoaded();
+  if (!incoming || !Array.isArray(incoming.bonuses)) {
+    return getBonusHuntState();
   }
-  return normalizeState(local);
+  const current = getBonusHuntState();
+  const merged = mergeHuntBoards(current, normalizeState(incoming));
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntState = merged;
+  persistState(merged);
+  return merged;
 }
 
 /** Pull shared remote state (Upstash) into this instance before serving GETs. */
