@@ -181,21 +181,43 @@ export function mergeHuntBoards(
   if (remoteReset && remoteT >= localT) return normalizeState(remote);
   if (localReset && localT > remoteT) return normalizeState(local);
 
-  const bonusById = new Map<string, BonusItem>();
-  for (const bonus of local.bonuses) bonusById.set(bonus.id, bonus);
-  for (const bonus of remote.bonuses) bonusById.set(bonus.id, bonus);
-
-  const requestById = new Map<string, SlotRequest>();
-  for (const req of local.slotRequests) requestById.set(req.id, req);
-  for (const req of remote.slotRequests) requestById.set(req.id, req);
-
   const newer = remoteT >= localT ? remote : local;
   const older = newer === remote ? local : remote;
+  const pickAmount = (a: number | null, b: number | null) => {
+    if (a != null && a > 0) return a;
+    if (b != null && b > 0) return b;
+    return a ?? b ?? null;
+  };
+
+  // Prefer the richer bonus record when the same id appears on both boards
+  // (keeps bet/win amounts from being wiped by a partial cold response).
+  const bonusById = new Map<string, BonusItem>();
+  for (const bonus of older.bonuses) bonusById.set(bonus.id, bonus);
+  for (const bonus of newer.bonuses) {
+    const prev = bonusById.get(bonus.id);
+    if (!prev) {
+      bonusById.set(bonus.id, bonus);
+      continue;
+    }
+    bonusById.set(bonus.id, {
+      ...prev,
+      ...bonus,
+      betSize: pickAmount(bonus.betSize, prev.betSize),
+      winAmount:
+        bonus.winAmount != null ? bonus.winAmount : (prev.winAmount ?? null),
+      requestedBy: bonus.requestedBy ?? prev.requestedBy,
+      name: bonus.name.trim() || prev.name,
+    });
+  }
+
+  const requestById = new Map<string, SlotRequest>();
+  for (const req of older.slotRequests) requestById.set(req.id, req);
+  for (const req of newer.slotRequests) requestById.set(req.id, req);
 
   return normalizeState({
     ...newer,
     title: newer.title.trim() || older.title,
-    startAmount: newer.startAmount ?? older.startAmount,
+    startAmount: pickAmount(newer.startAmount, older.startAmount),
     startedAt: newer.startedAt ?? older.startedAt,
     huntActive: newer.huntActive,
     requestsOpen: newer.requestsOpen,
@@ -577,6 +599,8 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
     totalWins >= state.startAmount;
 
   // Needed average x on remaining unopened bonuses to recover start bankroll.
+  // Fall back to full-list break-even whenever remaining bet can't be used yet
+  // (no bets left unopened, or no wins logged).
   let breakEvenX: number | null = null;
   if (state.startAmount != null && state.startAmount > 0) {
     if (breakEvenReached) {
@@ -584,8 +608,7 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
     } else if (remainingBet > 0 && remainingToRecover != null) {
       breakEvenX =
         Math.round((remainingToRecover / remainingBet) * 100) / 100;
-    } else if (totalBet > 0 && openedBonuses.length === 0) {
-      // No wins logged yet — classic full-list break-even.
+    } else if (totalBet > 0) {
       breakEvenX = Math.round((state.startAmount / totalBet) * 100) / 100;
     }
   }

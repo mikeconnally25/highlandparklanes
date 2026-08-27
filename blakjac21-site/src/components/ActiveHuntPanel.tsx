@@ -666,6 +666,7 @@ export function ActiveHuntPanel() {
     await adminRequest("/api/bonus-hunt/admin", {
       action: "set-start-amount",
       startAmount: startAmountInput,
+      board: stateRef.current ?? undefined,
     });
   }
 
@@ -898,9 +899,13 @@ export function ActiveHuntPanel() {
                 ? `Recovered ${formatBetSize(stats.totalWins)} of ${formatBetSize(stats.startAmount)}`
                 : stats?.remainingToRecover != null && stats.remainingBet > 0
                   ? `${formatBetSize(stats.remainingToRecover)} left ÷ ${formatBetSize(stats.remainingBet)} remaining bet`
-                  : stats?.startAmount != null && stats.openedCount === 0 && stats.totalBet > 0
+                  : stats?.startAmount != null && stats.totalBet > 0
                     ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
-                    : "Needs start amount, bets, and remaining bonuses"}
+                    : stats?.startAmount == null
+                      ? "Save a start amount to calculate break-even"
+                      : stats?.totalBet === 0
+                        ? "Add bet sizes on bonuses to calculate break-even"
+                        : "Needs start amount, bets, and remaining bonuses"}
             </p>
           </div>
         </div>
