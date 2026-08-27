@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       process.env.ADMIN_KICK_USERNAME ||
       process.env.KICK_CHANNEL_SLUG ||
       "Blakjac21",
+    // Stable chatroom id for Blakjac21 — keeps chat connected when Kick API is slow/offline.
+    KICK_CHATROOM_ID: process.env.KICK_CHATROOM_ID || "282833",
   },
   turbopack: {
     root,

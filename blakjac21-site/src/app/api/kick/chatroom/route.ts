@@ -5,7 +5,10 @@ export async function GET() {
   try {
     const meta = await fetchChatroomMeta();
     return NextResponse.json(meta, {
-      headers: { "Cache-Control": "public, s-maxage=300" },
+      headers: {
+        // Chatroom id is stable; shorter cache keeps reconnects fresh after deploys.
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
     });
   } catch (err) {
     return NextResponse.json(

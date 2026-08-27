@@ -26,8 +26,32 @@ type KickChatContextValue = {
 
 const KickChatContext = createContext<KickChatContextValue | null>(null);
 
+const CHATROOM_STORAGE_KEY = "blakjac21.kick.chatroomId";
+
+function readStoredChatroomId(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CHATROOM_STORAGE_KEY);
+    if (!raw) return null;
+    const id = Number(raw);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeChatroomId(id: number) {
+  try {
+    sessionStorage.setItem(CHATROOM_STORAGE_KEY, String(id));
+  } catch {
+    // Ignore storage failures — chat can still run for this session.
+  }
+}
+
 export function KickChatProvider({ children }: { children: ReactNode }) {
-  const [chatroomId, setChatroomId] = useState<number | null>(null);
+  const [chatroomId, setChatroomId] = useState<number | null>(() =>
+    readStoredChatroomId(),
+  );
   const [connectionState, setConnectionState] =
     useState<KickChatConnectionState>("idle");
   const subscribersRef = useRef(new Set<MessageHandler>());
@@ -38,12 +62,15 @@ export function KickChatProvider({ children }: { children: ReactNode }) {
     async function loadChatroom() {
       try {
         const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
+        if (!res.ok) return;
+
         const data = (await res.json()) as { chatroomId?: number };
         if (!cancelled && data.chatroomId) {
           setChatroomId(data.chatroomId);
+          storeChatroomId(data.chatroomId);
         }
       } catch {
-        if (!cancelled) setChatroomId(null);
+        // Keep the last known chatroom id so chat stays connected offline.
       }
     }
 
