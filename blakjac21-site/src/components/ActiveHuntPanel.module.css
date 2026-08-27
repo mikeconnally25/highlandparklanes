@@ -397,7 +397,7 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 28rem;
+  min-width: 36rem;
 }
 
 .table th,
@@ -430,12 +430,20 @@
   background: color-mix(in srgb, #c084fc 8%, transparent);
 }
 
-.colIndex {
-  width: 2.5rem;
+.colHunt {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.78rem;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.colBreakEven {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--gold);
+  white-space: nowrap;
 }
 
 .colName {
@@ -445,12 +453,12 @@
 }
 
 .bonusName {
-  display: inline;
+  display: block;
 }
 
 .bonusRequester {
-  display: inline;
-  margin-left: 0.4rem;
+  display: block;
+  margin-top: 0.15rem;
   font-size: 0.68rem;
   font-weight: 500;
   color: var(--text-dim);

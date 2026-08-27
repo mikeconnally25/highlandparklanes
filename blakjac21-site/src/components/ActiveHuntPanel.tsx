@@ -6,7 +6,6 @@ import {
   formatBetSize,
   formatBreakEvenLabel,
   formatMultiplier,
-  getBonusMultiplier,
   getHuntStats,
   parseSlotRequestMessage,
   sortBonusesForDisplay,
@@ -483,6 +482,8 @@ export function ActiveHuntPanel() {
   const bonuses = sortBonusesForDisplay(state?.bonuses ?? []);
   const slotRequests = state?.slotRequests ?? [];
   const stats = state ? getHuntStats(state) : null;
+  const huntLabel = state?.title?.trim() || "—";
+  const breakEvenLabel = stats ? formatBreakEvenLabel(stats) : "—";
   const activeSelectedRequestId =
     selectedRequestId &&
     slotRequests.some((req) => req.id === selectedRequestId)
@@ -849,28 +850,38 @@ export function ActiveHuntPanel() {
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Bonus</th>
-                    <th scope="col">Bet</th>
-                    <th scope="col">Win</th>
-                    <th scope="col">X</th>
-                    <th scope="col">Tier</th>
-                    <th scope="col">
-                      <span className={styles.srOnly}>Remove</span>
-                    </th>
+                    <th scope="col">Hunt #</th>
+                    <th scope="col">Break even x</th>
+                    <th scope="col">Slot name</th>
+                    <th scope="col">Bet size</th>
+                    <th scope="col">Win amount</th>
+                    {canManage ? (
+                      <th scope="col">
+                        <span className={styles.srOnly}>Remove</span>
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
-                  {bonuses.map((bonus, index) => (
+                  {bonuses.map((bonus) => (
                     <tr
                       key={bonus.id}
                       data-tier={
                         bonus.tier !== "normal" ? bonus.tier : undefined
                       }
                     >
-                      <td className={styles.colIndex}>{index + 1}</td>
+                      <td className={styles.colHunt}>{huntLabel}</td>
+                      <td className={styles.colBreakEven}>{breakEvenLabel}</td>
                       <td className={styles.colName}>
                         <span className={styles.bonusName}>{bonus.name}</span>
+                        {bonus.tier !== "normal" ? (
+                          <span
+                            className={styles.tierBadge}
+                            data-tier={bonus.tier}
+                          >
+                            {tierLabel(bonus.tier)}
+                          </span>
+                        ) : null}
                         {bonus.requestedBy ? (
                           <span className={styles.bonusRequester}>
                             {bonus.requestedBy}
@@ -910,23 +921,8 @@ export function ActiveHuntPanel() {
                           formatBetSize(bonus.winAmount)
                         )}
                       </td>
-                      <td className={styles.colX}>
-                        {formatMultiplier(getBonusMultiplier(bonus))}
-                      </td>
-                      <td className={styles.colTier}>
-                        {bonus.tier !== "normal" ? (
-                          <span
-                            className={styles.tierBadge}
-                            data-tier={bonus.tier}
-                          >
-                            {tierLabel(bonus.tier)}
-                          </span>
-                        ) : (
-                          <span className={styles.tierMuted}>Normal</span>
-                        )}
-                      </td>
-                      <td className={styles.colAction}>
-                        {canManage ? (
+                      {canManage ? (
+                        <td className={styles.colAction}>
                           <button
                             type="button"
                             className={styles.removeBtn}
@@ -940,8 +936,8 @@ export function ActiveHuntPanel() {
                           >
                             ×
                           </button>
-                        ) : null}
-                      </td>
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
