@@ -256,19 +256,6 @@ export function ActiveHuntPanel() {
   const requestsOpen = state?.requestsOpen ?? false;
   const huntActive = Boolean(state?.huntActive);
   const chatNeeded = huntActive || requestsOpen;
-  const chatStatusLabel = !chatNeeded
-    ? "Activate hunt or open slot requests to connect Kick chat"
-    : !chatroomId
-      ? "Loading Kick chatroom…"
-      : chatConnection === "connected"
-        ? requestsOpen
-          ? "Kick chat connected — listening for !s slot requests"
-          : "Kick chat connected — open slot requests to capture !s"
-        : chatConnection === "connecting"
-          ? "Connecting to Kick chat…"
-          : chatConnection === "error"
-            ? "Kick chat connection failed — retrying…"
-            : "Waiting for Kick chat…";
 
   useKickChatDemand("bonus-hunt", chatNeeded);
 
@@ -780,18 +767,6 @@ export function ActiveHuntPanel() {
             </span>
           </>
         )}
-        <span
-          className={`${styles.statusBadge} ${chatConnection === "connected" ? styles.statusOpen : styles.statusClosed}`}
-        >
-          {chatConnection === "connected"
-            ? "Kick chat live"
-            : chatConnection === "connecting"
-              ? "Kick chat connecting"
-              : chatConnection === "error"
-                ? "Kick chat reconnecting"
-                : "Kick chat idle"}
-        </span>
-        <span className={styles.chatStatus}>{chatStatusLabel}</span>
       </div>
 
       {canManage && lastChatError ? (
