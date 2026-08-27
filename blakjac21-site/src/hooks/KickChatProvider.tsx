@@ -22,6 +22,10 @@ type KickChatContextValue = {
   chatroomId: number | null;
   connectionState: KickChatConnectionState;
   subscribe: (handler: MessageHandler) => () => void;
+  /** Refresh chatroom id and force a WebSocket reconnect. */
+  reconnectChat: () => Promise<void>;
+  /** Request that the shared socket stay connected for this consumer. */
+  setChatNeeded: (key: string, needed: boolean) => void;
 };
 
 const KickChatContext = createContext<KickChatContextValue | null>(null);
@@ -54,24 +58,32 @@ export function KickChatProvider({ children }: { children: ReactNode }) {
   );
   const [connectionState, setConnectionState] =
     useState<KickChatConnectionState>("idle");
+  const [reconnectToken, setReconnectToken] = useState(0);
+  const [neededKeys, setNeededKeys] = useState<string[]>([]);
   const subscribersRef = useRef(new Set<MessageHandler>());
+
+  const chatNeeded = neededKeys.length > 0;
+
+  const refreshChatroom = useCallback(async () => {
+    try {
+      const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { chatroomId?: number };
+      if (data.chatroomId) {
+        setChatroomId(data.chatroomId);
+        storeChatroomId(data.chatroomId);
+      }
+    } catch {
+      // Keep the last known chatroom id so chat can still reconnect offline.
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadChatroom() {
-      try {
-        const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
-        if (!res.ok) return;
-
-        const data = (await res.json()) as { chatroomId?: number };
-        if (!cancelled && data.chatroomId) {
-          setChatroomId(data.chatroomId);
-          storeChatroomId(data.chatroomId);
-        }
-      } catch {
-        // Keep the last known chatroom id so chat stays connected offline.
-      }
+      if (cancelled) return;
+      await refreshChatroom();
     }
 
     loadChatroom();
@@ -80,7 +92,7 @@ export function KickChatProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [refreshChatroom]);
 
   const broadcast = useCallback((message: KickChatMessage) => {
     for (const handler of subscribersRef.current) {
@@ -90,7 +102,8 @@ export function KickChatProvider({ children }: { children: ReactNode }) {
 
   useKickChat({
     chatroomId,
-    enabled: Boolean(chatroomId),
+    enabled: Boolean(chatroomId) && chatNeeded,
+    reconnectToken,
     onMessage: broadcast,
     onConnectionChange: setConnectionState,
   });
@@ -102,13 +115,29 @@ export function KickChatProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const reconnectChat = useCallback(async () => {
+    await refreshChatroom();
+    setReconnectToken((token) => token + 1);
+  }, [refreshChatroom]);
+
+  const setChatNeeded = useCallback((key: string, needed: boolean) => {
+    setNeededKeys((current) => {
+      const has = current.includes(key);
+      if (needed && !has) return [...current, key];
+      if (!needed && has) return current.filter((item) => item !== key);
+      return current;
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       chatroomId,
       connectionState,
       subscribe,
+      reconnectChat,
+      setChatNeeded,
     }),
-    [chatroomId, connectionState, subscribe],
+    [chatroomId, connectionState, subscribe, reconnectChat, setChatNeeded],
   );
 
   return (
@@ -140,4 +169,25 @@ export function useKickChatSubscription(
     if (!enabled) return;
     return subscribe((message) => handlerRef.current(message));
   }, [enabled, subscribe]);
+}
+
+/**
+ * Keep the shared Kick chat socket connected while `needed` is true.
+ * When `needed` flips to true, refresh the chatroom and force a reconnect.
+ */
+export function useKickChatDemand(key: string, needed: boolean) {
+  const { setChatNeeded, reconnectChat } = useKickChatContext();
+  const wasNeededRef = useRef(false);
+
+  useEffect(() => {
+    setChatNeeded(key, needed);
+    return () => setChatNeeded(key, false);
+  }, [key, needed, setChatNeeded]);
+
+  useEffect(() => {
+    if (needed && !wasNeededRef.current) {
+      void reconnectChat();
+    }
+    wasNeededRef.current = needed;
+  }, [needed, reconnectChat]);
 }

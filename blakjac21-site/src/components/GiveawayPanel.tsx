@@ -9,6 +9,7 @@ import {
 } from "@/lib/giveaway";
 import {
   useKickChatContext,
+  useKickChatDemand,
   useKickChatSubscription,
 } from "@/hooks/KickChatProvider";
 import { useSiteSession } from "@/hooks/useSiteSession";
@@ -66,6 +67,10 @@ export function GiveawayPanel() {
   const entriesOpen = state?.entriesOpen ?? false;
   const keyword = state?.keyword?.trim() ?? "";
   const chatLive = connectionState === "connected" && Boolean(chatroomId);
+  const claiming = claim?.status === "waiting";
+  const chatNeeded = entriesOpen || claiming;
+
+  useKickChatDemand("giveaway", chatNeeded);
 
   useEffect(() => {
     claimRef.current = claim;
@@ -263,7 +268,7 @@ export function GiveawayPanel() {
     [entriesOpen, keyword, finishClaim],
   );
 
-  useKickChatSubscription(handleChatMessage);
+  useKickChatSubscription(handleChatMessage, chatNeeded);
 
   async function adminRequest(
     url: string,
@@ -371,7 +376,6 @@ export function GiveawayPanel() {
   const winnerLogs = claimUsername
     ? chatLog.filter((line) => line.username === claimUsername)
     : [];
-  const claiming = claim?.status === "waiting";
 
   return (
     <div className={styles.layout}>

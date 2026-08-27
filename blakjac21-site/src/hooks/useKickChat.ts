@@ -20,6 +20,8 @@ export type KickChatConnectionState =
 type UseKickChatOptions = {
   chatroomId: number | null;
   enabled: boolean;
+  /** Bump to force a fresh WebSocket connect while staying enabled. */
+  reconnectToken?: number;
   onMessage: (message: KickChatMessage) => void;
   onConnectionChange?: (state: KickChatConnectionState) => void;
 };
@@ -74,6 +76,7 @@ async function resolveFallbackWebSocketUrl(): Promise<string | null> {
 export function useKickChat({
   chatroomId,
   enabled,
+  reconnectToken = 0,
   onMessage,
   onConnectionChange,
 }: UseKickChatOptions) {
@@ -229,7 +232,7 @@ export function useKickChat({
       if (openTimer) clearTimeout(openTimer);
       socket?.close();
     };
-  }, [chatroomId, enabled]);
+  }, [chatroomId, enabled, reconnectToken]);
 }
 
 export function isBalanceGuessMessage(content: string): boolean {

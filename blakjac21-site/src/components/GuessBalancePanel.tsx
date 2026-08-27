@@ -9,6 +9,7 @@ import {
 } from "@/lib/guess-balance";
 import {
   useKickChatContext,
+  useKickChatDemand,
   useKickChatSubscription,
 } from "@/hooks/KickChatProvider";
 import { isBalanceGuessMessage } from "@/hooks/useKickChat";
@@ -49,6 +50,8 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
 
   const entriesOpen = state?.entriesOpen ?? false;
   const chatLive = connectionState === "connected" && Boolean(chatroomId);
+
+  useKickChatDemand("guess-balance", entriesOpen);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,7 +98,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
     [entriesOpen],
   );
 
-  useKickChatSubscription(handleChatMessage);
+  useKickChatSubscription(handleChatMessage, entriesOpen);
 
   async function adminRequest(
     url: string,

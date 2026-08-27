@@ -12,6 +12,7 @@ import {
 } from "@/lib/bonus-hunt";
 import {
   useKickChatContext,
+  useKickChatDemand,
   useKickChatSubscription,
 } from "@/hooks/KickChatProvider";
 import { useSiteSession } from "@/hooks/useSiteSession";
@@ -112,7 +113,8 @@ async function pushHuntSync(state: BonusHuntState) {
 export function ActiveHuntPanel() {
   const { isAdmin, user } = useSiteSession();
   const { publishBoard } = useHuntBoard();
-  const { chatroomId, connectionState: chatConnection } = useKickChatContext();
+  const { chatroomId, connectionState: chatConnection, reconnectChat } =
+    useKickChatContext();
   const canManage = Boolean(user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
@@ -222,17 +224,23 @@ export function ActiveHuntPanel() {
   }, [publishBoard]);
 
   const requestsOpen = state?.requestsOpen ?? false;
-  const chatStatusLabel = !chatroomId
-    ? "Loading Kick chatroom…"
-    : chatConnection === "connected"
-      ? requestsOpen
-        ? "Kick chat connected — listening for !s slot requests"
-        : "Kick chat connected — open slot requests to capture !s"
-      : chatConnection === "connecting"
-        ? "Connecting to Kick chat…"
-        : chatConnection === "error"
-          ? "Kick chat connection failed — retrying…"
-          : "Waiting for Kick chat…";
+  const huntActive = Boolean(state?.huntActive);
+  const chatNeeded = huntActive || requestsOpen;
+  const chatStatusLabel = !chatNeeded
+    ? "Activate hunt or open slot requests to connect Kick chat"
+    : !chatroomId
+      ? "Loading Kick chatroom…"
+      : chatConnection === "connected"
+        ? requestsOpen
+          ? "Kick chat connected — listening for !s slot requests"
+          : "Kick chat connected — open slot requests to capture !s"
+        : chatConnection === "connecting"
+          ? "Connecting to Kick chat…"
+          : chatConnection === "error"
+            ? "Kick chat connection failed — retrying…"
+            : "Waiting for Kick chat…";
+
+  useKickChatDemand("bonus-hunt", chatNeeded);
 
   const selectedTier: BonusTier =
     epicTier ? "epic" : superTier ? "super" : "normal";
@@ -372,7 +380,7 @@ export function ActiveHuntPanel() {
     [requestsOpen, publishBoard, canManage],
   );
 
-  useKickChatSubscription(handleChatMessage);
+  useKickChatSubscription(handleChatMessage, requestsOpen);
 
   async function adminRequest(
     url: string,
@@ -568,18 +576,22 @@ export function ActiveHuntPanel() {
 
   async function setHuntActiveState(active: boolean) {
     if (Boolean(state?.huntActive) === active) return;
-    await adminRequest("/api/bonus-hunt/admin", {
+    const next = await adminRequest("/api/bonus-hunt/admin", {
       action: "set-active",
       active,
     });
+    if (next && active) {
+      void reconnectChat();
+    }
   }
 
   async function setSlotRequestsOpen(open: boolean) {
     if (requestsOpen === open) return;
-    await adminRequest("/api/bonus-hunt/toggle", { open });
+    const next = await adminRequest("/api/bonus-hunt/toggle", { open });
+    if (next && open) {
+      void reconnectChat();
+    }
   }
-
-  const huntActive = Boolean(state?.huntActive);
 
   return (
     <div className={styles.wrap}>
