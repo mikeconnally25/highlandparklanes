@@ -221,18 +221,18 @@ export function ActiveHuntPanel() {
   }, [publishBoard]);
 
   const requestsOpen = state?.requestsOpen ?? false;
-  const chatConnected = Boolean(requestsOpen && chatroomId);
-  const chatStatusLabel = !requestsOpen
-    ? "Open slot requests to listen for !s in Kick chat"
-    : !chatroomId
-      ? "Loading Kick chatroom…"
-      : chatConnection === "connected"
-        ? "Listening for !s slot requests in Kick chat"
-        : chatConnection === "connecting"
-          ? "Connecting to Kick chat…"
-          : chatConnection === "error"
-            ? "Kick chat connection failed — retrying…"
-            : "Waiting for Kick chat…";
+  const chatListening = Boolean(chatroomId);
+  const chatStatusLabel = !chatroomId
+    ? "Loading Kick chatroom…"
+    : chatConnection === "connected"
+      ? requestsOpen
+        ? "Kick chat connected — listening for !s slot requests"
+        : "Kick chat connected — open slot requests to capture !s"
+      : chatConnection === "connecting"
+        ? "Connecting to Kick chat…"
+        : chatConnection === "error"
+          ? "Kick chat connection failed — retrying…"
+          : "Waiting for Kick chat…";
 
   const selectedTier: BonusTier =
     epicTier ? "epic" : superTier ? "super" : "normal";
@@ -342,8 +342,10 @@ export function ActiveHuntPanel() {
     }
 
     loadChatroom();
+    const timer = setInterval(loadChatroom, 30_000);
     return () => {
       cancelled = true;
+      clearInterval(timer);
     };
   }, []);
 
@@ -393,7 +395,7 @@ export function ActiveHuntPanel() {
 
   useKickChat({
     chatroomId,
-    enabled: chatConnected,
+    enabled: chatListening,
     onMessage: handleChatMessage,
     onConnectionChange: setChatConnection,
   });
@@ -593,6 +595,17 @@ export function ActiveHuntPanel() {
   return (
     <div className={styles.wrap}>
       <div className={styles.statusRow}>
+        <span
+          className={`${styles.statusBadge} ${chatConnection === "connected" ? styles.statusOpen : styles.statusClosed}`}
+        >
+          {chatConnection === "connected"
+            ? "Kick chat live"
+            : chatConnection === "connecting"
+              ? "Kick chat connecting"
+              : chatConnection === "error"
+                ? "Kick chat reconnecting"
+                : "Kick chat idle"}
+        </span>
         <span
           className={`${styles.statusBadge} ${requestsOpen ? styles.statusOpen : styles.statusClosed}`}
         >
