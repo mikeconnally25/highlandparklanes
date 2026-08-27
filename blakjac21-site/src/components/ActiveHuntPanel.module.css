@@ -389,15 +389,30 @@
 }
 
 .tableWrap {
+  max-height: 18rem;
   overflow-x: auto;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   border-radius: var(--radius-sm);
   border: 1px solid var(--glass-border);
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 36rem;
+.tableWrap[data-running] {
+  scrollbar-gutter: stable;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, #0a1218);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
 }
 
 .table th,
@@ -408,14 +423,49 @@
   border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-.table th {
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.02);
+.table tbody tr[data-new] {
+  animation: huntRowFlash 1.4s ease;
+}
+
+@keyframes huntRowFlash {
+  0% {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.table tbody tr[data-new][data-tier="super"] {
+  animation: huntRowFlashSuper 1.4s ease;
+}
+
+.table tbody tr[data-new][data-tier="epic"] {
+  animation: huntRowFlashEpic 1.4s ease;
+}
+
+@keyframes huntRowFlashSuper {
+  0% {
+    background: color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  100% {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+  }
+}
+
+@keyframes huntRowFlashEpic {
+  0% {
+    background: color-mix(in srgb, #c084fc 35%, transparent);
+  }
+  100% {
+    background: color-mix(in srgb, #c084fc 8%, transparent);
+  }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 36rem;
 }
 
 .table tbody tr:last-child td {

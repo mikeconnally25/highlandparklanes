@@ -134,10 +134,56 @@ export function ActiveHuntPanel() {
   const busyRef = useRef(false);
   const fingerprintRef = useRef<string>("");
   const stateRef = useRef<BonusHuntState | null>(null);
+  const huntListRef = useRef<HTMLDivElement>(null);
+  const huntListPausedRef = useRef(false);
+  const prevBonusIdsRef = useRef<string[]>([]);
+  const [newBonusId, setNewBonusId] = useState<string | null>(null);
 
   useEffect(() => {
     busyRef.current = busy;
   }, [busy]);
+
+  useEffect(() => {
+    const list = state?.bonuses ?? [];
+    const el = huntListRef.current;
+    const prevIds = prevBonusIdsRef.current;
+    const currentIds = list.map((bonus) => bonus.id);
+    const added = currentIds.filter((id) => !prevIds.includes(id));
+
+    if (prevIds.length === 0 && currentIds.length > 0) {
+      prevBonusIdsRef.current = currentIds;
+      return;
+    }
+
+    prevBonusIdsRef.current = currentIds;
+
+    if (added.length === 0 || !el) return;
+
+    const latestId = added[added.length - 1] ?? null;
+    setNewBonusId(latestId);
+    const flashTimer = window.setTimeout(() => setNewBonusId(null), 1600);
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+
+    return () => clearTimeout(flashTimer);
+  }, [state?.bonuses]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const el = huntListRef.current;
+      if (!el || huntListPausedRef.current) return;
+      if (el.scrollHeight <= el.clientHeight + 4) return;
+
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+        el.scrollTop = 0;
+      } else {
+        el.scrollTop += 1;
+      }
+    }, 45);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Restore last known board immediately so serverless empties don't flash
   useEffect(() => {
@@ -841,7 +887,29 @@ export function ActiveHuntPanel() {
           {bonuses.length === 0 ? (
             <p className={styles.empty}>No bonuses on the list yet.</p>
           ) : (
-            <div className={styles.tableWrap}>
+            <div
+              ref={huntListRef}
+              className={styles.tableWrap}
+              data-running={bonuses.length > 0 || undefined}
+              onMouseEnter={() => {
+                huntListPausedRef.current = true;
+              }}
+              onMouseLeave={() => {
+                huntListPausedRef.current = false;
+              }}
+              onFocusCapture={() => {
+                huntListPausedRef.current = true;
+              }}
+              onBlurCapture={(event) => {
+                if (
+                  !event.currentTarget.contains(
+                    event.relatedTarget as Node | null,
+                  )
+                ) {
+                  huntListPausedRef.current = false;
+                }
+              }}
+            >
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -864,6 +932,7 @@ export function ActiveHuntPanel() {
                       data-tier={
                         bonus.tier !== "normal" ? bonus.tier : undefined
                       }
+                      data-new={bonus.id === newBonusId || undefined}
                     >
                       <td className={styles.colHunt}>{huntLabel}</td>
                       <td className={styles.colBreakEven}>{breakEvenLabel}</td>
