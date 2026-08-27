@@ -676,21 +676,37 @@ export function ActiveHuntPanel() {
     }
   }
 
-  async function setHuntActiveState(active: boolean) {
-    if (Boolean(state?.huntActive) === active) return;
+  async function setHuntLive(live: boolean) {
+    const currentlyLive = Boolean(state?.huntActive) && requestsOpen;
+    if (currentlyLive === live) {
+      // Still force sync if one side drifted.
+      if (Boolean(state?.huntActive) === live && requestsOpen === live) return;
+    }
+
+    // Optimistic UI: keep both toggles locked together immediately.
+    if (stateRef.current) {
+      const nextLocal: BonusHuntState = {
+        ...stateRef.current,
+        huntActive: live,
+        requestsOpen: live,
+        updatedAt: new Date().toISOString(),
+      };
+      if (live) {
+        nextLocal.startedAt =
+          nextLocal.startedAt ?? new Date().toISOString();
+      }
+      fingerprintRef.current = huntFingerprint(nextLocal);
+      guardUntilRef.current = nowMs() + 20_000;
+      stateRef.current = nextLocal;
+      setState(nextLocal);
+      publishBoard(nextLocal);
+    }
+
     const next = await adminRequest("/api/bonus-hunt/admin", {
       action: "set-active",
-      active,
+      active: live,
     });
-    if (next && active) {
-      void reconnectChat();
-    }
-  }
-
-  async function setSlotRequestsOpen(open: boolean) {
-    if (requestsOpen === open) return;
-    const next = await adminRequest("/api/bonus-hunt/toggle", { open });
-    if (next && open) {
+    if (next && live) {
       void reconnectChat();
     }
   }
@@ -711,7 +727,7 @@ export function ActiveHuntPanel() {
                 aria-pressed={!huntActive}
                 data-active={!huntActive || undefined}
                 disabled={busy}
-                onClick={() => void setHuntActiveState(false)}
+                onClick={() => void setHuntLive(false)}
               >
                 Idle
               </button>
@@ -721,7 +737,7 @@ export function ActiveHuntPanel() {
                 aria-pressed={huntActive}
                 data-active={huntActive || undefined}
                 disabled={busy}
-                onClick={() => void setHuntActiveState(true)}
+                onClick={() => void setHuntLive(true)}
               >
                 Active
               </button>
@@ -737,7 +753,7 @@ export function ActiveHuntPanel() {
                 aria-pressed={!requestsOpen}
                 data-active={!requestsOpen || undefined}
                 disabled={busy}
-                onClick={() => void setSlotRequestsOpen(false)}
+                onClick={() => void setHuntLive(false)}
               >
                 Requests closed
               </button>
@@ -747,7 +763,7 @@ export function ActiveHuntPanel() {
                 aria-pressed={requestsOpen}
                 data-active={requestsOpen || undefined}
                 disabled={busy}
-                onClick={() => void setSlotRequestsOpen(true)}
+                onClick={() => void setHuntLive(true)}
               >
                 Requests open
               </button>

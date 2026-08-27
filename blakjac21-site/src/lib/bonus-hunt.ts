@@ -380,8 +380,9 @@ export function setStartAmount(
 export function setRequestsOpen(open: boolean): BonusHuntState {
   const state = getBonusHuntState();
   state.requestsOpen = open;
+  // Keep Active and Requests open linked together.
+  state.huntActive = open;
   if (open) {
-    state.huntActive = true;
     markHuntStarted(state);
   }
   return touch(state);
