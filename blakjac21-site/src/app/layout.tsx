@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Syne } from "next/font/google";
 import { SiteSessionProvider } from "@/hooks/useSiteSession";
+import { KickChatProvider } from "@/hooks/KickChatProvider";
 import "./globals.css";
 
 const display = Syne({
@@ -45,7 +46,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${display.variable} ${body.variable}`}>
       <body>
-        <SiteSessionProvider>{children}</SiteSessionProvider>
+        <SiteSessionProvider>
+          <KickChatProvider>{children}</KickChatProvider>
+        </SiteSessionProvider>
       </body>
     </html>
   );

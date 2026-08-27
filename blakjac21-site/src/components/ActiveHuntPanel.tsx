@@ -10,7 +10,10 @@ import {
   parseSlotRequestMessage,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
-import { useKickChat, type KickChatConnectionState } from "@/hooks/useKickChat";
+import {
+  useKickChatContext,
+  useKickChatSubscription,
+} from "@/hooks/KickChatProvider";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { useHuntBoard } from "@/components/HuntBoardContext";
@@ -109,9 +112,9 @@ async function pushHuntSync(state: BonusHuntState) {
 export function ActiveHuntPanel() {
   const { isAdmin, user } = useSiteSession();
   const { publishBoard } = useHuntBoard();
+  const { chatroomId, connectionState: chatConnection } = useKickChatContext();
   const canManage = Boolean(user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
-  const [chatroomId, setChatroomId] = useState<number | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -129,8 +132,6 @@ export function ActiveHuntPanel() {
   const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
     null,
   );
-  const [chatConnection, setChatConnection] =
-    useState<KickChatConnectionState>("idle");
   const [lastChatError, setLastChatError] = useState<string | null>(null);
   const guardUntilRef = useRef(0);
   const formFocusedRef = useRef(false);
@@ -221,7 +222,6 @@ export function ActiveHuntPanel() {
   }, [publishBoard]);
 
   const requestsOpen = state?.requestsOpen ?? false;
-  const chatListening = Boolean(chatroomId);
   const chatStatusLabel = !chatroomId
     ? "Loading Kick chatroom…"
     : chatConnection === "connected"
@@ -328,27 +328,6 @@ export function ActiveHuntPanel() {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadChatroom() {
-      try {
-        const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
-        const data = (await res.json()) as { chatroomId?: number };
-        if (!cancelled && data.chatroomId) setChatroomId(data.chatroomId);
-      } catch {
-        if (!cancelled) setChatroomId(null);
-      }
-    }
-
-    loadChatroom();
-    const timer = setInterval(loadChatroom, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, []);
-
   const handleChatMessage = useCallback(
     async (message: { username: string; content: string }) => {
       if (!requestsOpen) return;
@@ -393,12 +372,7 @@ export function ActiveHuntPanel() {
     [requestsOpen, publishBoard, canManage],
   );
 
-  useKickChat({
-    chatroomId,
-    enabled: chatListening,
-    onMessage: handleChatMessage,
-    onConnectionChange: setChatConnection,
-  });
+  useKickChatSubscription(handleChatMessage);
 
   async function adminRequest(
     url: string,

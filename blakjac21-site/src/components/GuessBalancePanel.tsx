@@ -7,7 +7,11 @@ import {
   getClosestGuesses,
   parseBalanceGuess,
 } from "@/lib/guess-balance";
-import { isBalanceGuessMessage, useKickChat } from "@/hooks/useKickChat";
+import {
+  useKickChatContext,
+  useKickChatSubscription,
+} from "@/hooks/KickChatProvider";
+import { isBalanceGuessMessage } from "@/hooks/useKickChat";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./GuessBalancePanel.module.css";
 
@@ -18,8 +22,8 @@ async function fetchState(): Promise<GuessBalanceState> {
 
 export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) {
   const { isAdmin, ready: sessionReady } = useSiteSession();
+  const { chatroomId, connectionState } = useKickChatContext();
   const [state, setState] = useState<GuessBalanceState | null>(null);
-  const [chatroomId, setChatroomId] = useState<number | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,7 +48,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
       : [];
 
   const entriesOpen = state?.entriesOpen ?? false;
-  const chatConnected = Boolean(entriesOpen && chatroomId);
+  const chatLive = connectionState === "connected" && Boolean(chatroomId);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,25 +67,6 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
     return () => {
       cancelled = true;
       clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadChatroom() {
-      try {
-        const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
-        const data = (await res.json()) as { chatroomId?: number };
-        if (!cancelled && data.chatroomId) setChatroomId(data.chatroomId);
-      } catch {
-        if (!cancelled) setChatroomId(null);
-      }
-    }
-
-    loadChatroom();
-    return () => {
-      cancelled = true;
     };
   }, []);
 
@@ -110,11 +95,7 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
     [entriesOpen],
   );
 
-  useKickChat({
-    chatroomId,
-    enabled: chatConnected,
-    onMessage: handleChatMessage,
-  });
+  useKickChatSubscription(handleChatMessage);
 
   async function adminRequest(
     url: string,
@@ -185,11 +166,17 @@ export function GuessBalancePanel({ fullPage = false }: { fullPage?: boolean }) 
           {entriesOpen ? "Entries open" : "Entries closed"}
         </span>
         <span className={styles.chatStatus}>
-          {entriesOpen
-            ? chatConnected
-              ? "Listening to Kick chat"
-              : "Connecting to chat…"
-            : "Open entries to capture guesses"}
+          {!chatroomId
+            ? "Loading Kick chatroom…"
+            : chatLive
+              ? entriesOpen
+                ? "Kick chat live — listening for balance guesses"
+                : "Kick chat live — open entries to capture guesses"
+              : connectionState === "connecting"
+                ? "Connecting to Kick chat…"
+                : connectionState === "error"
+                  ? "Kick chat reconnecting…"
+                  : "Waiting for Kick chat…"}
         </span>
       </div>
 

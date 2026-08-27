@@ -7,7 +7,10 @@ import {
   messageMatchesGiveawayKeyword,
   type GiveawayState,
 } from "@/lib/giveaway";
-import { useKickChat } from "@/hooks/useKickChat";
+import {
+  useKickChatContext,
+  useKickChatSubscription,
+} from "@/hooks/KickChatProvider";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import {
   GiveawayWheel,
@@ -39,8 +42,8 @@ async function fetchState(): Promise<GiveawayState> {
 
 export function GiveawayPanel() {
   const { isAdmin, ready: sessionReady } = useSiteSession();
+  const { chatroomId, connectionState } = useKickChatContext();
   const [state, setState] = useState<GiveawayState | null>(null);
-  const [chatroomId, setChatroomId] = useState<number | null>(null);
   const [keywordDraft, setKeywordDraft] = useState("");
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -62,7 +65,7 @@ export function GiveawayPanel() {
 
   const entriesOpen = state?.entriesOpen ?? false;
   const keyword = state?.keyword?.trim() ?? "";
-  const chatListening = Boolean(chatroomId);
+  const chatLive = connectionState === "connected" && Boolean(chatroomId);
 
   useEffect(() => {
     claimRef.current = claim;
@@ -89,25 +92,6 @@ export function GiveawayPanel() {
     return () => {
       cancelled = true;
       clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadChatroom() {
-      try {
-        const res = await fetch("/api/kick/chatroom", { cache: "no-store" });
-        const data = (await res.json()) as { chatroomId?: number };
-        if (!cancelled && data.chatroomId) setChatroomId(data.chatroomId);
-      } catch {
-        if (!cancelled) setChatroomId(null);
-      }
-    }
-
-    loadChatroom();
-    return () => {
-      cancelled = true;
     };
   }, []);
 
@@ -279,11 +263,7 @@ export function GiveawayPanel() {
     [entriesOpen, keyword, finishClaim],
   );
 
-  useKickChat({
-    chatroomId,
-    enabled: chatListening,
-    onMessage: handleChatMessage,
-  });
+  useKickChatSubscription(handleChatMessage);
 
   async function adminRequest(
     url: string,
@@ -403,9 +383,17 @@ export function GiveawayPanel() {
             {entriesOpen ? "Entries open" : "Entries closed"}
           </span>
           <span className={styles.chatStatus}>
-            {chatListening
-              ? "Listening to Kick chat"
-              : "Connecting to chat…"}
+            {!chatroomId
+              ? "Loading Kick chatroom…"
+              : chatLive
+                ? entriesOpen
+                  ? "Kick chat live — listening for giveaway keyword"
+                  : "Kick chat live — open entries to capture keyword"
+                : connectionState === "connecting"
+                  ? "Connecting to Kick chat…"
+                  : connectionState === "error"
+                    ? "Kick chat reconnecting…"
+                    : "Waiting for Kick chat…"}
           </span>
         </div>
 
