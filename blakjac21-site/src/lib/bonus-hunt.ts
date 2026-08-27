@@ -539,6 +539,21 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
   };
 }
 
+export function formatBonusNameWithTier(
+  name: string,
+  tier: BonusTier,
+): string {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (!trimmed) return trimmed;
+  // Avoid doubling if the name already ends with (Super) / (Epic)
+  const withoutSuffix = trimmed
+    .replace(/\s*\((?:super|epic)\)\s*$/i, "")
+    .trim();
+  if (tier === "super") return `${withoutSuffix} (Super)`;
+  if (tier === "epic") return `${withoutSuffix} (Epic)`;
+  return withoutSuffix;
+}
+
 export function addBonus(input: {
   name: string;
   betSize?: string | number | null;
@@ -551,7 +566,9 @@ export function addBonus(input: {
   state: BonusHuntState;
 } {
   const state = getBonusHuntState();
-  const trimmed = input.name.trim();
+  const tier: BonusTier =
+    input.tier === "super" || input.tier === "epic" ? input.tier : "normal";
+  const trimmed = formatBonusNameWithTier(input.name, tier);
   if (!trimmed) {
     return { accepted: false, reason: "Bonus name is required", state };
   }
@@ -579,9 +596,6 @@ export function addBonus(input: {
       return { accepted: false, reason: "Enter a valid win amount", state };
     }
   }
-
-  const tier: BonusTier =
-    input.tier === "super" || input.tier === "epic" ? input.tier : "normal";
 
   const requestedBy = input.requestedBy?.trim().toLowerCase() || null;
 

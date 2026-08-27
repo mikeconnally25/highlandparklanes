@@ -39,12 +39,6 @@ async function fetchState(): Promise<BonusHuntState> {
   return (await res.json()) as BonusHuntState;
 }
 
-function tierLabel(tier: BonusTier): string {
-  if (tier === "super") return "Super";
-  if (tier === "epic") return "Epic";
-  return "Normal";
-}
-
 function huntFingerprint(state: BonusHuntState): string {
   return [
     state.updatedAt,
@@ -1165,14 +1159,6 @@ export function ActiveHuntPanel() {
                       <td className={styles.colBreakEven}>{breakEvenLabel}</td>
                       <td className={styles.colName}>
                         <span className={styles.bonusName}>{bonus.name}</span>
-                        {bonus.tier !== "normal" ? (
-                          <span
-                            className={styles.tierBadge}
-                            data-tier={bonus.tier}
-                          >
-                            {tierLabel(bonus.tier)}
-                          </span>
-                        ) : null}
                         {bonus.requestedBy ? (
                           <span className={styles.bonusRequester}>
                             {bonus.requestedBy}
@@ -1336,7 +1322,7 @@ export function ActiveHuntPanel() {
               <p className={styles.adminHint}>
                 Signed in as admin via Kick. Use the Idle/Active and Requests
                 toggles above to run the hunt. Toggle Super or Epic before
-                adding a bonus to tag it.
+                adding a bonus to append (Super) or (Epic) to the slot name.
               </p>
             </div>
           ) : null}
