@@ -641,7 +641,6 @@ export function ActiveHuntPanel() {
         startAmount: state.startAmount ?? typedStartAmount,
       })
     : null;
-  const huntLabel = state?.title?.trim() || "—";
   const breakEvenLabel = stats ? formatBreakEvenLabel(stats) : "—";
   const activeSelectedRequestId =
     selectedRequestId &&
@@ -1181,7 +1180,7 @@ export function ActiveHuntPanel() {
                   <div ref={huntListMeasureRef}>
                     <table className={styles.table}>
                       <tbody>
-                        {bonuses.map((bonus) => (
+                        {bonuses.map((bonus, index) => (
                           <tr
                             key={bonus.id}
                             data-tier={
@@ -1189,7 +1188,7 @@ export function ActiveHuntPanel() {
                             }
                             data-new={bonus.id === newBonusId || undefined}
                           >
-                            <td className={styles.colHunt}>{huntLabel}</td>
+                            <td className={styles.colHunt}>{index + 1}</td>
                             <td className={styles.colBreakEven}>
                               {breakEvenLabel}
                             </td>
@@ -1265,14 +1264,14 @@ export function ActiveHuntPanel() {
                   {huntListScrolling ? (
                     <table className={styles.table} aria-hidden>
                       <tbody>
-                        {bonuses.map((bonus) => (
+                        {bonuses.map((bonus, index) => (
                           <tr
                             key={`loop-${bonus.id}`}
                             data-tier={
                               bonus.tier !== "normal" ? bonus.tier : undefined
                             }
                           >
-                            <td className={styles.colHunt}>{huntLabel}</td>
+                            <td className={styles.colHunt}>{index + 1}</td>
                             <td className={styles.colBreakEven}>
                               {breakEvenLabel}
                             </td>
