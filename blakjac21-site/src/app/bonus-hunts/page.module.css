@@ -186,43 +186,6 @@
   margin-top: 0.75rem;
 }
 
-.huntLayout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(22rem, 1.05fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.huntLayout:not([data-admin]) {
-  grid-template-columns: 1fr;
-}
-
-.widgetColumn {
-  position: sticky;
-  top: 1rem;
-  min-width: 0;
-}
-
-.widgetLabel {
-  margin: 0 0 0.55rem;
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-@media (max-width: 960px) {
-  .huntLayout {
-    grid-template-columns: 1fr;
-  }
-
-  .widgetColumn {
-    position: static;
-  }
-}
-
 .sectionTitle {
   margin: 0 0 0.75rem;
   font-family: var(--font-display);
