@@ -9,6 +9,7 @@ import {
   getHuntStats,
   appendSlotRequestToState,
   mergeHuntBoards,
+  parseMoneyAmount,
   parseSlotRequestMessage,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
@@ -632,7 +633,14 @@ export function ActiveHuntPanel() {
 
   const bonuses = sortBonusesForDisplay(state?.bonuses ?? []);
   const slotRequests = state?.slotRequests ?? [];
-  const stats = state ? getHuntStats(state) : null;
+  const typedStartAmount = parseMoneyAmount(startAmountInput);
+  const stats = state
+    ? getHuntStats({
+        ...state,
+        // Keep break-even live from the start-amount field even before save.
+        startAmount: state.startAmount ?? typedStartAmount,
+      })
+    : null;
   const huntLabel = state?.title?.trim() || "—";
   const breakEvenLabel = stats ? formatBreakEvenLabel(stats) : "—";
   const activeSelectedRequestId =
@@ -851,10 +859,26 @@ export function ActiveHuntPanel() {
                   onFocus={() => {
                     formFocusedRef.current = true;
                   }}
+                  onChange={(e) => {
+                    const nextValue = e.target.value;
+                    setStartAmountInput(nextValue);
+                    const parsed = parseMoneyAmount(nextValue);
+                    const base = stateRef.current;
+                    if (!base) return;
+                    const next: BonusHuntState = {
+                      ...base,
+                      startAmount: parsed,
+                      updatedAt: new Date().toISOString(),
+                    };
+                    fingerprintRef.current = huntFingerprint(next);
+                    stateRef.current = next;
+                    setState(next);
+                    publishBoard(next);
+                  }}
                   onBlur={() => {
                     formFocusedRef.current = false;
+                    void saveStartAmount();
                   }}
-                  onChange={(e) => setStartAmountInput(e.target.value)}
                   placeholder="e.g. 500 or $1,000"
                   autoComplete="off"
                   spellCheck={false}
@@ -864,7 +888,7 @@ export function ActiveHuntPanel() {
                 type="button"
                 className={styles.addBtn}
                 disabled={busy}
-                onClick={saveStartAmount}
+                onClick={() => void saveStartAmount()}
               >
                 Save start amount
               </button>
@@ -897,15 +921,11 @@ export function ActiveHuntPanel() {
             <p className={styles.statHint}>
               {stats?.breakEvenReached
                 ? `Recovered ${formatBetSize(stats.totalWins)} of ${formatBetSize(stats.startAmount)}`
-                : stats?.remainingToRecover != null && stats.remainingBet > 0
-                  ? `${formatBetSize(stats.remainingToRecover)} left ÷ ${formatBetSize(stats.remainingBet)} remaining bet`
-                  : stats?.startAmount != null && stats.totalBet > 0
-                    ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
-                    : stats?.startAmount == null
-                      ? "Save a start amount to calculate break-even"
-                      : stats?.totalBet === 0
-                        ? "Add bet sizes on bonuses to calculate break-even"
-                        : "Needs start amount, bets, and remaining bonuses"}
+                : stats?.startAmount != null && stats.totalBet > 0
+                  ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)} total bet`
+                  : stats?.startAmount == null
+                    ? "Save a start amount to calculate break-even"
+                    : "Add bet sizes on bonuses to calculate break-even"}
             </p>
           </div>
         </div>

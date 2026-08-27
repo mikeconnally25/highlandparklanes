@@ -555,17 +555,42 @@ export function sortBonusesForDisplay(bonuses: BonusItem[]): BonusItem[] {
 }
 
 export function getHuntStats(state: BonusHuntState): BonusHuntStats {
+  const startAmountRaw = state.startAmount as unknown;
+  const startAmount =
+    typeof startAmountRaw === "number"
+      ? startAmountRaw
+      : typeof startAmountRaw === "string"
+        ? Number.parseFloat(startAmountRaw.replace(/[^0-9.-]/g, ""))
+        : null;
+  const start =
+    startAmount != null && Number.isFinite(startAmount) && startAmount > 0
+      ? startAmount
+      : null;
+
   const totalBet = state.bonuses.reduce((sum, bonus) => {
-    return bonus.betSize != null && bonus.betSize > 0 ? sum + bonus.betSize : sum;
+    const bet =
+      typeof bonus.betSize === "number"
+        ? bonus.betSize
+        : typeof bonus.betSize === "string"
+          ? Number.parseFloat(String(bonus.betSize).replace(/[^0-9.-]/g, ""))
+          : null;
+    return bet != null && Number.isFinite(bet) && bet > 0 ? sum + bet : sum;
   }, 0);
 
-  const openedBonuses = state.bonuses.filter(
-    (bonus) => bonus.winAmount != null && bonus.betSize != null && bonus.betSize > 0,
-  );
-  const remainingBonuses = state.bonuses.filter(
-    (bonus) =>
-      bonus.winAmount == null && bonus.betSize != null && bonus.betSize > 0,
-  );
+  const openedBonuses = state.bonuses.filter((bonus) => {
+    const bet =
+      typeof bonus.betSize === "number"
+        ? bonus.betSize
+        : null;
+    return bonus.winAmount != null && bet != null && bet > 0;
+  });
+  const remainingBonuses = state.bonuses.filter((bonus) => {
+    const bet =
+      typeof bonus.betSize === "number"
+        ? bonus.betSize
+        : null;
+    return bonus.winAmount == null && bet != null && bet > 0;
+  });
 
   const totalWins = state.bonuses.reduce((sum, bonus) => {
     return bonus.winAmount != null ? sum + bonus.winAmount : sum;
@@ -589,32 +614,24 @@ export function getHuntStats(state: BonusHuntState): BonusHuntStats {
       : null;
 
   const remainingToRecover =
-    state.startAmount != null && state.startAmount > 0
-      ? Math.round(Math.max(0, state.startAmount - totalWins) * 100) / 100
+    start != null
+      ? Math.round(Math.max(0, start - totalWins) * 100) / 100
       : null;
 
-  const breakEvenReached =
-    state.startAmount != null &&
-    state.startAmount > 0 &&
-    totalWins >= state.startAmount;
+  const breakEvenReached = start != null && totalWins >= start;
 
-  // Needed average x on remaining unopened bonuses to recover start bankroll.
-  // Fall back to full-list break-even whenever remaining bet can't be used yet
-  // (no bets left unopened, or no wins logged).
+  // Classic avg x to break even = start bankroll ÷ total bet on the hunt list.
   let breakEvenX: number | null = null;
-  if (state.startAmount != null && state.startAmount > 0) {
+  if (start != null && totalBet > 0) {
     if (breakEvenReached) {
       breakEvenX = 0;
-    } else if (remainingBet > 0 && remainingToRecover != null) {
-      breakEvenX =
-        Math.round((remainingToRecover / remainingBet) * 100) / 100;
-    } else if (totalBet > 0) {
-      breakEvenX = Math.round((state.startAmount / totalBet) * 100) / 100;
+    } else {
+      breakEvenX = Math.round((start / totalBet) * 100) / 100;
     }
   }
 
   return {
-    startAmount: state.startAmount,
+    startAmount: start,
     totalBet,
     totalWins,
     remainingToRecover,
