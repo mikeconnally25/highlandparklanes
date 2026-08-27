@@ -649,6 +649,7 @@
 }
 
 .colBet {
+  width: 12%;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.84rem;
@@ -658,7 +659,13 @@
 }
 
 .colWin {
+  width: 18%;
   min-width: 8.5rem;
+}
+
+.colAction {
+  width: 6%;
+  text-align: right;
 }
 
 .winEditor {
