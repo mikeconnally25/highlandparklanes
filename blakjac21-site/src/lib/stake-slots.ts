@@ -46,9 +46,9 @@ const GROUPS: StakeGroupConfig[] = [
 ];
 
 /** Full catalog crawl cadence */
-const REFRESH_INTERVAL_MS = 10_000;
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 /** How often to refresh group gameCount metadata */
-const META_REFRESH_INTERVAL_MS = 10_000;
+const META_REFRESH_INTERVAL_MS = 60 * 1000;
 /** Negative live-lookup cache (invalid names) */
 const NEGATIVE_CACHE_MS = 5 * 60 * 1000;
 /** Positive live-lookup cache */
@@ -328,7 +328,7 @@ export async function refreshStakeSlotMeta(): Promise<void> {
 
 /**
  * Full prefix crawl of both Stake groups (Only on Stake + New Releases).
- * Runs automatically every 10 seconds when the previous crawl has finished,
+ * Runs automatically every few minutes when the previous crawl has finished,
  * and on-demand via admin `GET /api/bonus-hunt/slots?refresh=1`.
  */
 export async function refreshStakeSlotCatalog(

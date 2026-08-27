@@ -1,6 +1,14 @@
-import { getPastHunt, getPastHunts } from "@/lib/bonus-hunt";
+import {
+  flushBonusHuntPersist,
+  getPastHunt,
+  getPastHunts,
+  hydrateBonusHuntFromRemote,
+} from "@/lib/bonus-hunt";
 
 export async function GET(request: Request) {
+  await hydrateBonusHuntFromRemote();
+  await flushBonusHuntPersist();
+
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
 

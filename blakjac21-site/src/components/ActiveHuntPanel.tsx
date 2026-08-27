@@ -81,25 +81,45 @@ function preferState(
     remote.bonuses.length > 0 &&
     remote.bonuses.every((bonus) => localIds.has(bonus.id));
 
-  // Never flash an empty board over a populated one (serverless cold/stale)
-  if (local.bonuses.length > 0 && remote.bonuses.length === 0) return local;
-  if (local.slotRequests.length > 0 && remote.slotRequests.length === 0) {
+  const remoteReset =
+    remoteT > 0 &&
+    !remote.huntActive &&
+    !remote.requestsOpen &&
+    remote.bonuses.length === 0 &&
+    remote.slotRequests.length === 0 &&
+    !remote.title.trim() &&
+    remote.startAmount == null;
+
+  // Intentional end/clear must win when it's newer.
+  if (remoteReset && remoteT >= localT) return remote;
+
+  // Cold/empty serverless responses should not wipe a populated board.
+  if (
+    local.bonuses.length > 0 &&
+    remote.bonuses.length === 0 &&
+    remoteT <= localT
+  ) {
     return local;
   }
-  if (local.requestsOpen && !remote.requestsOpen) {
-    if (guarded || remoteT <= localT + 8000) return local;
+  if (
+    local.slotRequests.length > 0 &&
+    remote.slotRequests.length === 0 &&
+    remoteT <= localT
+  ) {
+    return local;
   }
+
+  // Trust newer remote for flag flips (open/close requests, idle/active).
+  if (remoteT > localT) return remote;
   if (remoteT < localT) return local;
 
-  // Divergent instance with fewer/different rows — keep the richer local board
+  // Same timestamp: keep richer local board while guarded.
   if (remote.bonuses.length < local.bonuses.length) {
     if (guarded) return local;
     if (!remoteIsSubset) return local;
-    if (remoteT <= localT + 1500) return local;
   }
   if (remote.slotRequests.length < local.slotRequests.length) {
     if (guarded) return local;
-    if (remoteT <= localT + 1500) return local;
   }
 
   return remote;
@@ -122,11 +142,11 @@ async function pushHuntSync(state: BonusHuntState) {
 }
 
 export function ActiveHuntPanel() {
-  const { isAdmin, user } = useSiteSession();
+  const { isAdmin, user, ready: sessionReady } = useSiteSession();
   const { publishBoard } = useHuntBoard();
   const { chatroomId, connectionState: chatConnection, reconnectChat } =
     useKickChatContext();
-  const canManage = Boolean(user && isAdmin);
+  const canManage = Boolean(sessionReady && user && isAdmin);
   const [state, setState] = useState<BonusHuntState | null>(null);
   const [showAdmin, setShowAdmin] = useState(true);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -272,28 +292,31 @@ export function ActiveHuntPanel() {
       canManage &&
       prev &&
       prev.bonuses.length > next.bonuses.length &&
-      merged.bonuses.length > next.bonuses.length
+      merged.bonuses.length > next.bonuses.length &&
+      !(!merged.huntActive && merged.bonuses.length === 0)
     ) {
       void pushHuntSync(merged);
     }
 
-    setHuntTitle((current) => current || merged.title);
-    setStartAmountInput((current) =>
-      current
-        ? current
-        : merged.startAmount != null
-          ? String(merged.startAmount)
-          : "",
-    );
+    if (!formFocusedRef.current) {
+      setHuntTitle(merged.title);
+      setStartAmountInput(
+        merged.startAmount != null ? String(merged.startAmount) : "",
+      );
+    }
     setWinDrafts((current) => {
+      const copy: Record<string, string> = {};
       let draftsChanged = false;
-      const copy = { ...current };
       for (const bonus of merged.bonuses) {
-        if (copy[bonus.id] === undefined) {
-          copy[bonus.id] =
-            bonus.winAmount != null ? String(bonus.winAmount) : "";
-          draftsChanged = true;
-        }
+        const nextVal =
+          bonus.winAmount != null ? String(bonus.winAmount) : "";
+        const prevVal = current[bonus.id];
+        copy[bonus.id] =
+          formFocusedRef.current && prevVal !== undefined ? prevVal : nextVal;
+        if (copy[bonus.id] !== prevVal) draftsChanged = true;
+      }
+      if (Object.keys(current).length !== Object.keys(copy).length) {
+        draftsChanged = true;
       }
       return draftsChanged ? copy : current;
     });
@@ -383,23 +406,22 @@ export function ActiveHuntPanel() {
         return;
       }
 
-      // Apply on this browser first so serverless splits can't drop the request.
-      const localBoard = stateRef.current;
-      if (localBoard?.requestsOpen) {
+      // Streamer tab owns optimistic queue + sync so serverless splits don't drop !s.
+      if (canManage && stateRef.current?.requestsOpen) {
         const local = appendSlotRequestToState(
-          localBoard,
+          stateRef.current,
           message.username,
           resolvedName,
         );
         if (local.accepted) {
           setLastChatError(null);
           fingerprintRef.current = huntFingerprint(local.state);
+          guardUntilRef.current = nowMs() + 20_000;
           publishBoard(local.state);
           stateRef.current = local.state;
           setState(local.state);
-          if (canManage) void pushHuntSync(local.state);
-        } else if (canManage && local.reason) {
-          // Duplicate / max-per-user — still surface for the streamer.
+          void pushHuntSync(local.state);
+        } else if (local.reason) {
           setLastChatError(local.reason);
         }
       }
@@ -417,17 +439,15 @@ export function ActiveHuntPanel() {
           error?: string;
           state?: BonusHuntState;
         };
-        const board =
-          res.ok
-            ? data
-            : data.state && Array.isArray(data.state.bonuses)
-              ? data.state
-              : data.updatedAt && Array.isArray(data.bonuses)
-                ? data
-                : null;
+        const board = res.ok
+          ? data
+          : data.state && Array.isArray(data.state.bonuses)
+            ? data.state
+            : data.updatedAt && Array.isArray(data.bonuses)
+              ? data
+              : null;
 
         if (board) {
-          // Prefer the richer of local vs server (keep queue if serverless lagged).
           const merged = preferState(
             stateRef.current,
             board,
@@ -442,7 +462,6 @@ export function ActiveHuntPanel() {
         }
 
         if (!res.ok && canManage && data.error) {
-          // Ignore "closed" when this browser already accepted locally.
           if (
             data.error === "Slot requests are closed" &&
             stateRef.current?.requestsOpen
@@ -452,8 +471,7 @@ export function ActiveHuntPanel() {
           setLastChatError(data.error);
         }
       } catch {
-        // Local accept + sync already handled the happy path for the streamer tab.
-        if (canManage && !stateRef.current?.slotRequests.length) {
+        if (canManage && !(stateRef.current?.slotRequests.length ?? 0)) {
           setLastChatError("Could not reach server for slot request");
         }
       }
@@ -512,6 +530,15 @@ export function ActiveHuntPanel() {
           window.dispatchEvent(new Event("bonus-hunt-history-changed"));
         }
       }
+      if (
+        url.includes("/api/bonus-hunt/bonus/remove") &&
+        body &&
+        "all" in body &&
+        (body as { all?: boolean }).all
+      ) {
+        setWinDrafts({});
+        setSelectedRequestId(null);
+      }
       return next;
     } catch {
       setAdminError("Could not reach server");
@@ -551,10 +578,18 @@ export function ActiveHuntPanel() {
   async function handleAddBonus(event: FormEvent) {
     event.preventDefault();
 
-    if (selectedRequestId) {
+    const requestId =
+      selectedRequestId &&
+      (stateRef.current?.slotRequests ?? []).some(
+        (req) => req.id === selectedRequestId,
+      )
+        ? selectedRequestId
+        : null;
+
+    if (requestId) {
       const next = await adminRequest("/api/bonus-hunt/admin", {
         action: "promote-request",
-        id: selectedRequestId,
+        id: requestId,
         betSize,
         winAmount,
         tier: selectedTier,
@@ -1051,7 +1086,7 @@ export function ActiveHuntPanel() {
             className={styles.addBtn}
             disabled={busy || !bonusName.trim()}
           >
-            {selectedRequestId ? "Add selected to list" : "Add to list"}
+            {activeSelectedRequestId ? "Add selected to list" : "Add to list"}
           </button>
         </form>
         ) : null}
@@ -1242,7 +1277,15 @@ export function ActiveHuntPanel() {
                 <button
                   type="button"
                   className={styles.adminBtnSecondary}
-                  disabled={busy || !state?.huntActive}
+                  disabled={
+                    busy ||
+                    !(
+                      state?.huntActive ||
+                      (state?.bonuses.length ?? 0) > 0 ||
+                      state?.startAmount != null ||
+                      Boolean(state?.title?.trim())
+                    )
+                  }
                   onClick={() =>
                     adminRequest("/api/bonus-hunt/admin", {
                       action: "end-hunt",
@@ -1271,7 +1314,7 @@ export function ActiveHuntPanel() {
                     : " · not crawled yet"}
                   {slotCatalog.nextRefreshAt
                     ? ` · next auto ${new Date(slotCatalog.nextRefreshAt).toLocaleString()}`
-                    : " · auto every 10s when stale"}
+                    : " · auto every 5m when stale"}
                   {slotCatalog.lastError
                     ? ` · error: ${slotCatalog.lastError}`
                     : ""}

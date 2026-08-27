@@ -35,7 +35,16 @@ export async function POST(request: Request) {
     ? body.slotRequests.length
     : 0;
   const currentRequests = current.slotRequests.length;
+  const incomingReset =
+    incomingT > 0 &&
+    !body.huntActive &&
+    !body.requestsOpen &&
+    body.bonuses.length === 0 &&
+    incomingRequests === 0 &&
+    !String(body.title ?? "").trim() &&
+    body.startAmount == null;
   const incomingRicher =
+    (incomingReset && incomingT >= currentT) ||
     Boolean(body.requestsOpen) !== current.requestsOpen ||
     incomingRequests > currentRequests ||
     body.bonuses.length > current.bonuses.length ||

@@ -84,13 +84,14 @@ export function BonusHuntsBoard() {
           />
         </button>
 
-        {activeOpen ? (
-          <div className={styles.dropdownBody}>
-            <div className={styles.card}>
-              <ActiveHuntPanel />
-            </div>
+        <div
+          className={activeOpen ? styles.dropdownBody : styles.dropdownBodyHidden}
+          aria-hidden={activeOpen ? undefined : true}
+        >
+          <div className={styles.card}>
+            <ActiveHuntPanel />
           </div>
-        ) : null}
+        </div>
       </section>
 
       <section className={styles.section} aria-labelledby="past-hunts">

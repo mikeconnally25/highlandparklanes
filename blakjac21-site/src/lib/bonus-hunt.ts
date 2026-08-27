@@ -175,8 +175,20 @@ export async function hydrateBonusHuntFromRemote(): Promise<BonusHuntState> {
     const history = await readRemoteJson<PastHuntResult[]>(HISTORY_FILE);
     if (Array.isArray(history)) {
       const local = g.__bonusHuntHistory ?? [];
-      g.__bonusHuntHistory =
-        history.length >= local.length ? history : local;
+      // Prefer the set that contains all of the other's ids, else the newer/longer archive.
+      const localIds = new Set(local.map((h) => h.id));
+      const remoteIds = new Set(history.map((h) => h.id));
+      const remoteHasAllLocal = [...localIds].every((id) => remoteIds.has(id));
+      const localHasAllRemote = [...remoteIds].every((id) => localIds.has(id));
+      if (remoteHasAllLocal && history.length >= local.length) {
+        g.__bonusHuntHistory = history;
+      } else if (localHasAllRemote && local.length > history.length) {
+        g.__bonusHuntHistory = local;
+      } else if (history.length >= local.length) {
+        g.__bonusHuntHistory = history;
+      } else {
+        g.__bonusHuntHistory = local;
+      }
     }
   } catch {
     /* keep local */
@@ -323,6 +335,7 @@ export function removePastHunt(id: string): {
   const next = history.filter((hunt) => hunt.id !== id);
   const g = globalThis as StoreGlobal;
   g.__bonusHuntHistory = next;
+  persistHistory(next);
   return { removed: next.length < before, hunts: next };
 }
 

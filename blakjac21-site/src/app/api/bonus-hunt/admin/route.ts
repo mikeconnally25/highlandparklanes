@@ -2,6 +2,7 @@ import {
   clearPastHunts,
   clearSlotRequests,
   endAndArchiveHunt,
+  hydrateBonusHuntFromRemote,
   promoteSlotRequestToBonus,
   removePastHunt,
   removeSlotRequest,
@@ -18,6 +19,9 @@ export async function POST(request: Request) {
   if (!(await authorizeStreamerAdmin(request))) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Always hydrate before mutating so cold serverless instances don't wipe Redis.
+  await hydrateBonusHuntFromRemote();
 
   let body: {
     action?:
