@@ -566,9 +566,93 @@ export function ActiveHuntPanel() {
     }
   }
 
+  async function setHuntActiveState(active: boolean) {
+    if (Boolean(state?.huntActive) === active) return;
+    await adminRequest("/api/bonus-hunt/admin", {
+      action: "set-active",
+      active,
+    });
+  }
+
+  async function setSlotRequestsOpen(open: boolean) {
+    if (requestsOpen === open) return;
+    await adminRequest("/api/bonus-hunt/toggle", { open });
+  }
+
+  const huntActive = Boolean(state?.huntActive);
+
   return (
     <div className={styles.wrap}>
       <div className={styles.statusRow}>
+        {canManage ? (
+          <>
+            <div
+              className={styles.huntStatusGroup}
+              role="group"
+              aria-label="Hunt status"
+            >
+              <button
+                type="button"
+                className={`${styles.huntStatusToggle} ${styles.huntIdle}`}
+                aria-pressed={!huntActive}
+                data-active={!huntActive || undefined}
+                disabled={busy}
+                onClick={() => void setHuntActiveState(false)}
+              >
+                Idle
+              </button>
+              <button
+                type="button"
+                className={`${styles.huntStatusToggle} ${styles.huntActiveBtn}`}
+                aria-pressed={huntActive}
+                data-active={huntActive || undefined}
+                disabled={busy}
+                onClick={() => void setHuntActiveState(true)}
+              >
+                Active
+              </button>
+            </div>
+            <div
+              className={styles.huntStatusGroup}
+              role="group"
+              aria-label="Slot requests"
+            >
+              <button
+                type="button"
+                className={`${styles.huntStatusToggle} ${styles.huntIdle}`}
+                aria-pressed={!requestsOpen}
+                data-active={!requestsOpen || undefined}
+                disabled={busy}
+                onClick={() => void setSlotRequestsOpen(false)}
+              >
+                Requests closed
+              </button>
+              <button
+                type="button"
+                className={`${styles.huntStatusToggle} ${styles.huntActiveBtn}`}
+                aria-pressed={requestsOpen}
+                data-active={requestsOpen || undefined}
+                disabled={busy}
+                onClick={() => void setSlotRequestsOpen(true)}
+              >
+                Requests open
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <span
+              className={`${styles.statusBadge} ${huntActive ? styles.statusOpen : styles.statusClosed}`}
+            >
+              {huntActive ? "Hunt active" : "Hunt idle"}
+            </span>
+            <span
+              className={`${styles.statusBadge} ${requestsOpen ? styles.statusOpen : styles.statusClosed}`}
+            >
+              {requestsOpen ? "Slot requests open" : "Slot requests closed"}
+            </span>
+          </>
+        )}
         <span
           className={`${styles.statusBadge} ${chatConnection === "connected" ? styles.statusOpen : styles.statusClosed}`}
         >
@@ -579,11 +663,6 @@ export function ActiveHuntPanel() {
               : chatConnection === "error"
                 ? "Kick chat reconnecting"
                 : "Kick chat idle"}
-        </span>
-        <span
-          className={`${styles.statusBadge} ${requestsOpen ? styles.statusOpen : styles.statusClosed}`}
-        >
-          {requestsOpen ? "Slot requests open" : "Slot requests closed"}
         </span>
         <span className={styles.chatStatus}>{chatStatusLabel}</span>
       </div>
@@ -1047,26 +1126,6 @@ export function ActiveHuntPanel() {
               <div className={styles.adminActions}>
                 <button
                   type="button"
-                  className={styles.adminBtnPrimary}
-                  disabled={busy || requestsOpen}
-                  onClick={() =>
-                    adminRequest("/api/bonus-hunt/toggle", { open: true })
-                  }
-                >
-                  Open !s requests
-                </button>
-                <button
-                  type="button"
-                  className={styles.adminBtnSecondary}
-                  disabled={busy || !requestsOpen}
-                  onClick={() =>
-                    adminRequest("/api/bonus-hunt/toggle", { open: false })
-                  }
-                >
-                  Close !s requests
-                </button>
-                <button
-                  type="button"
                   className={styles.adminBtnSecondary}
                   disabled={busy}
                   onClick={() =>
@@ -1138,8 +1197,9 @@ export function ActiveHuntPanel() {
                 <ObsOverlayLink />
               </div>
               <p className={styles.adminHint}>
-                Signed in as admin via Kick. Toggle Super or Epic before adding a
-                bonus to tag it.
+                Signed in as admin via Kick. Use the Idle/Active and Requests
+                toggles above to run the hunt. Toggle Super or Epic before
+                adding a bonus to tag it.
               </p>
             </div>
           ) : null}
