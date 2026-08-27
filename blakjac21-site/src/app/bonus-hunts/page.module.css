@@ -85,20 +85,6 @@
   padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2rem) 2rem;
 }
 
-.eyebrow {
-  display: inline-flex;
-  margin: 0 0 0.75rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--gold);
-  border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
-  background: color-mix(in srgb, var(--gold) 8%, transparent);
-}
-
 .title {
   margin: 0;
   font-family: var(--font-display);

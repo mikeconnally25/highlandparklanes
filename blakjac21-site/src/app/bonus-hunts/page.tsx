@@ -24,7 +24,6 @@ export default function BonusHuntsPage() {
       </header>
 
       <main className={styles.main}>
-        <p className={styles.eyebrow}>Community</p>
         <h1 className={styles.title}>Bonus Hunts</h1>
         <p className={styles.lead}>
           Use the Active hunt dropdown for the live board. End a hunt to archive
