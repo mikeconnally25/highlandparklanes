@@ -512,51 +512,9 @@ export function ActiveHuntPanel() {
     }
   }
 
-  async function setHuntActiveState(active: boolean) {
-    if (Boolean(state?.huntActive) === active) return;
-    await adminRequest("/api/bonus-hunt/admin", {
-      action: "set-active",
-      active,
-    });
-  }
-
   return (
     <div className={styles.wrap}>
       <div className={styles.statusRow}>
-        {canManage ? (
-          <div
-            className={styles.huntStatusGroup}
-            role="group"
-            aria-label="Hunt status"
-          >
-            <button
-              type="button"
-              className={`${styles.huntStatusToggle} ${styles.huntIdle}`}
-              aria-pressed={!state?.huntActive}
-              data-active={!state?.huntActive || undefined}
-              disabled={busy}
-              onClick={() => void setHuntActiveState(false)}
-            >
-              Idle
-            </button>
-            <button
-              type="button"
-              className={`${styles.huntStatusToggle} ${styles.huntActiveBtn}`}
-              aria-pressed={Boolean(state?.huntActive)}
-              data-active={state?.huntActive || undefined}
-              disabled={busy}
-              onClick={() => void setHuntActiveState(true)}
-            >
-              Active
-            </button>
-          </div>
-        ) : (
-          <span
-            className={`${styles.statusBadge} ${state?.huntActive ? styles.statusOpen : styles.statusClosed}`}
-          >
-            {state?.huntActive ? "Hunt active" : "Hunt idle"}
-          </span>
-        )}
         <span
           className={`${styles.statusBadge} ${requestsOpen ? styles.statusOpen : styles.statusClosed}`}
         >
