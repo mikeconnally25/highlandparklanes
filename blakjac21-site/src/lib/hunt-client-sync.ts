@@ -77,8 +77,12 @@ export function readHuntHashSeed(): BonusHuntState | null {
   }
 }
 
-export function buildOverlayUrl(origin: string, state: BonusHuntState | null) {
-  const base = `${origin}/bonus-hunts/overlay`;
+export function buildOverlayUrl(
+  origin: string,
+  state: BonusHuntState | null,
+  path = "/bonus-hunts/overlay",
+) {
+  const base = `${origin}${path}`;
   if (!state || state.bonuses.length === 0) return base;
   try {
     const encoded = encodeURIComponent(JSON.stringify(state));
@@ -88,4 +92,11 @@ export function buildOverlayUrl(origin: string, state: BonusHuntState | null) {
   } catch {
     return base;
   }
+}
+
+export function buildHuntListOverlayUrl(
+  origin: string,
+  state: BonusHuntState | null,
+) {
+  return buildOverlayUrl(origin, state, "/bonus-hunts/overlay/list");
 }

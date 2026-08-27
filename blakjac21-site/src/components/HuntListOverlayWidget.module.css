@@ -1,0 +1,214 @@
+.widget {
+  --list-bg-1: #071018;
+  --list-bg-2: #0c1a24;
+  --list-border: color-mix(in srgb, var(--accent, #22e0ff) 22%, transparent);
+  --list-muted: color-mix(in srgb, #d7eef8 55%, transparent);
+  width: 100%;
+  max-width: 52rem;
+  font-family: var(--font-body), "DM Sans", sans-serif;
+  color: #f4fbff;
+}
+
+.obs {
+  padding: 0;
+  background: transparent;
+}
+
+.preview {
+  padding: 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 14rem;
+  padding: 0.7rem 0.75rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--list-border);
+  background:
+    radial-gradient(
+      ellipse at top,
+      color-mix(in srgb, var(--accent, #22e0ff) 14%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(165deg, var(--list-bg-2), var(--list-bg-1) 70%);
+  overflow: hidden;
+}
+
+.topBar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.1rem 0.2rem 0.15rem;
+}
+
+.brand {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold, #7ee8ff);
+}
+
+.huntTitle {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fff;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tablePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-height: 10rem;
+  padding: 0.55rem 0.55rem 0.45rem;
+  border-radius: 0.55rem;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.tableHead,
+.tableRow {
+  display: grid;
+  grid-template-columns: 3.4rem 5.6rem minmax(0, 1fr) 5rem 5.4rem;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.tableHead {
+  padding: 0.1rem 0.2rem 0.4rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--list-muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #22e0ff) 18%, transparent);
+}
+
+.alignEnd {
+  text-align: right;
+}
+
+.tableViewport {
+  position: relative;
+  flex: 1;
+  min-height: 8rem;
+  max-height: 18rem;
+  overflow: hidden;
+}
+
+.tableTrack {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableTrack[data-scrolling] {
+  animation: huntListScroll var(--scroll-duration, 18s) linear infinite;
+}
+
+.tableBody {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.tableRow {
+  padding: 0.4rem 0.2rem;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+}
+
+.tableRow:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.tableRow[data-tier="super"] {
+  background: color-mix(in srgb, var(--accent, #22e0ff) 10%, transparent);
+}
+
+.tableRow[data-tier="epic"] {
+  background: color-mix(in srgb, var(--gold, #7ee8ff) 12%, transparent);
+}
+
+.colHunt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: color-mix(in srgb, #fff 70%, transparent);
+}
+
+.colBreakEven {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent, #22e0ff);
+}
+
+.colName {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.bonusName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: #fff;
+}
+
+.requester {
+  flex: 0 0 auto;
+  font-weight: 500;
+  font-size: 0.66rem;
+  color: var(--list-muted);
+}
+
+.colBet,
+.colWin {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.empty {
+  margin: 0;
+  padding: 1.4rem 0.5rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--list-muted);
+}
+
+@keyframes huntListScroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@media (max-width: 640px) {
+  .tableHead,
+  .tableRow {
+    grid-template-columns: 2.4rem 4.4rem minmax(0, 1fr) 4.2rem 4.6rem;
+    font-size: 0.72rem;
+    gap: 0.3rem;
+  }
+
+  .tableHead {
+    font-size: 0.55rem;
+  }
+}
