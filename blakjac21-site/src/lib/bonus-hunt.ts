@@ -344,10 +344,7 @@ export function removePastHunt(id: string): {
 export function setHuntTitle(title: string): BonusHuntState {
   const state = getBonusHuntState();
   state.title = title.trim();
-  if (state.title) {
-    state.huntActive = true;
-    markHuntStarted(state);
-  }
+  // Title-only edit — do not flip Active / Requests open.
   return touch(state);
 }
 

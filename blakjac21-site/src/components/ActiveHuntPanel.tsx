@@ -62,6 +62,16 @@ function huntFingerprint(state: BonusHuntState): string {
   ].join("::");
 }
 
+function linkHuntLiveFlags(state: BonusHuntState): BonusHuntState {
+  const live = state.huntActive || state.requestsOpen;
+  if (state.huntActive === live && state.requestsOpen === live) return state;
+  return {
+    ...state,
+    huntActive: live,
+    requestsOpen: live,
+  };
+}
+
 function preferState(
   local: BonusHuntState | null,
   remote: BonusHuntState,
@@ -264,7 +274,9 @@ export function ActiveHuntPanel() {
 
   const applyRemoteState = useCallback((next: BonusHuntState) => {
     const prev = stateRef.current;
-    const merged = preferState(prev, next, guardUntilRef.current);
+    const merged = linkHuntLiveFlags(
+      preferState(prev, next, guardUntilRef.current),
+    );
     const fp = huntFingerprint(merged);
     if (fp === fingerprintRef.current) return;
 
@@ -805,29 +817,13 @@ export function ActiveHuntPanel() {
             onBlur={() => {
               formFocusedRef.current = false;
               const next = huntTitle.trim();
-              if (next !== (state?.title ?? "").trim()) {
-                void adminRequest("/api/bonus-hunt/admin", {
-                  action: "set-title",
-                  title: next,
-                });
-              }
+              if (next === (stateRef.current?.title ?? "").trim()) return;
+              void adminRequest("/api/bonus-hunt/admin", {
+                action: "set-title",
+                title: next,
+              });
             }}
-            onChange={(e) => {
-              const nextTitle = e.target.value;
-              setHuntTitle(nextTitle);
-              const base = stateRef.current;
-              if (!base) return;
-              const next: BonusHuntState = {
-                ...base,
-                title: nextTitle,
-                huntActive: base.huntActive || Boolean(nextTitle.trim()),
-                updatedAt: new Date().toISOString(),
-              };
-              fingerprintRef.current = huntFingerprint(next);
-              stateRef.current = next;
-              setState(next);
-              publishBoard(next);
-            }}
+            onChange={(e) => setHuntTitle(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.currentTarget.blur();
