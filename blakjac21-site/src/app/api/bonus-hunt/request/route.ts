@@ -1,11 +1,15 @@
 import {
   addSlotRequest,
+  hydrateBonusHuntFromRemote,
   parseSlotRequestMessage,
 } from "@/lib/bonus-hunt";
 import { huntJson } from "@/lib/hunt-api";
 import { resolveAllowedStakeSlot } from "@/lib/stake-slots";
 
 export async function POST(request: Request) {
+  // Pull shared board first so serverless instances see requestsOpen.
+  await hydrateBonusHuntFromRemote();
+
   let body: { username?: string; message?: string; slotName?: string };
   try {
     body = (await request.json()) as {
@@ -39,7 +43,7 @@ export async function POST(request: Request) {
 
   const allowed = await resolveAllowedStakeSlot(parsed.slotName);
   if (!allowed.ok) {
-    return Response.json(
+    return huntJson(
       { error: allowed.reason, allowed: false },
       { status: 400 },
     );

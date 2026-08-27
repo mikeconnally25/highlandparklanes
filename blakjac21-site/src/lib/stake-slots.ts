@@ -394,7 +394,31 @@ export function getCatalogNextRefreshAt(): string | null {
 function findInCatalog(slotName: string): StakeSlot | null {
   const key = normalizeSlotKey(slotName);
   if (!key) return null;
-  return catalog.byNormalizedName.get(key) ?? null;
+
+  const exact = catalog.byNormalizedName.get(key);
+  if (exact) return exact;
+
+  const prefix: StakeSlot[] = [];
+  const contains: StakeSlot[] = [];
+  for (const [nameKey, slot] of catalog.byNormalizedName) {
+    if (nameKey.startsWith(key) || key.startsWith(nameKey)) {
+      prefix.push(slot);
+    } else if (nameKey.includes(key)) {
+      contains.push(slot);
+    }
+  }
+
+  if (prefix.length === 1) return prefix[0];
+  if (prefix.length > 1) {
+    const shortest = [...prefix].sort(
+      (a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name),
+    );
+    const best = shortest[0];
+    const tied = shortest.filter((s) => s.name.length === best.name.length);
+    return tied.length === 1 ? best : null;
+  }
+  if (contains.length === 1) return contains[0];
+  return null;
 }
 
 function pickExactLiveMatch(
@@ -404,21 +428,53 @@ function pickExactLiveMatch(
   const key = normalizeSlotKey(slotName);
   if (!key) return null;
 
-  const exact = hits.filter(
-    (h) => h.inGroup && normalizeSlotKey(h.name) === key,
-  );
-  if (exact.length === 0) return null;
+  const inGroup = hits.filter((h) => h.inGroup);
+  if (inGroup.length === 0) return null;
+
+  const exact = inGroup.filter((h) => normalizeSlotKey(h.name) === key);
+  const pool = exact.length > 0
+    ? exact
+    : inGroup.filter((h) => {
+        const nameKey = normalizeSlotKey(h.name);
+        return nameKey.startsWith(key) || key.startsWith(nameKey);
+      });
+
+  // Prefer a unique fuzzy match so "!s waylander" still resolves.
+  const unique =
+    pool.length > 0
+      ? pool
+      : (() => {
+          const contains = inGroup.filter((h) =>
+            normalizeSlotKey(h.name).includes(key),
+          );
+          return contains.length === 1 ? contains : [];
+        })();
+
+  if (unique.length === 0) return null;
+
+  // If multiple prefix matches, only accept when one name equals the query
+  // or there is a single shortest/closest candidate.
+  let chosen = unique;
+  if (unique.length > 1) {
+    const shortest = [...unique].sort(
+      (a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name),
+    );
+    const best = shortest[0];
+    const tied = shortest.filter((h) => h.name.length === best.name.length);
+    if (tied.length !== 1 && exact.length === 0) return null;
+    chosen = exact.length > 0 ? exact : [best];
+  }
 
   const byId = new Map<string, StakeSlot>();
-  for (const hit of exact) {
+  for (const hit of chosen) {
     mergeSlot(byId, hit, hit.source);
   }
   return [...byId.values()][0] ?? null;
 }
 
 /**
- * Live Stake lookup: search both groups and require an exact name match
- * that is a member of Only on Stake and/or New Releases.
+ * Live Stake lookup: search both groups and accept an exact or unique
+ * close name match that is a member of Only on Stake and/or New Releases.
  */
 export async function resolveStakeSlotLive(
   slotName: string,
@@ -473,7 +529,7 @@ export async function resolveAllowedStakeSlot(
     return {
       ok: false,
       reason:
-        "Slot must be from Stake Only on Stake or New Releases (exact name)",
+        "Slot must be from Stake Only on Stake or New Releases (close name match)",
     };
   }
 
@@ -498,7 +554,7 @@ export async function resolveAllowedStakeSlot(
     return {
       ok: false,
       reason:
-        "Slot must be from Stake Only on Stake or New Releases (exact name)",
+        "Slot must be from Stake Only on Stake or New Releases (close name match)",
     };
   } catch {
     // If Stake is unreachable and catalog is empty, fail closed with a clear message
@@ -511,7 +567,7 @@ export async function resolveAllowedStakeSlot(
     return {
       ok: false,
       reason:
-        "Slot must be from Stake Only on Stake or New Releases (exact name)",
+        "Slot must be from Stake Only on Stake or New Releases (close name match)",
     };
   }
 }

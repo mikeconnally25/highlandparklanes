@@ -31,10 +31,19 @@ export async function POST(request: Request) {
   const current = getBonusHuntState();
   const currentT = Date.parse(current.updatedAt) || 0;
   const incomingT = Date.parse(body.updatedAt) || 0;
+  const incomingRequests = Array.isArray(body.slotRequests)
+    ? body.slotRequests.length
+    : 0;
+  const currentRequests = current.slotRequests.length;
   const incomingRicher =
+    Boolean(body.requestsOpen) !== current.requestsOpen ||
+    incomingRequests > currentRequests ||
     body.bonuses.length > current.bonuses.length ||
-    (body.bonuses.length === current.bonuses.length && incomingT >= currentT) ||
-    (current.bonuses.length === 0 && body.bonuses.length > 0);
+    (body.bonuses.length === current.bonuses.length &&
+      incomingRequests >= currentRequests &&
+      incomingT >= currentT) ||
+    (current.bonuses.length === 0 && body.bonuses.length > 0) ||
+    (currentRequests === 0 && incomingRequests > 0);
 
   if (!incomingRicher && incomingT < currentT) {
     await flushBonusHuntPersist();

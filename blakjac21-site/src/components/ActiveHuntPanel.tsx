@@ -7,6 +7,7 @@ import {
   formatBreakEvenLabel,
   formatMultiplier,
   getHuntStats,
+  appendSlotRequestToState,
   parseSlotRequestMessage,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
@@ -82,12 +83,22 @@ function preferState(
 
   // Never flash an empty board over a populated one (serverless cold/stale)
   if (local.bonuses.length > 0 && remote.bonuses.length === 0) return local;
+  if (local.slotRequests.length > 0 && remote.slotRequests.length === 0) {
+    return local;
+  }
+  if (local.requestsOpen && !remote.requestsOpen) {
+    if (guarded || remoteT <= localT + 8000) return local;
+  }
   if (remoteT < localT) return local;
 
   // Divergent instance with fewer/different rows — keep the richer local board
   if (remote.bonuses.length < local.bonuses.length) {
     if (guarded) return local;
     if (!remoteIsSubset) return local;
+    if (remoteT <= localT + 1500) return local;
+  }
+  if (remote.slotRequests.length < local.slotRequests.length) {
+    if (guarded) return local;
     if (remoteT <= localT + 1500) return local;
   }
 
@@ -339,7 +350,59 @@ export function ActiveHuntPanel() {
   const handleChatMessage = useCallback(
     async (message: { username: string; content: string }) => {
       if (!requestsOpen) return;
-      if (!parseSlotRequestMessage(message.content)) return;
+      const parsed = parseSlotRequestMessage(message.content);
+      if (!parsed) return;
+
+      let resolvedName = parsed.slotName;
+
+      try {
+        const checkRes = await fetch("/api/bonus-hunt/slots", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slotName: parsed.slotName }),
+        });
+        const check = (await checkRes.json()) as {
+          allowed?: boolean;
+          reason?: string;
+          slot?: { name?: string };
+        };
+        if (!check.allowed || !check.slot?.name) {
+          if (canManage) {
+            setLastChatError(
+              check.reason ??
+                `Could not verify slot "${parsed.slotName}" against Stake`,
+            );
+          }
+          return;
+        }
+        resolvedName = check.slot.name;
+      } catch {
+        if (canManage) {
+          setLastChatError("Could not verify slot name against Stake");
+        }
+        return;
+      }
+
+      // Apply on this browser first so serverless splits can't drop the request.
+      const localBoard = stateRef.current;
+      if (localBoard?.requestsOpen) {
+        const local = appendSlotRequestToState(
+          localBoard,
+          message.username,
+          resolvedName,
+        );
+        if (local.accepted) {
+          setLastChatError(null);
+          fingerprintRef.current = huntFingerprint(local.state);
+          publishBoard(local.state);
+          stateRef.current = local.state;
+          setState(local.state);
+          if (canManage) void pushHuntSync(local.state);
+        } else if (canManage && local.reason) {
+          // Duplicate / max-per-user — still surface for the streamer.
+          setLastChatError(local.reason);
+        }
+      }
 
       try {
         const res = await fetch("/api/bonus-hunt/request", {
@@ -347,32 +410,50 @@ export function ActiveHuntPanel() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             username: message.username,
-            message: message.content,
+            message: `!s ${resolvedName}`,
           }),
         });
-        const data = (await res.json()) as BonusHuntState & { error?: string };
-        if (res.ok) {
-          setLastChatError(null);
-          fingerprintRef.current = huntFingerprint(data);
-          publishBoard(data);
-          setState(data);
-          return;
-        }
+        const data = (await res.json()) as BonusHuntState & {
+          error?: string;
+          state?: BonusHuntState;
+        };
+        const board =
+          res.ok
+            ? data
+            : data.state && Array.isArray(data.state.bonuses)
+              ? data.state
+              : data.updatedAt && Array.isArray(data.bonuses)
+                ? data
+                : null;
 
-        if (data.updatedAt && Array.isArray(data.bonuses)) {
-          fingerprintRef.current = huntFingerprint(data);
-          publishBoard(data);
-          setState(data);
-        }
-
-        if (canManage) {
-          setLastChatError(
-            data.error ??
-              `Could not add slot request from ${message.username}`,
+        if (board) {
+          // Prefer the richer of local vs server (keep queue if serverless lagged).
+          const merged = preferState(
+            stateRef.current,
+            board,
+            guardUntilRef.current,
           );
+          fingerprintRef.current = huntFingerprint(merged);
+          publishBoard(merged);
+          stateRef.current = merged;
+          setState(merged);
+          if (canManage) void pushHuntSync(merged);
+          if (res.ok) setLastChatError(null);
+        }
+
+        if (!res.ok && canManage && data.error) {
+          // Ignore "closed" when this browser already accepted locally.
+          if (
+            data.error === "Slot requests are closed" &&
+            stateRef.current?.requestsOpen
+          ) {
+            return;
+          }
+          setLastChatError(data.error);
         }
       } catch {
-        if (canManage) {
+        // Local accept + sync already handled the happy path for the streamer tab.
+        if (canManage && !stateRef.current?.slotRequests.length) {
           setLastChatError("Could not reach server for slot request");
         }
       }

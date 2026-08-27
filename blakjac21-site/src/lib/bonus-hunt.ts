@@ -663,7 +663,9 @@ export function clearBonuses(): BonusHuntState {
 
 const MAX_SLOT_REQUESTS_PER_USER = 3;
 
-export function addSlotRequest(
+/** Pure helper — append a slot request onto a board snapshot (client or server). */
+export function appendSlotRequestToState(
+  state: BonusHuntState,
   username: string,
   slotName: string,
 ): {
@@ -671,8 +673,6 @@ export function addSlotRequest(
   reason?: string;
   state: BonusHuntState;
 } {
-  const state = getBonusHuntState();
-
   if (!state.requestsOpen) {
     return { accepted: false, reason: "Slot requests are closed", state };
   }
@@ -718,18 +718,45 @@ export function addSlotRequest(
     };
   }
 
-  state.slotRequests.push({
-    id: `${Date.now()}-${normalized}-${userRequests.length + 1}`,
-    username: normalized,
-    slotName: slot,
-    createdAt: new Date().toISOString(),
-  });
+  const next: BonusHuntState = {
+    ...state,
+    huntActive: true,
+    slotRequests: [
+      ...state.slotRequests,
+      {
+        id: `${Date.now()}-${normalized}-${userRequests.length + 1}`,
+        username: normalized,
+        slotName: slot,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+    updatedAt: new Date().toISOString(),
+  };
 
-  if (state.slotRequests.length > 200) {
-    state.slotRequests = state.slotRequests.slice(-200);
+  if (next.slotRequests.length > 200) {
+    next.slotRequests = next.slotRequests.slice(-200);
   }
 
-  return { accepted: true, state: touch(state) };
+  return { accepted: true, state: next };
+}
+
+export function addSlotRequest(
+  username: string,
+  slotName: string,
+): {
+  accepted: boolean;
+  reason?: string;
+  state: BonusHuntState;
+} {
+  const state = getBonusHuntState();
+  const result = appendSlotRequestToState(state, username, slotName);
+  if (!result.accepted) return result;
+
+  markHuntStarted(result.state);
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntState = result.state;
+  persistState(result.state);
+  return result;
 }
 
 export function clearSlotRequests(): BonusHuntState {
@@ -744,11 +771,13 @@ export function removeSlotRequest(id: string): BonusHuntState {
   return touch(state);
 }
 
-/** Parse `!s Slot Name` — null if missing a slot name. */
+/** Parse `!s Slot Name` / `!s: Slot Name` / `!slot Name` — null if missing a slot name. */
 export function parseSlotRequestMessage(
   content: string,
 ): { slotName: string } | null {
-  const match = content.trim().match(/^!s\s+(.+)$/i);
+  // Kick messages are usually plain text; strip a leading @mention if present.
+  const cleaned = content.trim().replace(/^@[^\s]+\s+/u, "");
+  const match = cleaned.match(/^!\s*s(?:lot)?\s*[:\-]?\s+(.+)$/i);
   if (!match) return null;
   const slotName = match[1].trim().replace(/\s+/g, " ").slice(0, 80);
   if (!slotName) return null;
