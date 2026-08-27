@@ -40,6 +40,16 @@
   color: var(--text-dim);
 }
 
+.chatError {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, #f87171 35%, transparent);
+  background: color-mix(in srgb, #f87171 8%, transparent);
+  font-size: 0.78rem;
+  color: #fecaca;
+}
+
 .huntTitle {
   margin: 0;
   font-family: var(--font-display);

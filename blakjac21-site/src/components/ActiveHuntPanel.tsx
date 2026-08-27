@@ -10,7 +10,7 @@ import {
   parseSlotRequestMessage,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
-import { useKickChat } from "@/hooks/useKickChat";
+import { useKickChat, type KickChatConnectionState } from "@/hooks/useKickChat";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { useHuntBoard } from "@/components/HuntBoardContext";
@@ -129,6 +129,9 @@ export function ActiveHuntPanel() {
   const [slotCatalog, setSlotCatalog] = useState<SlotCatalogSummary | null>(
     null,
   );
+  const [chatConnection, setChatConnection] =
+    useState<KickChatConnectionState>("idle");
+  const [lastChatError, setLastChatError] = useState<string | null>(null);
   const guardUntilRef = useRef(0);
   const formFocusedRef = useRef(false);
   const busyRef = useRef(false);
@@ -219,6 +222,17 @@ export function ActiveHuntPanel() {
 
   const requestsOpen = state?.requestsOpen ?? false;
   const chatConnected = Boolean(requestsOpen && chatroomId);
+  const chatStatusLabel = !requestsOpen
+    ? "Open slot requests to listen for !s in Kick chat"
+    : !chatroomId
+      ? "Loading Kick chatroom…"
+      : chatConnection === "connected"
+        ? "Listening for !s slot requests in Kick chat"
+        : chatConnection === "connecting"
+          ? "Connecting to Kick chat…"
+          : chatConnection === "error"
+            ? "Kick chat connection failed — retrying…"
+            : "Waiting for Kick chat…";
 
   const selectedTier: BonusTier =
     epicTier ? "epic" : superTier ? "super" : "normal";
@@ -347,23 +361,41 @@ export function ActiveHuntPanel() {
             message: message.content,
           }),
         });
+        const data = (await res.json()) as BonusHuntState & { error?: string };
         if (res.ok) {
-          const next = (await res.json()) as BonusHuntState;
-          fingerprintRef.current = huntFingerprint(next);
-          publishBoard(next);
-          setState(next);
+          setLastChatError(null);
+          fingerprintRef.current = huntFingerprint(data);
+          publishBoard(data);
+          setState(data);
+          return;
+        }
+
+        if (data.updatedAt && Array.isArray(data.bonuses)) {
+          fingerprintRef.current = huntFingerprint(data);
+          publishBoard(data);
+          setState(data);
+        }
+
+        if (canManage) {
+          setLastChatError(
+            data.error ??
+              `Could not add slot request from ${message.username}`,
+          );
         }
       } catch {
-        /* ignore */
+        if (canManage) {
+          setLastChatError("Could not reach server for slot request");
+        }
       }
     },
-    [requestsOpen],
+    [requestsOpen, publishBoard, canManage],
   );
 
   useKickChat({
     chatroomId,
     enabled: chatConnected,
     onMessage: handleChatMessage,
+    onConnectionChange: setChatConnection,
   });
 
   async function adminRequest(
@@ -566,14 +598,14 @@ export function ActiveHuntPanel() {
         >
           {requestsOpen ? "Slot requests open" : "Slot requests closed"}
         </span>
-        <span className={styles.chatStatus}>
-          {requestsOpen
-            ? chatConnected
-              ? "Listening for !s <slot> in Kick chat"
-              : "Connecting to chat…"
-            : "Open requests to capture !s <slot>"}
-        </span>
+        <span className={styles.chatStatus}>{chatStatusLabel}</span>
       </div>
+
+      {canManage && lastChatError ? (
+        <p className={styles.chatError} role="status">
+          {lastChatError}
+        </p>
+      ) : null}
 
       {canManage ? (
         <label className={styles.huntNumberLabel} htmlFor="hunt-number-input">
