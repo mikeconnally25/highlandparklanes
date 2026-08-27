@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
@@ -174,10 +174,11 @@ export function ActiveHuntPanel() {
   const busyRef = useRef(false);
   const fingerprintRef = useRef<string>("");
   const stateRef = useRef<BonusHuntState | null>(null);
-  const huntListRef = useRef<HTMLDivElement>(null);
-  const huntListPausedRef = useRef(false);
+  const huntListViewportRef = useRef<HTMLDivElement>(null);
+  const huntListMeasureRef = useRef<HTMLDivElement>(null);
   const prevBonusIdsRef = useRef<string[]>([]);
   const [newBonusId, setNewBonusId] = useState<string | null>(null);
+  const [huntListScrolling, setHuntListScrolling] = useState(false);
 
   useEffect(() => {
     busyRef.current = busy;
@@ -185,7 +186,6 @@ export function ActiveHuntPanel() {
 
   useEffect(() => {
     const list = state?.bonuses ?? [];
-    const el = huntListRef.current;
     const prevIds = prevBonusIdsRef.current;
     const currentIds = list.map((bonus) => bonus.id);
     const added = currentIds.filter((id) => !prevIds.includes(id));
@@ -197,33 +197,13 @@ export function ActiveHuntPanel() {
 
     prevBonusIdsRef.current = currentIds;
 
-    if (added.length === 0 || !el) return;
+    if (added.length === 0) return;
 
     const latestId = added[added.length - 1] ?? null;
     setNewBonusId(latestId);
     const flashTimer = window.setTimeout(() => setNewBonusId(null), 1600);
-    requestAnimationFrame(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    });
-
     return () => clearTimeout(flashTimer);
   }, [state?.bonuses]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      const el = huntListRef.current;
-      if (!el || huntListPausedRef.current) return;
-      if (el.scrollHeight <= el.clientHeight + 4) return;
-
-      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
-        el.scrollTop = 0;
-      } else {
-        el.scrollTop += 1;
-      }
-    }, 45);
-
-    return () => clearInterval(timer);
-  }, []);
 
   // Restore last known board immediately so serverless empties don't flash
   useEffect(() => {
@@ -659,6 +639,27 @@ export function ActiveHuntPanel() {
     slotRequests.some((req) => req.id === selectedRequestId)
       ? selectedRequestId
       : null;
+  const huntListDurationSec = Math.max(14, bonuses.length * 2.4);
+
+  useEffect(() => {
+    const viewport = huntListViewportRef.current;
+    const measure = huntListMeasureRef.current;
+    if (!viewport || !measure || bonuses.length === 0) {
+      setHuntListScrolling(false);
+      return;
+    }
+
+    function update() {
+      if (!viewport || !measure) return;
+      setHuntListScrolling(measure.scrollHeight > viewport.clientHeight + 4);
+    }
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(viewport);
+    observer.observe(measure);
+    return () => observer.disconnect();
+  }, [bonuses]);
 
   async function saveStartAmount() {
     await adminRequest("/api/bonus-hunt/admin", {
@@ -1108,30 +1109,8 @@ export function ActiveHuntPanel() {
           {bonuses.length === 0 ? (
             <p className={styles.empty}>No bonuses on the list yet.</p>
           ) : (
-            <div
-              ref={huntListRef}
-              className={styles.tableWrap}
-              data-running={bonuses.length > 0 || undefined}
-              onMouseEnter={() => {
-                huntListPausedRef.current = true;
-              }}
-              onMouseLeave={() => {
-                huntListPausedRef.current = false;
-              }}
-              onFocusCapture={() => {
-                huntListPausedRef.current = true;
-              }}
-              onBlurCapture={(event) => {
-                if (
-                  !event.currentTarget.contains(
-                    event.relatedTarget as Node | null,
-                  )
-                ) {
-                  huntListPausedRef.current = false;
-                }
-              }}
-            >
-              <table className={styles.table}>
+            <div className={styles.tableShell}>
+              <table className={`${styles.table} ${styles.tableHeadTable}`}>
                 <thead>
                   <tr>
                     <th scope="col">Hunt #</th>
@@ -1146,79 +1125,146 @@ export function ActiveHuntPanel() {
                     ) : null}
                   </tr>
                 </thead>
-                <tbody>
-                  {bonuses.map((bonus) => (
-                    <tr
-                      key={bonus.id}
-                      data-tier={
-                        bonus.tier !== "normal" ? bonus.tier : undefined
-                      }
-                      data-new={bonus.id === newBonusId || undefined}
-                    >
-                      <td className={styles.colHunt}>{huntLabel}</td>
-                      <td className={styles.colBreakEven}>{breakEvenLabel}</td>
-                      <td className={styles.colName}>
-                        <span className={styles.bonusName}>{bonus.name}</span>
-                        {bonus.requestedBy ? (
-                          <span className={styles.bonusRequester}>
-                            {bonus.requestedBy}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className={styles.colBet}>
-                        {formatBetSize(bonus.betSize)}
-                      </td>
-                      <td className={styles.colWin}>
-                        {canManage ? (
-                          <div className={styles.winEditor}>
-                            <input
-                              className={styles.winInput}
-                              type="text"
-                              inputMode="decimal"
-                              value={winDrafts[bonus.id] ?? ""}
-                              onChange={(e) =>
-                                setWinDrafts((current) => ({
-                                  ...current,
-                                  [bonus.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="0"
-                              aria-label={`Win amount for ${bonus.name}`}
-                            />
-                            <button
-                              type="button"
-                              className={styles.winSave}
-                              disabled={busy}
-                              onClick={() => saveWinAmount(bonus.id)}
-                            >
-                              Save
-                            </button>
-                          </div>
-                        ) : (
-                          formatBetSize(bonus.winAmount)
-                        )}
-                      </td>
-                      {canManage ? (
-                        <td className={styles.colAction}>
-                          <button
-                            type="button"
-                            className={styles.removeBtn}
-                            disabled={busy}
-                            onClick={() =>
-                              adminRequest("/api/bonus-hunt/bonus/remove", {
-                                id: bonus.id,
-                              })
-                            }
-                            aria-label={`Remove ${bonus.name}`}
-                          >
-                            ×
-                          </button>
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))}
-                </tbody>
               </table>
+              <div
+                ref={huntListViewportRef}
+                className={styles.tableViewport}
+                data-scrolling={huntListScrolling || undefined}
+              >
+                <div
+                  className={styles.tableTrack}
+                  data-scrolling={huntListScrolling || undefined}
+                  style={
+                    huntListScrolling
+                      ? ({
+                          "--scroll-duration": `${huntListDurationSec}s`,
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  <div ref={huntListMeasureRef}>
+                    <table className={styles.table}>
+                      <tbody>
+                        {bonuses.map((bonus) => (
+                          <tr
+                            key={bonus.id}
+                            data-tier={
+                              bonus.tier !== "normal" ? bonus.tier : undefined
+                            }
+                            data-new={bonus.id === newBonusId || undefined}
+                          >
+                            <td className={styles.colHunt}>{huntLabel}</td>
+                            <td className={styles.colBreakEven}>
+                              {breakEvenLabel}
+                            </td>
+                            <td className={styles.colName}>
+                              <span className={styles.bonusName}>
+                                {bonus.name}
+                              </span>
+                              {bonus.requestedBy ? (
+                                <span className={styles.bonusRequester}>
+                                  {bonus.requestedBy}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className={styles.colBet}>
+                              {formatBetSize(bonus.betSize)}
+                            </td>
+                            <td className={styles.colWin}>
+                              {canManage ? (
+                                <div className={styles.winEditor}>
+                                  <input
+                                    className={styles.winInput}
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={winDrafts[bonus.id] ?? ""}
+                                    onChange={(e) =>
+                                      setWinDrafts((current) => ({
+                                        ...current,
+                                        [bonus.id]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="0"
+                                    aria-label={`Win amount for ${bonus.name}`}
+                                  />
+                                  <button
+                                    type="button"
+                                    className={styles.winSave}
+                                    disabled={busy}
+                                    onClick={() => saveWinAmount(bonus.id)}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              ) : (
+                                formatBetSize(bonus.winAmount)
+                              )}
+                            </td>
+                            {canManage ? (
+                              <td className={styles.colAction}>
+                                <button
+                                  type="button"
+                                  className={styles.removeBtn}
+                                  disabled={busy}
+                                  onClick={() =>
+                                    adminRequest(
+                                      "/api/bonus-hunt/bonus/remove",
+                                      {
+                                        id: bonus.id,
+                                      },
+                                    )
+                                  }
+                                  aria-label={`Remove ${bonus.name}`}
+                                >
+                                  ×
+                                </button>
+                              </td>
+                            ) : null}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {huntListScrolling ? (
+                    <table className={styles.table} aria-hidden>
+                      <tbody>
+                        {bonuses.map((bonus) => (
+                          <tr
+                            key={`loop-${bonus.id}`}
+                            data-tier={
+                              bonus.tier !== "normal" ? bonus.tier : undefined
+                            }
+                          >
+                            <td className={styles.colHunt}>{huntLabel}</td>
+                            <td className={styles.colBreakEven}>
+                              {breakEvenLabel}
+                            </td>
+                            <td className={styles.colName}>
+                              <span className={styles.bonusName}>
+                                {bonus.name}
+                              </span>
+                              {bonus.requestedBy ? (
+                                <span className={styles.bonusRequester}>
+                                  {bonus.requestedBy}
+                                </span>
+                              ) : null}
+                            </td>
+                            <td className={styles.colBet}>
+                              {formatBetSize(bonus.betSize)}
+                            </td>
+                            <td className={styles.colWin}>
+                              {formatBetSize(bonus.winAmount)}
+                            </td>
+                            {canManage ? (
+                              <td className={styles.colAction} />
+                            ) : null}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : null}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -449,6 +449,54 @@
   color: var(--text-dim);
 }
 
+.tableShell {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.tableHeadTable {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.tableHeadTable thead th {
+  position: static;
+  box-shadow: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.tableViewport {
+  max-height: 18rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.tableTrack {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableTrack[data-scrolling] {
+  animation: huntListScroll var(--scroll-duration, 20s) linear infinite;
+}
+
+.tableViewport:hover .tableTrack[data-scrolling],
+.tableViewport:focus-within .tableTrack[data-scrolling] {
+  animation-play-state: paused;
+}
+
+@keyframes huntListScroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
 .tableWrap {
   max-height: 18rem;
   overflow-x: auto;
@@ -460,6 +508,12 @@
 
 .tableWrap[data-running] {
   scrollbar-gutter: stable;
+}
+
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
 }
 
 .table thead th {
@@ -474,6 +528,16 @@
   color: var(--text-dim);
   background: color-mix(in srgb, var(--bg-elevated) 92%, #0a1218);
   box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.tableHeadTable thead th {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, #0a1218);
 }
 
 .table th,
@@ -542,6 +606,7 @@
 }
 
 .colHunt {
+  width: 16%;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.78rem;
@@ -550,6 +615,7 @@
 }
 
 .colBreakEven {
+  width: 14%;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.84rem;
@@ -558,6 +624,7 @@
 }
 
 .colName {
+  width: 34%;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text);
