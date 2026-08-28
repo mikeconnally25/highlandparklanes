@@ -17,19 +17,21 @@ export function readHuntCache(): BonusHuntState | null {
   }
 }
 
-function isIntentionalReset(remote: BonusHuntState): boolean {
-  const remoteT = Date.parse(remote.updatedAt) || 0;
+function isIntentionalReset(state: BonusHuntState): boolean {
+  const remoteT = Date.parse(state.updatedAt) || 0;
   // createState uses epoch; intentional end/clear always stamps a real time.
   if (remoteT <= 0) return false;
   return (
-    !remote.huntActive &&
-    !remote.requestsOpen &&
-    remote.bonuses.length === 0 &&
-    remote.slotRequests.length === 0 &&
-    !remote.title.trim() &&
-    remote.startAmount == null
+    !state.huntActive &&
+    !state.requestsOpen &&
+    state.bonuses.length === 0 &&
+    state.slotRequests.length === 0 &&
+    !state.title.trim() &&
+    state.startAmount == null
   );
 }
+
+export { isIntentionalReset };
 
 export function preferHuntBoard(
   local: BonusHuntState | null,
@@ -43,6 +45,25 @@ export function preferHuntBoard(
   if (isIntentionalReset(remote) && remoteT >= localT) return remote;
 
   return mergeHuntBoards(local, remote);
+}
+
+/** Overlay/OBS: always accept an ended-hunt reset instead of merging stale rows. */
+export function resolveOverlayBoard(
+  local: BonusHuntState | null,
+  incoming: BonusHuntState,
+): BonusHuntState {
+  if (isIntentionalReset(incoming)) return incoming;
+  return preferHuntBoard(local, incoming);
+}
+
+export function clearOverlayHash() {
+  if (typeof window === "undefined") return;
+  if (!window.location.hash.startsWith("#hunt=")) return;
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
 }
 
 export function writeHuntCache(state: BonusHuntState) {
@@ -81,19 +102,12 @@ export function readHuntHashSeed(): BonusHuntState | null {
 
 export function buildOverlayUrl(
   origin: string,
-  state: BonusHuntState | null,
+  _state: BonusHuntState | null,
   path = "/bonus-hunts/overlay",
 ) {
-  const base = `${origin}${path}`;
-  if (!state || state.bonuses.length === 0) return base;
-  try {
-    const encoded = encodeURIComponent(JSON.stringify(state));
-    // Keep URL under common browser limits; fall back to bare path if huge
-    if (encoded.length > 12_000) return base;
-    return `${base}#hunt=${encoded}`;
-  } catch {
-    return base;
-  }
+  // OBS polls /api/bonus-hunt — avoid embedding hunt JSON in the URL so End hunt
+  // clears the overlay without re-copying the browser source link.
+  return `${origin.replace(/\/$/, "")}${path}`;
 }
 
 export function buildHuntListOverlayUrl(

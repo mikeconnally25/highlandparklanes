@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   buildHuntListOverlayUrl,
   buildOverlayUrl,
-  readHuntCache,
+  HUNT_LIVE_EVENT,
 } from "@/lib/hunt-client-sync";
 import styles from "./ObsOverlayLink.module.css";
 
@@ -17,13 +17,30 @@ export function ObsOverlayLink() {
 
   function statsUrl() {
     if (typeof window === "undefined") return "/bonus-hunts/overlay";
-    return buildOverlayUrl(window.location.origin, readHuntCache());
+    return buildOverlayUrl(window.location.origin, null);
   }
 
   function listUrl() {
     if (typeof window === "undefined") return "/bonus-hunts/overlay/list";
-    return buildHuntListOverlayUrl(window.location.origin, readHuntCache());
+    return buildHuntListOverlayUrl(window.location.origin, null);
   }
+
+  useEffect(() => {
+    setStatsPreview(statsUrl().replace(window.location.origin, "") || statsUrl());
+    setListPreview(listUrl().replace(window.location.origin, "") || listUrl());
+
+    function refreshPaths() {
+      setStatsPreview(
+        statsUrl().replace(window.location.origin, "") || statsUrl(),
+      );
+      setListPreview(
+        listUrl().replace(window.location.origin, "") || listUrl(),
+      );
+    }
+
+    window.addEventListener(HUNT_LIVE_EVENT, refreshPaths);
+    return () => window.removeEventListener(HUNT_LIVE_EVENT, refreshPaths);
+  }, []);
 
   async function copyUrl(kind: OverlayKind) {
     const url = kind === "stats" ? statsUrl() : listUrl();
@@ -54,7 +71,8 @@ export function ObsOverlayLink() {
         </button>
         <p className={styles.hint}>
           Width ~440 · Height ~720 · Transparent background. Stats, best/lucky
-          win, and compact bonus table.
+          win, and compact bonus table. Set once in OBS — the overlay clears
+          when you press End hunt and updates live for the next hunt.
         </p>
       </div>
 
@@ -70,8 +88,8 @@ export function ObsOverlayLink() {
         </button>
         <p className={styles.hint}>
           Width ~780 · Height ~520 · Transparent background. Matches the hunt
-          list columns (Hunt #, break even, slot, bet, win). Copy again after
-          adding bonuses so OBS gets the latest list.
+          list columns (Hunt #, break even, slot, bet, win). Same URL works
+          across hunts — no need to re-copy after End hunt.
         </p>
       </div>
     </div>

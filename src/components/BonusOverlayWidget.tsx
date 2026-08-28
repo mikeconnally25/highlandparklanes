@@ -11,10 +11,13 @@ import {
 } from "@/lib/bonus-hunt";
 import { useHuntBoardState } from "@/components/HuntBoardContext";
 import {
+  clearOverlayHash,
   HUNT_LIVE_EVENT,
+  isIntentionalReset,
   preferHuntBoard,
   readHuntCache,
   readHuntHashSeed,
+  resolveOverlayBoard,
   writeHuntCache,
 } from "@/lib/hunt-client-sync";
 import { SlotThumbnail } from "@/components/SlotThumbnail";
@@ -148,9 +151,16 @@ export function BonusOverlayWidget({
   const measureRef = useRef<HTMLDivElement | null>(null);
 
   function applyBoard(next: BonusHuntState, opts?: { persist?: boolean }) {
-    const merged = preferHuntBoard(boardRef.current, next);
+    const merged =
+      mode === "obs"
+        ? resolveOverlayBoard(boardRef.current, next)
+        : preferHuntBoard(boardRef.current, next);
     const fp = huntFingerprint(merged);
     if (fp === fingerprintRef.current && boardRef.current) return;
+
+    if (isIntentionalReset(merged)) {
+      clearOverlayHash();
+    }
 
     fingerprintRef.current = fp;
     boardRef.current = merged;
@@ -171,6 +181,7 @@ export function BonusOverlayWidget({
   }, [mode, boardSeed]);
 
   useEffect(() => {
+    if (mode === "obs") return;
     const seeded = readHuntHashSeed() ?? readHuntCache();
     if (!seeded) return;
     const frame = window.requestAnimationFrame(() => {
@@ -178,7 +189,7 @@ export function BonusOverlayWidget({
     });
     return () => window.cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     function onLive(event: Event) {
@@ -227,6 +238,7 @@ export function BonusOverlayWidget({
   const luckyWin = useMemo(() => findLuckyWin(bonuses), [bonuses]);
   const title = board?.title ?? "";
   const huntNo = huntNumberLabel(title);
+  const readyForNextHunt = Boolean(board && isIntentionalReset(board));
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -349,7 +361,11 @@ export function BonusOverlayWidget({
           </div>
 
           {bonuses.length === 0 ? (
-            <p className={styles.empty}>Waiting for bonuses…</p>
+            <p className={styles.empty}>
+              {readyForNextHunt
+                ? "Hunt ended — ready for the next one"
+                : "Waiting for bonuses…"}
+            </p>
           ) : (
             <div
               ref={viewportRef}
