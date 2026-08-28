@@ -1,17 +1,22 @@
 "use client";
 
+import type { BonusHuntState } from "@/lib/bonus-hunt";
 import { BonusOverlayWidget } from "@/components/BonusOverlayWidget";
 import { HuntListOverlayWidget } from "@/components/HuntListOverlayWidget";
 import styles from "./ObsOverlayPreview.module.css";
 
-export function ObsOverlayPreview() {
+type ObsOverlayPreviewProps = {
+  board?: BonusHuntState | null;
+};
+
+export function ObsOverlayPreview({ board = null }: ObsOverlayPreviewProps) {
   return (
     <div className={styles.wrap}>
       <div className={styles.previewBlock}>
         <p className={styles.label}>Live preview · Stats overlay</p>
         <div className={styles.frame} aria-label="Stats overlay preview">
           <div className={styles.scaledStats}>
-            <BonusOverlayWidget mode="preview" limit={16} />
+            <BonusOverlayWidget mode="preview" limit={16} boardSeed={board} />
           </div>
         </div>
       </div>
@@ -20,7 +25,7 @@ export function ObsOverlayPreview() {
         <p className={styles.label}>Live preview · Hunt list overlay</p>
         <div className={styles.frame} aria-label="Hunt list overlay preview">
           <div className={styles.scaledList}>
-            <HuntListOverlayWidget mode="preview" limit={16} />
+            <HuntListOverlayWidget mode="preview" limit={16} boardSeed={board} />
           </div>
         </div>
       </div>

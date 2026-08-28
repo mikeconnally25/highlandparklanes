@@ -81,6 +81,8 @@ function findLuckyWin(bonuses: BonusItem[]): BonusItem | null {
 type BonusOverlayWidgetProps = {
   mode?: "obs" | "preview";
   limit?: number;
+  /** Admin preview: use the hunt board already loaded in the panel. */
+  boardSeed?: BonusHuntState | null;
 };
 
 function BonusTableRows({
@@ -134,6 +136,7 @@ function BonusTableRows({
 export function BonusOverlayWidget({
   mode = "obs",
   limit,
+  boardSeed = null,
 }: BonusOverlayWidgetProps) {
   const effectiveLimit = limit ?? (mode === "obs" ? 100 : 24);
   const liveBoard = useHuntBoardState();
@@ -162,6 +165,12 @@ export function BonusOverlayWidget({
   }, [mode, liveBoard]);
 
   useEffect(() => {
+    if (mode !== "preview" || !boardSeed) return;
+    applyBoard(boardSeed, { persist: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, boardSeed]);
+
+  useEffect(() => {
     const seeded = readHuntHashSeed() ?? readHuntCache();
     if (!seeded) return;
     const frame = window.requestAnimationFrame(() => {
@@ -183,10 +192,9 @@ export function BonusOverlayWidget({
   }, []);
 
   useEffect(() => {
-    if (mode === "preview") return;
-
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const pollMs = mode === "preview" ? 4000 : POLL_MS;
 
     async function load() {
       try {
@@ -198,7 +206,7 @@ export function BonusOverlayWidget({
       } catch {
         /* ignore */
       } finally {
-        if (!cancelled) timer = setTimeout(load, POLL_MS);
+        if (!cancelled) timer = setTimeout(load, pollMs);
       }
     }
 

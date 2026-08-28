@@ -83,11 +83,13 @@ function HuntListRows({
 type HuntListOverlayWidgetProps = {
   mode?: "obs" | "preview";
   limit?: number;
+  boardSeed?: BonusHuntState | null;
 };
 
 export function HuntListOverlayWidget({
   mode = "obs",
   limit,
+  boardSeed = null,
 }: HuntListOverlayWidgetProps) {
   const effectiveLimit = limit ?? (mode === "obs" ? 100 : 24);
   const liveBoard = useHuntBoardState();
@@ -116,6 +118,12 @@ export function HuntListOverlayWidget({
   }, [mode, liveBoard]);
 
   useEffect(() => {
+    if (mode !== "preview" || !boardSeed) return;
+    applyBoard(boardSeed, { persist: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, boardSeed]);
+
+  useEffect(() => {
     const seeded = readHuntHashSeed() ?? readHuntCache();
     if (!seeded) return;
     const frame = window.requestAnimationFrame(() => {
@@ -137,10 +145,9 @@ export function HuntListOverlayWidget({
   }, []);
 
   useEffect(() => {
-    if (mode === "preview") return;
-
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const pollMs = mode === "preview" ? 4000 : POLL_MS;
 
     async function load() {
       try {
@@ -152,7 +159,7 @@ export function HuntListOverlayWidget({
       } catch {
         /* ignore */
       } finally {
-        if (!cancelled) timer = setTimeout(load, POLL_MS);
+        if (!cancelled) timer = setTimeout(load, pollMs);
       }
     }
 

@@ -1478,7 +1478,7 @@ export function ActiveHuntPanel() {
                 <p className={styles.adminHint}>
                   OBS overlay for this hunt board (admin only):
                 </p>
-                <ObsOverlayPreview />
+                <ObsOverlayPreview board={state} />
                 <ObsOverlayLink />
               </div>
               <p className={styles.adminHint}>

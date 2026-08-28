@@ -21,6 +21,12 @@
   padding: 0;
 }
 
+.preview .card {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--w-accent) 28%, transparent);
+}
+
 .card {
   display: flex;
   flex-direction: column;
