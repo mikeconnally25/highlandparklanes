@@ -1,0 +1,227 @@
+.wrap {
+  display: grid;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: 24rem;
+  animation: playerReveal 0.9s ease 0.15s both;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  padding: 0 0.15rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.badgeLive {
+  border-color: color-mix(in srgb, var(--live) 45%, transparent);
+  background: color-mix(in srgb, var(--live) 12%, transparent);
+  color: var(--live);
+}
+
+.badgeOffline {
+  border-color: color-mix(in srgb, var(--gold) 35%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--gold);
+}
+
+.badgeDot {
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badgeLive .badgeDot {
+  animation: livePulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent);
+}
+
+.title {
+  margin: 0;
+  flex: 1 1 8rem;
+  font-size: clamp(0.72rem, 1.2vw, 0.82rem);
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.viewers {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: #050806;
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border: 0;
+  display: block;
+  background: #000;
+  object-fit: contain;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.frame,
+.vodCard {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.vodCard {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.vodThumb,
+.vodFallbackBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vodFallbackBg {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--felt) 55%, #000) 0%,
+      #050d14 55%,
+      color-mix(in srgb, var(--gold) 18%, #050d14) 100%
+    );
+}
+
+.vodOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.75) 0%,
+    rgba(0, 0, 0, 0.25) 45%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  transition: background 0.25s ease;
+}
+
+.vodCard:hover .vodOverlay,
+.vodCard:focus-visible .vodOverlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.32) 45%,
+    rgba(0, 0, 0, 0.42) 100%
+  );
+}
+
+.playIcon {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+  box-shadow: 0 8px 24px rgba(34, 224, 255, 0.28);
+}
+
+.playTriangle {
+  width: 0;
+  height: 0;
+  margin-left: 0.12rem;
+  border-style: solid;
+  border-width: 0.35rem 0 0.35rem 0.55rem;
+  border-color: transparent transparent transparent var(--on-accent);
+}
+
+.vodCta {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(0.55rem, 1.6vw, 0.62rem);
+  color: #f4f7f2;
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 65%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 0.55rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes playerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  .playIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}

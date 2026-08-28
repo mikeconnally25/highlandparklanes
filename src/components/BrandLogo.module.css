@@ -1,0 +1,52 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.wrap:hover,
+.wrap:focus-visible {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.image {
+  display: block;
+  border-radius: 0.55rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.sm .image {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.md .image {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.lg .image {
+  width: 4rem;
+  height: 4rem;
+}
+
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .wordmark {
+    display: none;
+  }
+}

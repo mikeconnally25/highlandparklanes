@@ -1,0 +1,109 @@
+.wrap {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(100%, 26rem);
+  margin-inline: auto;
+}
+
+.pointer {
+  width: 0;
+  height: 0;
+  border-left: 0.7rem solid transparent;
+  border-right: 0.7rem solid transparent;
+  border-top: 1.15rem solid var(--gold);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  z-index: 2;
+  margin-bottom: -0.35rem;
+}
+
+.rim {
+  position: relative;
+  width: min(100%, 22rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  padding: 0.55rem;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.18), transparent 45%),
+    linear-gradient(145deg, #1a3a48 0%, #061018 55%, #0a2a36 100%);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35) inset,
+    0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.disk {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  will-change: transform;
+}
+
+.label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.labelText {
+  display: block;
+  width: 5.5rem;
+  margin-left: -2.75rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f2fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hub {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin: -1.7rem 0 0 -1.7rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, var(--accent) 0%, var(--accent-soft) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.hubText {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--on-accent);
+}
+
+.result {
+  margin: 0;
+  min-height: 1.5rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.result strong {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

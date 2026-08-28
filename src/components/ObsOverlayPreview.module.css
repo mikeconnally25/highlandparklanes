@@ -1,0 +1,80 @@
+.wrap {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.35rem;
+}
+
+.previewBlock {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.frame {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  background:
+    repeating-conic-gradient(
+      color-mix(in srgb, var(--text) 8%, transparent) 0% 25%,
+      transparent 0% 50%
+    )
+    50% / 14px 14px;
+  padding: 0.75rem;
+  overflow: auto;
+}
+
+.scaledStats,
+.scaledList {
+  margin-inline: auto;
+  width: max-content;
+  max-width: 100%;
+}
+
+.scaledStats {
+  zoom: 0.82;
+}
+
+.scaledList {
+  zoom: 0.68;
+}
+
+@supports not (zoom: 1) {
+  .scaledStats {
+    transform: scale(0.82);
+    transform-origin: top center;
+  }
+
+  .scaledList {
+    transform: scale(0.68);
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 720px) {
+  .scaledStats {
+    zoom: 0.72;
+  }
+
+  .scaledList {
+    zoom: 0.58;
+  }
+
+  @supports not (zoom: 1) {
+    .scaledStats {
+      transform: scale(0.72);
+    }
+
+    .scaledList {
+      transform: scale(0.58);
+    }
+  }
+}

@@ -1,0 +1,124 @@
+.strip {
+  margin: 0;
+  animation: stripIn 0.65s ease both;
+}
+
+.inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--glass-border);
+  background: var(--bg-elevated);
+  backdrop-filter: blur(18px);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.liveDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent);
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+
+.liveLabel {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--live);
+}
+
+.offlineLabel {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.detail {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viewers {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.15rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.action:hover,
+.action:focus-visible {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+@keyframes stripIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes livePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 65%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 0.4rem transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (max-width: 520px) {
+  .detail {
+    flex-basis: 100%;
+    white-space: normal;
+  }
+}
