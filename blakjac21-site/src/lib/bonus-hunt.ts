@@ -15,6 +15,8 @@ export type SlotRequest = {
   id: string;
   username: string;
   slotName: string;
+  /** Stake slot tile from kuratorGameQuery thumbnailUrl */
+  thumbnailUrl: string | null;
   createdAt: string;
 };
 
@@ -89,6 +91,7 @@ function normalizeState(state: BonusHuntState): BonusHuntState {
     (state.slotRequests ?? []).map((req) => ({
       ...req,
       slotName: req.slotName?.trim() || "—",
+      thumbnailUrl: req.thumbnailUrl ?? null,
     })),
   );
   if (!state.updatedAt) state.updatedAt = new Date(0).toISOString();
@@ -103,8 +106,15 @@ function dedupeSlotRequests(requests: SlotRequest[]): SlotRequest[] {
   );
   for (const req of sorted) {
     const key = req.slotName.trim().toLowerCase();
-    if (!key || bySlot.has(key)) continue;
-    bySlot.set(key, req);
+    if (!key) continue;
+    const prev = bySlot.get(key);
+    if (!prev) {
+      bySlot.set(key, req);
+      continue;
+    }
+    if (!prev.thumbnailUrl && req.thumbnailUrl) {
+      bySlot.set(key, req);
+    }
   }
   return [...bySlot.values()].sort(
     (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
@@ -230,7 +240,19 @@ export function mergeHuntBoards(
 
   const requestById = new Map<string, SlotRequest>();
   for (const req of older.slotRequests) requestById.set(req.id, req);
-  for (const req of newer.slotRequests) requestById.set(req.id, req);
+  for (const req of newer.slotRequests) {
+    const prev = requestById.get(req.id);
+    requestById.set(
+      req.id,
+      prev
+        ? {
+            ...prev,
+            ...req,
+            thumbnailUrl: req.thumbnailUrl ?? prev.thumbnailUrl,
+          }
+        : req,
+    );
+  }
 
   return removeFulfilledSlotRequests(
     normalizeState({
@@ -854,6 +876,7 @@ export function appendSlotRequestToState(
   state: BonusHuntState,
   username: string,
   slotName: string,
+  thumbnailUrl?: string | null,
 ): {
   accepted: boolean;
   reason?: string;
@@ -913,6 +936,7 @@ export function appendSlotRequestToState(
         id: `${Date.now()}-${normalized}-${userRequests.length + 1}`,
         username: normalized,
         slotName: slot,
+        thumbnailUrl: thumbnailUrl?.trim() || null,
         createdAt: new Date().toISOString(),
       },
     ],
@@ -929,13 +953,19 @@ export function appendSlotRequestToState(
 export function addSlotRequest(
   username: string,
   slotName: string,
+  thumbnailUrl?: string | null,
 ): {
   accepted: boolean;
   reason?: string;
   state: BonusHuntState;
 } {
   const state = getBonusHuntState();
-  const result = appendSlotRequestToState(state, username, slotName);
+  const result = appendSlotRequestToState(
+    state,
+    username,
+    slotName,
+    thumbnailUrl,
+  );
   if (!result.accepted) return result;
 
   markHuntStarted(result.state);

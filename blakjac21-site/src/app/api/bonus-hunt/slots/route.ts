@@ -36,6 +36,7 @@ export async function GET(request: Request) {
       name: slot.name,
       slug: slot.slug,
       sources: slot.sources,
+      thumbnailUrl: slot.thumbnailUrl,
     })),
   });
 }
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
       name: result.slot.name,
       slug: result.slot.slug,
       sources: result.slot.sources,
+      thumbnailUrl: result.slot.thumbnailUrl,
     },
   });
 }

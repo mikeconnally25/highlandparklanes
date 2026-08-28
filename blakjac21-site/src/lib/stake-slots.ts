@@ -10,6 +10,7 @@ export type StakeSlot = {
   id: string;
   name: string;
   slug: string;
+  thumbnailUrl: string | null;
   sources: StakeSlotSource[];
 };
 
@@ -168,6 +169,7 @@ type GameHit = {
   id: string;
   name: string;
   slug: string;
+  thumbnailUrl: string | null;
   inGroup: { id: string } | null;
 };
 
@@ -184,6 +186,7 @@ async function searchGroupGames(
         id
         name
         slug
+        thumbnailUrl
         inGroup: groupGame(groupName: $gn) { id }
       }
     }
@@ -222,12 +225,16 @@ function mergeSlot(
     if (!existing.sources.includes(source)) {
       existing.sources.push(source);
     }
+    if (!existing.thumbnailUrl && hit.thumbnailUrl) {
+      existing.thumbnailUrl = hit.thumbnailUrl;
+    }
     return;
   }
   map.set(hit.id, {
     id: hit.id,
     name: hit.name,
     slug: hit.slug,
+    thumbnailUrl: hit.thumbnailUrl ?? null,
     sources: [source],
   });
 }

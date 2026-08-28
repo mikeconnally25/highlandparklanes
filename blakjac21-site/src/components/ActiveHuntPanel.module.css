@@ -242,7 +242,7 @@
 
 .requestRow {
   display: grid;
-  grid-template-columns: 1.75rem 1fr auto;
+  grid-template-columns: 1.75rem 2.35rem 1fr auto;
   align-items: center;
   gap: 0.55rem;
   width: 100%;
@@ -280,6 +280,29 @@
 
 .requestRow[data-selected] .selectHint {
   color: var(--accent);
+}
+
+.slotThumb {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.35rem;
+  object-fit: cover;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.slotThumbPlaceholder {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-dim);
 }
 
 .bankrollRow {

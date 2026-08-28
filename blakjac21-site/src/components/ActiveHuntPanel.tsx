@@ -37,6 +37,33 @@ type SlotCatalogSummary = {
   lastError: string | null;
 };
 
+function SlotRequestArt({
+  slotName,
+  thumbnailUrl,
+}: {
+  slotName: string;
+  thumbnailUrl: string | null;
+}) {
+  if (thumbnailUrl) {
+    return (
+      <img
+        className={styles.slotThumb}
+        src={thumbnailUrl}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <span className={styles.slotThumbPlaceholder} aria-hidden>
+      {slotName.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 async function fetchState(): Promise<BonusHuntState> {
   const res = await fetch("/api/bonus-hunt", { cache: "no-store" });
   return (await res.json()) as BonusHuntState;
@@ -333,6 +360,7 @@ export function ActiveHuntPanel() {
       if (!parsed) return;
 
       let resolvedName = parsed.slotName;
+      let resolvedThumbnail: string | null = null;
 
       try {
         const checkRes = await fetch("/api/bonus-hunt/slots", {
@@ -343,7 +371,7 @@ export function ActiveHuntPanel() {
         const check = (await checkRes.json()) as {
           allowed?: boolean;
           reason?: string;
-          slot?: { name?: string };
+          slot?: { name?: string; thumbnailUrl?: string | null };
         };
         if (!check.allowed || !check.slot?.name) {
           if (canManage) {
@@ -355,6 +383,7 @@ export function ActiveHuntPanel() {
           return;
         }
         resolvedName = check.slot.name;
+        resolvedThumbnail = check.slot.thumbnailUrl ?? null;
       } catch {
         if (canManage) {
           setLastChatError("Could not verify slot name against Stake");
@@ -368,6 +397,7 @@ export function ActiveHuntPanel() {
           stateRef.current,
           message.username,
           resolvedName,
+          resolvedThumbnail,
         );
         if (local.accepted) {
           setLastChatError(null);
@@ -974,6 +1004,10 @@ export function ActiveHuntPanel() {
                         aria-pressed={selected}
                       >
                         <span className={styles.itemIndex}>{index + 1}</span>
+                        <SlotRequestArt
+                          slotName={req.slotName}
+                          thumbnailUrl={req.thumbnailUrl}
+                        />
                         <span className={styles.itemMeta}>
                           <span className={styles.itemName}>{req.username}</span>
                           <span className={styles.itemSlot}>{req.slotName}</span>
@@ -985,6 +1019,10 @@ export function ActiveHuntPanel() {
                     ) : (
                       <div className={styles.requestRow}>
                         <span className={styles.itemIndex}>{index + 1}</span>
+                        <SlotRequestArt
+                          slotName={req.slotName}
+                          thumbnailUrl={req.thumbnailUrl}
+                        />
                         <span className={styles.itemMeta}>
                           <span className={styles.itemName}>{req.username}</span>
                           <span className={styles.itemSlot}>{req.slotName}</span>

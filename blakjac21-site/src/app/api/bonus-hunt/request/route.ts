@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = addSlotRequest(username, allowed.slot.name);
+  const result = addSlotRequest(username, allowed.slot.name, allowed.slot.thumbnailUrl);
   if (!result.accepted) {
     return huntJson(
       { error: result.reason ?? "Request rejected", state: result.state },
