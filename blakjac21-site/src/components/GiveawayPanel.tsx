@@ -395,9 +395,7 @@ export function GiveawayPanel() {
                   : "Kick chat live — open entries to capture keyword"
                 : connectionState === "connecting"
                   ? "Connecting to Kick chat…"
-                  : connectionState === "error"
-                    ? "Kick chat reconnecting…"
-                    : "Waiting for Kick chat…"}
+                  : "Waiting for Kick chat…"}
           </span>
         </div>
 
