@@ -97,7 +97,7 @@ function AccountFormInner() {
             <li>
               Put them in the host environment (local:{" "}
               <code className={styles.setupCode}>.env.local</code>; production:
-              Railway Variables), then restart:
+              Vercel Environment Variables), then restart:
               {kickMissing.length > 0 ? (
                 <ul className={styles.missingList}>
                   {kickMissing.map((name) => (
@@ -115,14 +115,16 @@ function AccountFormInner() {
                     <code className={styles.setupCode}>KICK_CLIENT_SECRET</code>
                   </li>
                   <li>
-                    <code className={styles.setupCode}>KICK_REDIRECT_URI</code>{" "}
-                    (same URL as step 2)
-                  </li>
-                  <li>
-                    <code className={styles.setupCode}>NEXT_PUBLIC_SITE_URL</code>
+                    <code className={styles.setupCode}>SESSION_SECRET</code>
                   </li>
                 </ul>
               )}
+            </li>
+            <li>
+              Redirect URL env vars are optional — the site picks the callback
+              from the URL you are visiting. Register that same URL in Kick
+              once; you do not need to change it on redeploy if your public URL
+              stays the same.
             </li>
             <li>
               Reload this page — <strong>Continue with Kick</strong> will unlock

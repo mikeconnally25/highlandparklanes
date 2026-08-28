@@ -5,6 +5,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { cookies } from "next/headers";
+import { getConfiguredKickCallbackUrl } from "@/lib/site-url";
 
 export type SiteUser = {
   id: string;
@@ -55,16 +56,12 @@ function sessionSecret() {
 export function getKickOAuthConfig() {
   const clientId = process.env.KICK_CLIENT_ID?.trim() ?? "";
   const clientSecret = process.env.KICK_CLIENT_SECRET?.trim() ?? "";
-  const redirectUri =
-    process.env.KICK_REDIRECT_URI?.trim() ||
-    (process.env.NEXT_PUBLIC_SITE_URL
-      ? `${process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")}/api/account/kick/callback`
-      : "");
+  const redirectUri = getConfiguredKickCallbackUrl();
 
   const missing: string[] = [];
   if (!clientId) missing.push("KICK_CLIENT_ID");
   if (!clientSecret) missing.push("KICK_CLIENT_SECRET");
-  // Redirect URI is derived from the request origin at login time when unset.
+  // Redirect URI is derived from the live site URL at login time; env overrides are optional.
 
   return {
     clientId,
@@ -297,7 +294,7 @@ export async function beginKickOAuthLogin(options?: {
   const redirectUri = options?.redirectUri?.trim() || config.redirectUri;
   if (!config.clientId || !config.clientSecret || !redirectUri) {
     throw new SiteAuthError(
-      "Kick login is not configured. Set KICK_CLIENT_ID, KICK_CLIENT_SECRET, and KICK_REDIRECT_URI (or NEXT_PUBLIC_SITE_URL).",
+      "Kick login is not configured. Set KICK_CLIENT_ID and KICK_CLIENT_SECRET.",
       503,
     );
   }
