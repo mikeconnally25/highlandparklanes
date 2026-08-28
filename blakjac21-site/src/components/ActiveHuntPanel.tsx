@@ -379,6 +379,7 @@ export function ActiveHuntPanel() {
         } else if (local.reason) {
           setLastChatError(local.reason);
         }
+        return;
       }
 
       try {

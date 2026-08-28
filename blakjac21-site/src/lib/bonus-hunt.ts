@@ -85,12 +85,30 @@ function normalizeState(state: BonusHuntState): BonusHuntState {
     requestedBy: bonus.requestedBy ?? null,
     tier: bonus.tier ?? "normal",
   }));
-  state.slotRequests = (state.slotRequests ?? []).map((req) => ({
-    ...req,
-    slotName: req.slotName?.trim() || "—",
-  }));
+  state.slotRequests = dedupeSlotRequests(
+    (state.slotRequests ?? []).map((req) => ({
+      ...req,
+      slotName: req.slotName?.trim() || "—",
+    })),
+  );
   if (!state.updatedAt) state.updatedAt = new Date(0).toISOString();
   return state;
+}
+
+/** One queue row per slot name (matches appendSlotRequestToState rules). */
+function dedupeSlotRequests(requests: SlotRequest[]): SlotRequest[] {
+  const bySlot = new Map<string, SlotRequest>();
+  const sorted = [...requests].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
+  for (const req of sorted) {
+    const key = req.slotName.trim().toLowerCase();
+    if (!key || bySlot.has(key)) continue;
+    bySlot.set(key, req);
+  }
+  return [...bySlot.values()].sort(
+    (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+  );
 }
 
 function persistState(state: BonusHuntState) {
