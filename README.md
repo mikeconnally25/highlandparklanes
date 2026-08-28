@@ -4,6 +4,8 @@ Members sign up, get a coupon for **3 free games every week**, and staff validat
 
 Works on phones in the browser, and can be **installed to the home screen** like an app (PWA).
 
+> **Blakjac21 streaming site** moved out of this repo. See branch [`blakjac21-website`](https://github.com/mikeconnally25/highlandparklanes/tree/blakjac21-website) or clone that branch into its own project folder (`blakjac21 website`).
+
 ## Quick start (local)
 
 ```bash
