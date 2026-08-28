@@ -28,11 +28,12 @@ Temporary `vercel deploy --temporary` URLs change every run (~60 min expiry). Th
 
 #### 1. Connect GitHub → Vercel (do this once)
 
-1. Go to [vercel.com](https://vercel.com) → **Add New Project** → import `mikeconnally25/blakjac21-website`
-2. Leave **Root Directory** empty (repo root is the app)
-3. Framework: Next.js (auto-detected). Deploy
-4. Copy your **Production URL** (e.g. `https://blakjac21-website.vercel.app`) — it stays the same across redeploys
-5. Optional: add a custom domain under **Settings → Domains**
+1. Go to [vercel.com](https://vercel.com) → **Add New Project**
+2. Import `mikeconnally25/highlandparklanes` and set **Production Branch** to `blakjac21-website`, **or** create a dedicated repo from that branch and import it
+3. Leave **Root Directory** empty (repo root is the app)
+4. Framework: Next.js (auto-detected). Deploy
+5. Copy your **Production URL** (e.g. `https://blakjac21-website.vercel.app`) — it stays the same across redeploys
+6. Optional: add a custom domain under **Settings → Domains**
 
 Every push to `main` redeploys automatically. You do **not** need to run manual deploys or update URL env vars.
 
@@ -65,7 +66,7 @@ The `/account` page shows the exact callback URL for the site you are on if you 
 
 ### Option B — Railway
 
-1. [railway.app](https://railway.app) → New Project → Deploy from GitHub → `mikeconnally25/blakjac21-website`
+1. [railway.app](https://railway.app) → New Project → Deploy from GitHub → branch `blakjac21-website`
 2. Repo root is the app (Dockerfile included)
 3. Generate a public domain under Networking
 4. Add the same env vars as above (secrets only — URL vars optional)
