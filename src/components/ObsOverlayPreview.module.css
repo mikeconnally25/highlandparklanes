@@ -23,11 +23,12 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--glass-border);
   background:
-    repeating-conic-gradient(
-      color-mix(in srgb, var(--text) 8%, transparent) 0% 25%,
-      transparent 0% 50%
-    )
-    50% / 14px 14px;
+    radial-gradient(
+      circle at 50% 0%,
+      color-mix(in srgb, var(--accent) 10%, transparent),
+      transparent 52%
+    ),
+    linear-gradient(165deg, var(--bg-1), var(--bg-0));
   padding: 0.75rem;
   overflow: auto;
 }

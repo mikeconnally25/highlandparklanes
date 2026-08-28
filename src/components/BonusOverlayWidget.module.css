@@ -1,14 +1,15 @@
 .widget {
-  --w-purple: #9333ea;
-  --w-purple-soft: #a855f7;
-  --w-bg-1: #09090b;
-  --w-bg-2: #2e2c36;
-  --w-border: #26262d;
-  --w-muted: #a1a1aa;
+  --w-bg-1: #071018;
+  --w-bg-2: #0c1a24;
+  --w-border: color-mix(in srgb, var(--accent, #22e0ff) 22%, transparent);
+  --w-muted: color-mix(in srgb, var(--text-muted, #9bb6c7) 90%, transparent);
+  --w-accent: var(--accent, #22e0ff);
+  --w-accent-soft: var(--accent-soft, #0bb4e0);
+  --w-gold: var(--gold, #7ee8ff);
   width: 100%;
   max-width: 34rem;
   font-family: var(--font-body), "DM Sans", sans-serif;
-  color: #fafafa;
+  color: var(--text, #f4fbff);
 }
 
 .obs {
@@ -28,7 +29,13 @@
   padding: 0.75rem 0.7rem 0.7rem;
   border-radius: 0.85rem;
   border: 1px solid var(--w-border);
-  background: radial-gradient(circle at center, var(--w-bg-2), #06040e);
+  background:
+    radial-gradient(
+      ellipse at top,
+      color-mix(in srgb, var(--w-accent) 14%, transparent),
+      transparent 55%
+    ),
+    linear-gradient(165deg, var(--w-bg-2), var(--w-bg-1) 70%);
   overflow: hidden;
 }
 
@@ -43,18 +50,20 @@
 .brand {
   margin: 0;
   font-family: var(--font-display), sans-serif;
-  font-weight: 900;
-  font-size: 1rem;
-  letter-spacing: 0.01em;
-  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--w-gold);
 }
 
 .huntNo {
   margin: 0;
   font-family: var(--font-display), sans-serif;
-  font-weight: 800;
-  font-size: 0.95rem;
+  font-weight: 700;
+  font-size: 0.9rem;
   color: #fff;
+  opacity: 0.9;
   font-variant-numeric: tabular-nums;
 }
 
@@ -65,7 +74,7 @@
   gap: 0.65rem;
   padding: 0.65rem;
   border-radius: 0.75rem;
-  background: var(--w-bg-1);
+  background: rgba(0, 0, 0, 0.28);
 }
 
 .statsPanel {
@@ -123,12 +132,12 @@
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--w-purple) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--w-accent) 35%, transparent);
   background:
     linear-gradient(
       145deg,
-      color-mix(in srgb, var(--w-purple) 35%, #111) 0%,
-      #15151a 100%
+      color-mix(in srgb, var(--w-accent) 22%, #061018) 0%,
+      #0a1520 100%
     );
   display: grid;
   place-items: center;
@@ -139,9 +148,9 @@
   top: -0.2rem;
   left: -0.15rem;
   font-size: 0.72rem;
-  color: #ffd700;
+  color: var(--w-gold);
   line-height: 1;
-  text-shadow: 0 0 8px rgba(255, 215, 0, 0.45);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--w-accent) 55%, transparent);
 }
 
 .thumbLetter {
@@ -160,7 +169,7 @@
 
 .highlightLabel {
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--w-muted);
 }
 
 .highlightName {
@@ -182,7 +191,7 @@
 .highlightValue em {
   font-style: normal;
   font-size: 0.66rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--w-muted);
 }
 
 .tablePanel {
@@ -203,8 +212,8 @@
 .tableHead {
   padding: 0.1rem 0.15rem 0.35rem;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--w-muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--w-accent) 12%, transparent);
 }
 
 .alignEnd {
@@ -244,15 +253,15 @@
 }
 
 .tableRow[data-tier="super"] {
-  background: color-mix(in srgb, var(--w-purple) 12%, transparent);
+  background: color-mix(in srgb, var(--w-accent) 12%, transparent);
 }
 
 .tableRow[data-tier="epic"] {
-  background: color-mix(in srgb, #c084fc 14%, transparent);
+  background: color-mix(in srgb, var(--w-gold) 14%, transparent);
 }
 
 .colIndex {
-  color: rgba(255, 255, 255, 0.55);
+  color: color-mix(in srgb, var(--w-muted) 85%, transparent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -284,7 +293,7 @@
   margin-left: 0.35rem;
   font-weight: 500;
   font-size: 0.66rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: color-mix(in srgb, var(--w-muted) 75%, transparent);
 }
 
 .colBet,
@@ -299,7 +308,7 @@
   display: block;
   font-size: 0.62rem;
   font-weight: 700;
-  color: var(--w-purple-soft);
+  color: var(--w-accent-soft);
 }
 
 .empty {
@@ -307,7 +316,7 @@
   padding: 1.25rem 0.5rem;
   text-align: center;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: color-mix(in srgb, var(--w-muted) 75%, transparent);
 }
 
 @keyframes w1Scroll {
