@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     winAmount?: string | number | null;
     tier?: BonusTier;
     requestId?: string | null;
+    thumbnailUrl?: string | null;
     board?: BonusHuntState;
   };
   try {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     winAmount: body.winAmount,
     tier: body.tier,
     requestId: body.requestId,
+    thumbnailUrl: body.thumbnailUrl,
   });
   if (!result.accepted) {
     return huntJson(

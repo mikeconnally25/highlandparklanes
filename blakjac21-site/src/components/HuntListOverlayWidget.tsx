@@ -16,6 +16,7 @@ import {
   readHuntHashSeed,
   writeHuntCache,
 } from "@/lib/hunt-client-sync";
+import { SlotThumbnail } from "@/components/SlotThumbnail";
 import styles from "./HuntListOverlayWidget.module.css";
 
 const POLL_MS = 1500;
@@ -29,7 +30,7 @@ function huntFingerprint(state: BonusHuntState): string {
     state.bonuses
       .map(
         (bonus) =>
-          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}`,
+          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}:${bonus.thumbnailUrl ?? ""}`,
       )
       .join("|"),
   ].join("::");
@@ -60,10 +61,16 @@ function HuntListRows({
           <span className={styles.colHunt}>{index + 1}</span>
           <span className={styles.colBreakEven}>{breakEvenLabel}</span>
           <span className={styles.colName} title={bonus.name}>
-            <span className={styles.bonusName}>{bonus.name}</span>
-            {bonus.requestedBy ? (
-              <span className={styles.requester}>@{bonus.requestedBy}</span>
-            ) : null}
+            <SlotThumbnail
+              name={bonus.name}
+              thumbnailUrl={bonus.thumbnailUrl}
+            />
+            <span className={styles.nameStack}>
+              <span className={styles.bonusName}>{bonus.name}</span>
+              {bonus.requestedBy ? (
+                <span className={styles.requester}>@{bonus.requestedBy}</span>
+              ) : null}
+            </span>
           </span>
           <span className={styles.colBet}>{formatBetSize(bonus.betSize)}</span>
           <span className={styles.colWin}>{formatBetSize(bonus.winAmount)}</span>

@@ -17,6 +17,7 @@ import {
   readHuntHashSeed,
   writeHuntCache,
 } from "@/lib/hunt-client-sync";
+import { SlotThumbnail } from "@/components/SlotThumbnail";
 import styles from "./BonusOverlayWidget.module.css";
 
 const POLL_MS = 1500;
@@ -30,7 +31,7 @@ function huntFingerprint(state: BonusHuntState): string {
     state.bonuses
       .map(
         (bonus) =>
-          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}`,
+          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}:${bonus.thumbnailUrl ?? ""}`,
       )
       .join("|"),
   ].join("::");
@@ -105,10 +106,16 @@ function BonusTableRows({
           >
             <span className={styles.colIndex}>{index + 1}</span>
             <span className={styles.colGame} title={bonus.name}>
-              {bonus.name}
-              {bonus.requestedBy ? (
-                <span className={styles.requester}>@{bonus.requestedBy}</span>
-              ) : null}
+              <SlotThumbnail
+                name={bonus.name}
+                thumbnailUrl={bonus.thumbnailUrl}
+              />
+              <span className={styles.gameStack}>
+                <span className={styles.gameName}>{bonus.name}</span>
+                {bonus.requestedBy ? (
+                  <span className={styles.requester}>@{bonus.requestedBy}</span>
+                ) : null}
+              </span>
             </span>
             <span className={styles.colBet}>{money(bonus.betSize)}</span>
             <span className={styles.colPayout}>
@@ -284,11 +291,13 @@ export function BonusOverlayWidget({
 
         <div className={styles.highlights}>
           <div className={styles.highlight}>
-            <div className={styles.thumb} aria-hidden>
+            <div className={styles.highlightThumb} aria-hidden>
               <span className={styles.star}>★</span>
-              <span className={styles.thumbLetter}>
-                {(bestWin?.name ?? "?").slice(0, 1).toUpperCase()}
-              </span>
+              <SlotThumbnail
+                name={bestWin?.name ?? "?"}
+                thumbnailUrl={bestWin?.thumbnailUrl ?? null}
+                size="md"
+              />
             </div>
             <div className={styles.highlightMeta}>
               <span className={styles.highlightLabel}>Best Win</span>
@@ -302,11 +311,13 @@ export function BonusOverlayWidget({
             </div>
           </div>
           <div className={styles.highlight}>
-            <div className={styles.thumb} aria-hidden>
+            <div className={styles.highlightThumb} aria-hidden>
               <span className={styles.star}>★</span>
-              <span className={styles.thumbLetter}>
-                {(luckyWin?.name ?? "?").slice(0, 1).toUpperCase()}
-              </span>
+              <SlotThumbnail
+                name={luckyWin?.name ?? "?"}
+                thumbnailUrl={luckyWin?.thumbnailUrl ?? null}
+                size="md"
+              />
             </div>
             <div className={styles.highlightMeta}>
               <span className={styles.highlightLabel}>Lucky Win</span>

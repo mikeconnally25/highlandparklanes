@@ -110,6 +110,13 @@
   gap: 0.55rem;
 }
 
+.highlightThumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
 .thumb {
   position: relative;
   flex: 0 0 auto;
@@ -251,6 +258,21 @@
 
 .colGame {
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+}
+
+.gameStack {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.gameName {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

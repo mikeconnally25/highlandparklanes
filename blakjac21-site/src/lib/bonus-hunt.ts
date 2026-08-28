@@ -8,6 +8,8 @@ export type BonusItem = {
   tier: BonusTier;
   /** Kick username that requested this slot via !s, if any */
   requestedBy: string | null;
+  /** Stake slot tile from kuratorGameQuery thumbnailUrl */
+  thumbnailUrl: string | null;
   createdAt: string;
 };
 
@@ -85,6 +87,7 @@ function normalizeState(state: BonusHuntState): BonusHuntState {
     ...bonus,
     winAmount: bonus.winAmount ?? null,
     requestedBy: bonus.requestedBy ?? null,
+    thumbnailUrl: bonus.thumbnailUrl ?? null,
     tier: bonus.tier ?? "normal",
   }));
   state.slotRequests = dedupeSlotRequests(
@@ -234,6 +237,7 @@ export function mergeHuntBoards(
       winAmount:
         bonus.winAmount != null ? bonus.winAmount : (prev.winAmount ?? null),
       requestedBy: bonus.requestedBy ?? prev.requestedBy,
+      thumbnailUrl: bonus.thumbnailUrl ?? prev.thumbnailUrl,
       name: bonus.name.trim() || prev.name,
     });
   }
@@ -739,6 +743,7 @@ export function addBonus(input: {
   tier?: BonusTier;
   requestedBy?: string | null;
   requestId?: string | null;
+  thumbnailUrl?: string | null;
 }): {
   accepted: boolean;
   reason?: string;
@@ -778,6 +783,20 @@ export function addBonus(input: {
 
   const requestedBy = input.requestedBy?.trim().toLowerCase() || null;
 
+  let thumbnailUrl = input.thumbnailUrl?.trim() || null;
+  if (input.requestId) {
+    const request = state.slotRequests.find((req) => req.id === input.requestId);
+    if (request?.thumbnailUrl) thumbnailUrl = request.thumbnailUrl;
+  }
+  if (!thumbnailUrl) {
+    const matchedRequest = state.slotRequests.find((req) =>
+      slotNamesMatch(req.slotName, trimmed),
+    );
+    if (matchedRequest?.thumbnailUrl) {
+      thumbnailUrl = matchedRequest.thumbnailUrl;
+    }
+  }
+
   state.huntActive = true;
   state.bonuses.push({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -786,6 +805,7 @@ export function addBonus(input: {
     winAmount,
     tier,
     requestedBy,
+    thumbnailUrl,
     createdAt: new Date().toISOString(),
   });
   if (input.requestId) {
@@ -821,6 +841,7 @@ export function promoteSlotRequestToBonus(input: {
     tier: input.tier,
     requestedBy: request.username,
     requestId: input.requestId,
+    thumbnailUrl: request.thumbnailUrl,
   });
   if (!result.accepted) return result;
 
