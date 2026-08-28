@@ -9,6 +9,12 @@ import {
   getBonusMultiplier,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
+import {
+  preferPastHunts,
+  readHuntHistoryCache,
+  writeHuntHistoryCache,
+  HUNT_HISTORY_EVENT,
+} from "@/lib/hunt-client-sync";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./PastHuntsPanel.module.css";
 
@@ -50,7 +56,14 @@ export function PastHuntsPanel() {
         });
         if (!res.ok) return;
         const data = (await res.json()) as { hunts?: PastHuntResult[] };
-        if (!cancelled) setHunts(data.hunts ?? []);
+        const merged = preferPastHunts(
+          readHuntHistoryCache(),
+          data.hunts ?? [],
+        );
+        if (!cancelled) {
+          setHunts(merged);
+          writeHuntHistoryCache(merged);
+        }
       } catch {
         /* ignore */
       }
@@ -61,11 +74,11 @@ export function PastHuntsPanel() {
     const onHistory = () => {
       void tick();
     };
-    window.addEventListener("bonus-hunt-history-changed", onHistory);
+    window.addEventListener(HUNT_HISTORY_EVENT, onHistory);
     return () => {
       cancelled = true;
       clearInterval(timer);
-      window.removeEventListener("bonus-hunt-history-changed", onHistory);
+      window.removeEventListener(HUNT_HISTORY_EVENT, onHistory);
     };
   }, []);
 
@@ -96,9 +109,11 @@ export function PastHuntsPanel() {
         );
         return;
       }
-      setHunts(data.hunts ?? []);
+      const hunts = data.hunts ?? [];
+      setHunts(hunts);
+      writeHuntHistoryCache(hunts);
       if (id && openId === id) setOpenId(null);
-      window.dispatchEvent(new Event("bonus-hunt-history-changed"));
+      window.dispatchEvent(new Event(HUNT_HISTORY_EVENT));
     } catch {
       setError("Could not reach server");
     } finally {

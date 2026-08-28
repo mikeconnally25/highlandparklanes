@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
 import { HuntBoardProvider } from "@/components/HuntBoardContext";
+import type { PastHuntResult } from "@/lib/bonus-hunt";
 import { PastHuntsPanel } from "@/components/PastHuntsPanel";
+import {
+  HUNT_HISTORY_EVENT,
+  preferPastHunts,
+  readHuntHistoryCache,
+} from "@/lib/hunt-client-sync";
 import styles from "@/app/bonus-hunts/page.module.css";
 
 function BonusHuntsBoardInner() {
@@ -19,8 +25,12 @@ function BonusHuntsBoardInner() {
           cache: "no-store",
         });
         if (historyRes.ok) {
-          const data = (await historyRes.json()) as { hunts?: unknown[] };
-          if (!cancelled) setPastCount(data.hunts?.length ?? 0);
+          const data = (await historyRes.json()) as { hunts?: PastHuntResult[] };
+          const merged = preferPastHunts(
+            readHuntHistoryCache(),
+            data.hunts ?? [],
+          );
+          if (!cancelled) setPastCount(merged.length);
         }
       } catch {
         /* ignore */
@@ -33,11 +43,11 @@ function BonusHuntsBoardInner() {
       void load();
       setPastOpen(true);
     };
-    window.addEventListener("bonus-hunt-history-changed", onHistory);
+    window.addEventListener(HUNT_HISTORY_EVENT, onHistory);
     return () => {
       cancelled = true;
       clearInterval(timer);
-      window.removeEventListener("bonus-hunt-history-changed", onHistory);
+      window.removeEventListener(HUNT_HISTORY_EVENT, onHistory);
     };
   }, []);
 

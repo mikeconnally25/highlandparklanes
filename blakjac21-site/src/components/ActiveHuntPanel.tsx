@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
+import type { BonusHuntState, BonusTier, PastHuntResult } from "@/lib/bonus-hunt";
 import {
   formatBetSize,
   formatBreakEvenLabel,
   formatMultiplier,
   getHuntStats,
   appendSlotRequestToState,
+  buildPastHuntArchive,
   mergeHuntBoards,
   parseMoneyAmount,
   parseSlotRequestMessage,
@@ -23,7 +24,11 @@ import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { ObsOverlayPreview } from "@/components/ObsOverlayPreview";
 import { useHuntBoard } from "@/components/HuntBoardContext";
 import {
+  HUNT_HISTORY_EVENT,
+  preferPastHunts,
   readHuntCache,
+  readHuntHistoryCache,
+  writeHuntHistoryCache,
 } from "@/lib/hunt-client-sync";
 import styles from "./ActiveHuntPanel.module.css";
 
@@ -150,6 +155,18 @@ async function pushHuntSync(state: BonusHuntState) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(state),
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function pushHistorySync(hunts: PastHuntResult[]) {
+  try {
+    await fetch("/api/bonus-hunt/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync-history", hunts }),
     });
   } catch {
     /* ignore */
@@ -495,13 +512,18 @@ export function ActiveHuntPanel() {
         return null;
       }
 
-      const next = (await res.json()) as BonusHuntState & {
-        archived?: unknown;
+      const nextRaw = (await res.json()) as BonusHuntState & {
+        archived?: PastHuntResult | null;
+        hunts?: PastHuntResult[];
       };
       const action =
         url.includes("/api/bonus-hunt/admin") && body && "action" in body
           ? (body as { action?: string }).action
           : null;
+      const preEndBoard =
+        action === "end-hunt" ? stateRef.current : null;
+      const { archived, hunts, ...boardPayload } = nextRaw;
+      const next = boardPayload as BonusHuntState;
       const clearing =
         action === "end-hunt" ||
         (url.includes("/api/bonus-hunt/bonus/remove") &&
@@ -520,6 +542,20 @@ export function ActiveHuntPanel() {
       setState(merged);
       if (canManage) void pushHuntSync(merged);
       if (action === "end-hunt") {
+        let archivedHunt = archived ?? null;
+        if (!archivedHunt && preEndBoard) {
+          archivedHunt = buildPastHuntArchive(preEndBoard);
+        }
+        const mergedHunts = preferPastHunts(
+          readHuntHistoryCache(),
+          Array.isArray(hunts) ? hunts : [],
+        );
+        const withArchive = archivedHunt
+          ? preferPastHunts(mergedHunts, [archivedHunt])
+          : mergedHunts;
+        writeHuntHistoryCache(withArchive);
+        if (canManage) void pushHistorySync(withArchive);
+
         setWinDrafts({});
         setSelectedRequestId(null);
         setBonusName("");
@@ -527,7 +563,7 @@ export function ActiveHuntPanel() {
         setWinAmount("");
         setHuntTitle("");
         setStartAmountInput("");
-        window.dispatchEvent(new Event("bonus-hunt-history-changed"));
+        window.dispatchEvent(new Event(HUNT_HISTORY_EVENT));
       }
       if (clearing && action !== "end-hunt") {
         setWinDrafts({});
@@ -1400,6 +1436,7 @@ export function ActiveHuntPanel() {
                   onClick={() =>
                     adminRequest("/api/bonus-hunt/admin", {
                       action: "end-hunt",
+                      board: stateRef.current ?? undefined,
                     })
                   }
                 >

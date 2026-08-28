@@ -1,8 +1,10 @@
-import type { BonusHuntState } from "@/lib/bonus-hunt";
-import { mergeHuntBoards } from "@/lib/bonus-hunt";
+import type { BonusHuntState, PastHuntResult } from "@/lib/bonus-hunt";
+import { mergeHuntBoards, mergePastHuntLists } from "@/lib/bonus-hunt";
 
 export const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
+export const HUNT_HISTORY_CACHE_KEY = "blakjac21-bonus-hunt-history-v1";
 export const HUNT_LIVE_EVENT = "bonus-hunt-live-state";
+export const HUNT_HISTORY_EVENT = "bonus-hunt-history-changed";
 
 export function readHuntCache(): BonusHuntState | null {
   if (typeof window === "undefined") return null;
@@ -99,4 +101,48 @@ export function buildHuntListOverlayUrl(
   state: BonusHuntState | null,
 ) {
   return buildOverlayUrl(origin, state, "/bonus-hunts/overlay/list");
+}
+
+export function readHuntHistoryCache(): PastHuntResult[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(HUNT_HISTORY_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as PastHuntResult[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeHuntHistoryCache(hunts: PastHuntResult[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      HUNT_HISTORY_CACHE_KEY,
+      JSON.stringify(hunts),
+    );
+  } catch {
+    /* ignore quota */
+  }
+  try {
+    window.dispatchEvent(new Event(HUNT_HISTORY_EVENT));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function preferPastHunts(
+  local: PastHuntResult[],
+  remote: PastHuntResult[],
+): PastHuntResult[] {
+  return mergePastHuntLists(local, remote);
+}
+
+export function appendPastHuntToCache(
+  archived: PastHuntResult,
+): PastHuntResult[] {
+  const next = preferPastHunts(readHuntHistoryCache(), [archived]);
+  writeHuntHistoryCache(next);
+  return next;
 }

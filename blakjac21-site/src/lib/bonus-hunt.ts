@@ -409,36 +409,76 @@ export function setHuntActive(active: boolean): BonusHuntState {
   return touch(state);
 }
 
+/** Build an archive snapshot from the current board (pure — no mutation). */
+export function buildPastHuntArchive(
+  state: BonusHuntState,
+): PastHuntResult | null {
+  const hasContent =
+    state.bonuses.length > 0 ||
+    state.startAmount != null ||
+    Boolean(state.title.trim());
+  if (!hasContent) return null;
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: state.title.trim() || "Untitled hunt",
+    startAmount: state.startAmount,
+    bonuses: state.bonuses.map((bonus) => ({ ...bonus })),
+    stats: getHuntStats(state),
+    startedAt: state.startedAt,
+    endedAt: new Date().toISOString(),
+  };
+}
+
+export function mergePastHuntLists(
+  ...lists: PastHuntResult[][]
+): PastHuntResult[] {
+  const byId = new Map<string, PastHuntResult>();
+  for (const list of lists) {
+    for (const hunt of list) {
+      byId.set(hunt.id, hunt);
+    }
+  }
+  return [...byId.values()]
+    .sort((a, b) => Date.parse(b.endedAt) - Date.parse(a.endedAt))
+    .slice(0, MAX_PAST_HUNTS);
+}
+
+export function appendPastHunt(archived: PastHuntResult): PastHuntResult[] {
+  const history = getPastHunts();
+  if (!history.some((hunt) => hunt.id === archived.id)) {
+    history.unshift(archived);
+    if (history.length > MAX_PAST_HUNTS) {
+      history.length = MAX_PAST_HUNTS;
+    }
+  }
+  const g = globalThis as StoreGlobal;
+  g.__bonusHuntHistory = history;
+  persistHistory(history);
+  return history;
+}
+
+export function replacePastHunts(hunts: PastHuntResult[]): PastHuntResult[] {
+  const g = globalThis as StoreGlobal;
+  const next = mergePastHuntLists(hunts);
+  g.__bonusHuntHistory = next;
+  persistHistory(next);
+  return next;
+}
+
 /** Archive the current hunt into past results and reset the active board. */
 export function endAndArchiveHunt(): {
   accepted: boolean;
   reason?: string;
   state: BonusHuntState;
   archived: PastHuntResult | null;
+  hunts: PastHuntResult[];
 } {
   const state = getBonusHuntState();
-  const hasContent =
-    state.bonuses.length > 0 ||
-    state.startAmount != null ||
-    Boolean(state.title.trim());
+  const archived = buildPastHuntArchive(state);
 
-  let archived: PastHuntResult | null = null;
-
-  if (hasContent) {
-    const history = getPastHunts();
-    archived = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      title: state.title.trim() || "Untitled hunt",
-      startAmount: state.startAmount,
-      bonuses: state.bonuses.map((bonus) => ({ ...bonus })),
-      stats: getHuntStats(state),
-      startedAt: state.startedAt,
-      endedAt: new Date().toISOString(),
-    };
-    history.unshift(archived);
-    if (history.length > MAX_PAST_HUNTS) {
-      history.length = MAX_PAST_HUNTS;
-    }
+  if (archived) {
+    appendPastHunt(archived);
   }
 
   const g = globalThis as StoreGlobal;
@@ -446,8 +486,12 @@ export function endAndArchiveHunt(): {
   reset.updatedAt = new Date().toISOString();
   g.__bonusHuntState = reset;
   persistState(reset);
-  persistHistory(getPastHunts());
-  return { accepted: true, state: reset, archived };
+  return {
+    accepted: true,
+    state: reset,
+    archived,
+    hunts: getPastHunts(),
+  };
 }
 
 export function getPastHunt(id: string): PastHuntResult | null {

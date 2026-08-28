@@ -2,17 +2,19 @@ import {
   clearPastHunts,
   clearSlotRequests,
   endAndArchiveHunt,
+  flushBonusHuntPersist,
   hydrateBonusHuntFromRemote,
   promoteSlotRequestToBonus,
   removePastHunt,
   removeSlotRequest,
+  replacePastHunts,
   seedBonusHuntFromClient,
   setBonusWinAmount,
   setHuntActive,
   setHuntTitle,
   setStartAmount,
 } from "@/lib/bonus-hunt";
-import type { BonusHuntState, BonusTier } from "@/lib/bonus-hunt";
+import type { BonusHuntState, BonusTier, PastHuntResult } from "@/lib/bonus-hunt";
 import { huntJson } from "@/lib/hunt-api";
 import { authorizeStreamerAdmin } from "@/lib/site-auth";
 
@@ -31,6 +33,7 @@ export async function POST(request: Request) {
       | "promote-request"
       | "set-active"
       | "end-hunt"
+      | "sync-history"
       | "set-title"
       | "set-start-amount"
       | "set-win-amount"
@@ -44,6 +47,7 @@ export async function POST(request: Request) {
     betSize?: string | number | null;
     tier?: BonusTier;
     board?: BonusHuntState;
+    hunts?: PastHuntResult[];
   };
   try {
     body = (await request.json()) as typeof body;
@@ -57,7 +61,8 @@ export async function POST(request: Request) {
     body.action === "set-start-amount" ||
     body.action === "set-title" ||
     body.action === "remove-request" ||
-    body.action === "clear-requests"
+    body.action === "clear-requests" ||
+    body.action === "end-hunt"
   ) {
     seedBonusHuntFromClient(body.board);
   }
@@ -101,10 +106,20 @@ export async function POST(request: Request) {
       return huntJson(setHuntActive(body.active));
     case "end-hunt": {
       const result = endAndArchiveHunt();
+      await flushBonusHuntPersist();
       return huntJson({
         ...result.state,
         archived: result.archived,
+        hunts: result.hunts,
       });
+    }
+    case "sync-history": {
+      if (!Array.isArray(body.hunts)) {
+        return Response.json({ error: "hunts array is required" }, { status: 400 });
+      }
+      const hunts = replacePastHunts(body.hunts);
+      await flushBonusHuntPersist();
+      return huntJson({ hunts });
     }
     case "set-title":
       return huntJson(setHuntTitle(body.title ?? ""));
