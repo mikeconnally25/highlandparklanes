@@ -20,6 +20,7 @@ import {
 } from "@/hooks/KickChatProvider";
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
+import { ObsOverlayPreview } from "@/components/ObsOverlayPreview";
 import { useHuntBoard } from "@/components/HuntBoardContext";
 import {
   readHuntCache,
@@ -1402,6 +1403,7 @@ export function ActiveHuntPanel() {
                 <p className={styles.adminHint}>
                   OBS overlay for this hunt board (admin only):
                 </p>
+                <ObsOverlayPreview />
                 <ObsOverlayLink />
               </div>
               <p className={styles.adminHint}>
