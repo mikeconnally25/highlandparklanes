@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     betSize?: string | number | null;
     winAmount?: string | number | null;
     tier?: BonusTier;
+    requestId?: string | null;
     board?: BonusHuntState;
   };
   try {
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
       betSize?: string | number | null;
       winAmount?: string | number | null;
       tier?: BonusTier;
+      requestId?: string | null;
       board?: BonusHuntState;
     };
   } catch {
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
     betSize: body.betSize,
     winAmount: body.winAmount,
     tier: body.tier,
+    requestId: body.requestId,
   });
   if (!result.accepted) {
     return huntJson(

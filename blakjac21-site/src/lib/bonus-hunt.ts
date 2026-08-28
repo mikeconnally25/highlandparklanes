@@ -214,21 +214,23 @@ export function mergeHuntBoards(
   for (const req of older.slotRequests) requestById.set(req.id, req);
   for (const req of newer.slotRequests) requestById.set(req.id, req);
 
-  return normalizeState({
-    ...newer,
-    title: newer.title.trim() || older.title,
-    startAmount: pickAmount(newer.startAmount, older.startAmount),
-    startedAt: newer.startedAt ?? older.startedAt,
-    huntActive: newer.huntActive,
-    requestsOpen: newer.requestsOpen,
-    bonuses: [...bonusById.values()].sort(
-      (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-    ),
-    slotRequests: [...requestById.values()].sort(
-      (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-    ),
-    updatedAt: new Date(Math.max(localT, remoteT, Date.now())).toISOString(),
-  });
+  return removeFulfilledSlotRequests(
+    normalizeState({
+      ...newer,
+      title: newer.title.trim() || older.title,
+      startAmount: pickAmount(newer.startAmount, older.startAmount),
+      startedAt: newer.startedAt ?? older.startedAt,
+      huntActive: newer.huntActive,
+      requestsOpen: newer.requestsOpen,
+      bonuses: [...bonusById.values()].sort(
+        (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+      ),
+      slotRequests: [...requestById.values()].sort(
+        (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+      ),
+      updatedAt: new Date(Math.max(localT, remoteT, Date.now())).toISOString(),
+    }),
+  );
 }
 
 /** Seed this instance from a trusted client board before mutating. */
@@ -659,12 +661,44 @@ export function formatBonusNameWithTier(
   return withoutSuffix;
 }
 
+function stripBonusTierSuffix(name: string): string {
+  return name.trim().replace(/\s*\((?:super|epic)\)\s*$/i, "").trim();
+}
+
+function slotNamesMatch(a: string, b: string): boolean {
+  return (
+    stripBonusTierSuffix(a).toLowerCase() ===
+    stripBonusTierSuffix(b).toLowerCase()
+  );
+}
+
+/** Drop queue rows that already appear on the bonus list. */
+export function removeFulfilledSlotRequests(
+  state: BonusHuntState,
+): BonusHuntState {
+  const slotRequests = state.slotRequests.filter(
+    (req) =>
+      !state.bonuses.some((bonus) => {
+        if (!slotNamesMatch(req.slotName, bonus.name)) return false;
+        if (bonus.requestedBy) {
+          return (
+            req.username.toLowerCase() === bonus.requestedBy.toLowerCase()
+          );
+        }
+        return true;
+      }),
+  );
+  if (slotRequests.length === state.slotRequests.length) return state;
+  return { ...state, slotRequests };
+}
+
 export function addBonus(input: {
   name: string;
   betSize?: string | number | null;
   winAmount?: string | number | null;
   tier?: BonusTier;
   requestedBy?: string | null;
+  requestId?: string | null;
 }): {
   accepted: boolean;
   reason?: string;
@@ -714,8 +748,13 @@ export function addBonus(input: {
     requestedBy,
     createdAt: new Date().toISOString(),
   });
+  if (input.requestId) {
+    state.slotRequests = state.slotRequests.filter(
+      (req) => req.id !== input.requestId,
+    );
+  }
   markHuntStarted(state);
-  return { accepted: true, state: touch(state) };
+  return { accepted: true, state: touch(removeFulfilledSlotRequests(state)) };
 }
 
 /** Move a chat slot request onto the bonus list, then drop it from the queue. */
@@ -741,13 +780,10 @@ export function promoteSlotRequestToBonus(input: {
     winAmount: input.winAmount,
     tier: input.tier,
     requestedBy: request.username,
+    requestId: input.requestId,
   });
   if (!result.accepted) return result;
 
-  result.state.slotRequests = result.state.slotRequests.filter(
-    (req) => req.id !== input.requestId,
-  );
-  touch(result.state);
   return result;
 }
 

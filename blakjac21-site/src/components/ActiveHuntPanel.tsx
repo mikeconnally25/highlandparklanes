@@ -583,9 +583,11 @@ export function ActiveHuntPanel() {
       betSize,
       winAmount,
       tier: selectedTier,
+      requestId,
       board: stateRef.current ?? undefined,
     });
     if (next) {
+      setSelectedRequestId(null);
       setBonusName("");
       setBetSize("");
       setWinAmount("");
