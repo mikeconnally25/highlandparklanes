@@ -9,6 +9,7 @@ type SessionKickInfo = {
   kickConfigured?: boolean;
   kickMissing?: string[];
   kickRedirectUri?: string | null;
+  isAdmin?: boolean;
 };
 
 function AccountFormInner() {
@@ -17,6 +18,7 @@ function AccountFormInner() {
   const queryError = searchParams.get("error");
   const [kickConfigured, setKickConfigured] = useState<boolean | null>(null);
   const [kickMissing, setKickMissing] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [callbackHint, setCallbackHint] = useState(
     "https://YOUR_DOMAIN/api/account/kick/callback",
   );
@@ -30,6 +32,7 @@ function AccountFormInner() {
         if (cancelled) return;
         setKickConfigured(Boolean(data.kickConfigured));
         setKickMissing(Array.isArray(data.kickMissing) ? data.kickMissing : []);
+        setIsAdmin(Boolean(data.isAdmin));
         setCallbackHint(
           data.kickRedirectUri ||
             `${window.location.origin}/api/account/kick/callback`,
@@ -66,12 +69,12 @@ function AccountFormInner() {
         </p>
       ) : null}
 
-      {kickConfigured === false ? (
+      {kickConfigured === false && isAdmin ? (
         <div className={styles.setup} role="alert">
           <p className={styles.setupTitle}>Streamer setup required</p>
           <p className={styles.setupLead}>
-            Viewers cannot sign in until you connect a Kick developer app.
-            Takes a few minutes:
+            Viewers cannot sign in until you add Kick OAuth credentials to
+            Vercel. Takes a few minutes:
           </p>
           <ol className={styles.setupList}>
             <li>
@@ -95,9 +98,9 @@ function AccountFormInner() {
               Copy the Client ID and Client Secret.
             </li>
             <li>
-              Put them in the host environment (local:{" "}
-              <code className={styles.setupCode}>.env.local</code>; production:
-              Vercel Environment Variables), then restart:
+              In Vercel → your project →{" "}
+              <strong>Settings → Environment Variables</strong>, add then
+              redeploy:
               {kickMissing.length > 0 ? (
                 <ul className={styles.missingList}>
                   {kickMissing.map((name) => (
@@ -105,6 +108,9 @@ function AccountFormInner() {
                       <code className={styles.setupCode}>{name}</code>
                     </li>
                   ))}
+                  <li>
+                    <code className={styles.setupCode}>SESSION_SECRET</code>
+                  </li>
                 </ul>
               ) : (
                 <ul className={styles.missingList}>
@@ -121,17 +127,18 @@ function AccountFormInner() {
               )}
             </li>
             <li>
-              Redirect URL env vars are optional — the site picks the callback
-              from the URL you are visiting. Register that same URL in Kick
-              once; you do not need to change it on redeploy if your public URL
-              stays the same.
-            </li>
-            <li>
               Reload this page — <strong>Continue with Kick</strong> will unlock
-              for viewers.
+              for everyone.
             </li>
           </ol>
         </div>
+      ) : null}
+
+      {kickConfigured === false && !isAdmin ? (
+        <p className={styles.error} role="alert">
+          Kick sign-in is not set up on this site yet. The streamer needs to
+          connect a Kick developer app — check back soon.
+        </p>
       ) : null}
 
       <a
