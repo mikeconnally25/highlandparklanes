@@ -27,22 +27,140 @@ export type PublicSiteUser = {
   isAdmin: boolean;
 };
 
+export type AdminSiteUser = PublicSiteUser & {
+  lastLoginAt: string;
+};
+
 type StoreGlobal = typeof globalThis & {
   __siteUsers?: SiteUser[];
+  __siteUsersLoaded?: boolean;
 };
 
 const COOKIE_NAME = "blakjac21_session";
 const OAUTH_COOKIE = "blakjac21_kick_oauth";
 const MAX_AGE_SEC = 60 * 60 * 24 * 14;
+const USERS_FILE = "site-users.json";
 
 const KICK_AUTHORIZE = "https://id.kick.com/oauth/authorize";
 const KICK_TOKEN = "https://id.kick.com/oauth/token";
 const KICK_USERS = "https://api.kick.com/public/v1/users";
 
 function users(): SiteUser[] {
+  ensureUsersLoaded();
   const g = globalThis as StoreGlobal;
   if (!g.__siteUsers) g.__siteUsers = [];
   return g.__siteUsers;
+}
+
+let pendingUsersWrite: Promise<void> = Promise.resolve();
+
+function normalizeSiteUser(raw: SiteUser): SiteUser {
+  return {
+    id: String(raw.id),
+    kickUserId: String(raw.kickUserId),
+    username: String(raw.username ?? "").trim() || "—",
+    email: raw.email?.trim() || null,
+    profilePicture: raw.profilePicture ?? null,
+    createdAt: raw.createdAt || new Date(0).toISOString(),
+    lastLoginAt: raw.lastLoginAt || raw.createdAt || new Date(0).toISOString(),
+  };
+}
+
+function mergeUserRecords(...lists: SiteUser[][]): SiteUser[] {
+  const byKickId = new Map<string, SiteUser>();
+  for (const list of lists) {
+    for (const raw of list) {
+      if (!raw?.kickUserId) continue;
+      const user = normalizeSiteUser(raw);
+      const prev = byKickId.get(user.kickUserId);
+      if (
+        !prev ||
+        Date.parse(user.lastLoginAt) >= Date.parse(prev.lastLoginAt)
+      ) {
+        byKickId.set(user.kickUserId, user);
+      }
+    }
+  }
+  return [...byKickId.values()].sort(
+    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+  );
+}
+
+function ensureUsersLoaded() {
+  const g = globalThis as StoreGlobal;
+  if (g.__siteUsersLoaded) return;
+  g.__siteUsersLoaded = true;
+  if (typeof window !== "undefined") return;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readJsonFile } =
+      require("@/lib/json-store") as typeof import("@/lib/json-store");
+    const saved = readJsonFile<SiteUser[]>(USERS_FILE);
+    if (Array.isArray(saved)) {
+      g.__siteUsers = mergeUserRecords(saved);
+    }
+  } catch {
+    /* keep memory defaults */
+  }
+}
+
+function persistUsers() {
+  if (typeof window !== "undefined") return;
+  const g = globalThis as StoreGlobal;
+  const snapshot = mergeUserRecords(g.__siteUsers ?? []);
+  g.__siteUsers = snapshot;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeJsonFile } =
+      require("@/lib/json-store") as typeof import("@/lib/json-store");
+    writeJsonFile(USERS_FILE, snapshot);
+  } catch {
+    /* ignore */
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { writeRemoteJson } =
+      require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
+    pendingUsersWrite = pendingUsersWrite
+      .catch(() => undefined)
+      .then(() => writeRemoteJson(USERS_FILE, snapshot))
+      .then(() => undefined);
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function flushSiteUsersPersist(): Promise<void> {
+  await pendingUsersWrite;
+}
+
+/** Pull shared user records (Upstash) into this instance before admin listings. */
+export async function hydrateSiteUsersFromRemote(): Promise<SiteUser[]> {
+  ensureUsersLoaded();
+  const g = globalThis as StoreGlobal;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { readRemoteJson } =
+      require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
+    const remote = await readRemoteJson<SiteUser[]>(USERS_FILE);
+    if (Array.isArray(remote)) {
+      g.__siteUsers = mergeUserRecords(g.__siteUsers ?? [], remote);
+    }
+  } catch {
+    /* keep local */
+  }
+  return users();
+}
+
+export async function listSiteUsers(): Promise<AdminSiteUser[]> {
+  await hydrateSiteUsersFromRemote();
+  return users().map((user) => ({
+    ...toPublic(user),
+    lastLoginAt: user.lastLoginAt,
+  }));
 }
 
 function sessionSecret() {
@@ -203,9 +321,11 @@ function upsertMemoryUser(snapshot: SiteUser): SiteUser {
     existing.profilePicture = snapshot.profilePicture;
     existing.kickUserId = snapshot.kickUserId;
     existing.lastLoginAt = snapshot.lastLoginAt;
+    persistUsers();
     return existing;
   }
   users().push(snapshot);
+  persistUsers();
   return snapshot;
 }
 
@@ -450,6 +570,9 @@ export async function completeKickOAuthLogin(input: {
     };
     users().push(user);
   }
+
+  persistUsers();
+  await flushSiteUsersPersist();
 
   await createSession(user);
   return toPublic(user);

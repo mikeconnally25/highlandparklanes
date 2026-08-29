@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AccountForm } from "@/components/AccountForm";
 import { AccountHeader } from "@/components/AccountHeader";
+import { AllAccountsCard } from "@/components/AllAccountsCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import styles from "./page.module.css";
 
@@ -20,6 +21,7 @@ export default function AccountPage() {
       <main className={styles.main}>
         <p className={styles.eyebrow}>Account</p>
         <AccountForm />
+        <AllAccountsCard />
       </main>
 
       <footer className={styles.footer}>
