@@ -53,6 +53,15 @@ export function resolveOverlayBoard(
   incoming: BonusHuntState,
 ): BonusHuntState {
   if (isIntentionalReset(incoming)) return incoming;
+  if (local && isIntentionalReset(local)) {
+    const localT = Date.parse(local.updatedAt) || 0;
+    const incomingT = Date.parse(incoming.updatedAt) || 0;
+    const newHuntStarted =
+      incoming.huntActive ||
+      incoming.requestsOpen ||
+      (incoming.bonuses.length > 0 && incomingT > localT);
+    if (!newHuntStarted) return local;
+  }
   return preferHuntBoard(local, incoming);
 }
 

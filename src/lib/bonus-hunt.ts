@@ -80,6 +80,13 @@ function createState(): BonusHuntState {
   };
 }
 
+/** Empty board after End hunt — stamped so merges and overlays accept the reset. */
+export function createIntentionalResetBoard(): BonusHuntState {
+  const reset = createState();
+  reset.updatedAt = new Date().toISOString();
+  return reset;
+}
+
 function normalizeState(state: BonusHuntState): BonusHuntState {
   if (state.startAmount === undefined) state.startAmount = null;
   if (state.startedAt === undefined) state.startedAt = null;
@@ -210,7 +217,7 @@ export function mergeHuntBoards(
     local.startAmount == null;
 
   if (remoteReset && remoteT >= localT) return normalizeState(remote);
-  if (localReset && localT > remoteT) return normalizeState(local);
+  if (localReset && localT >= remoteT) return normalizeState(local);
 
   const newer = remoteT >= localT ? remote : local;
   const older = newer === remote ? local : remote;
@@ -482,8 +489,7 @@ export function endAndArchiveHunt(): {
   }
 
   const g = globalThis as StoreGlobal;
-  const reset = createState();
-  reset.updatedAt = new Date().toISOString();
+  const reset = createIntentionalResetBoard();
   g.__bonusHuntState = reset;
   persistState(reset);
   return {

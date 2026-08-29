@@ -9,6 +9,7 @@ import {
   getHuntStats,
   appendSlotRequestToState,
   buildPastHuntArchive,
+  createIntentionalResetBoard,
   mergeHuntBoards,
   parseMoneyAmount,
   parseSlotRequestMessage,
@@ -25,6 +26,7 @@ import { ObsOverlayPreview } from "@/components/ObsOverlayPreview";
 import { useHuntBoard } from "@/components/HuntBoardContext";
 import {
   HUNT_HISTORY_EVENT,
+  isIntentionalReset,
   preferPastHunts,
   readHuntCache,
   readHuntHistoryCache,
@@ -124,6 +126,11 @@ function preferState(
     remote.slotRequests.length === 0 &&
     !remote.title.trim() &&
     remote.startAmount == null;
+
+  const localReset = isIntentionalReset(local);
+
+  // End hunt / clear: keep the empty board during the guard window.
+  if (localReset && guarded) return local;
 
   // Intentional end/clear must win when it's newer.
   if (remoteReset && remoteT >= localT) return remote;
@@ -521,7 +528,11 @@ export function ActiveHuntPanel() {
           ? (body as { action?: string }).action
           : null;
       const preEndBoard =
-        action === "end-hunt" ? stateRef.current : null;
+        action === "end-hunt" && body && "board" in body
+          ? ((body as { board?: BonusHuntState | null }).board ?? null)
+          : action === "end-hunt"
+            ? stateRef.current
+            : null;
       const { archived, hunts, ...boardPayload } = nextRaw;
       const next = boardPayload as BonusHuntState;
       const clearing =
@@ -542,6 +553,7 @@ export function ActiveHuntPanel() {
       setState(merged);
       if (canManage) void pushHuntSync(merged);
       if (action === "end-hunt") {
+        guardUntilRef.current = nowMs() + 60_000;
         let archivedHunt = archived ?? null;
         if (!archivedHunt && preEndBoard) {
           archivedHunt = buildPastHuntArchive(preEndBoard);
@@ -796,6 +808,29 @@ export function ActiveHuntPanel() {
     if (next && live) {
       void reconnectChat();
     }
+  }
+
+  async function endHunt() {
+    const archiveBoard = stateRef.current;
+    const optimistic = createIntentionalResetBoard();
+
+    fingerprintRef.current = huntFingerprint(optimistic);
+    guardUntilRef.current = nowMs() + 60_000;
+    stateRef.current = optimistic;
+    setState(optimistic);
+    publishBoard(optimistic);
+    setWinDrafts({});
+    setSelectedRequestId(null);
+    setBonusName("");
+    setBetSize("");
+    setWinAmount("");
+    setHuntTitle("");
+    setStartAmountInput("");
+
+    await adminRequest("/api/bonus-hunt/admin", {
+      action: "end-hunt",
+      board: archiveBoard ?? undefined,
+    });
   }
 
   return (
@@ -1436,12 +1471,7 @@ export function ActiveHuntPanel() {
                       Boolean(state?.title?.trim())
                     )
                   }
-                  onClick={() =>
-                    adminRequest("/api/bonus-hunt/admin", {
-                      action: "end-hunt",
-                      board: stateRef.current ?? undefined,
-                    })
-                  }
+                  onClick={() => void endHunt()}
                 >
                   End hunt
                 </button>
