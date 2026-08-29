@@ -24,9 +24,15 @@ function initials(username: string): string {
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
 
-export function AllAccountsCard() {
+export function AllAccountsCard({
+  defaultOpen = true,
+  embedded = false,
+}: {
+  defaultOpen?: boolean;
+  embedded?: boolean;
+}) {
   const { isAdmin, ready } = useSiteSession();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [users, setUsers] = useState<AdminSiteUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +75,10 @@ export function AllAccountsCard() {
   if (!ready || !isAdmin) return null;
 
   return (
-    <section className={styles.wrap} aria-label="Linked Kick accounts">
+    <section
+      className={embedded ? styles.wrapEmbedded : styles.wrap}
+      aria-label="Linked Kick accounts"
+    >
       <button
         type="button"
         className={styles.toggle}
