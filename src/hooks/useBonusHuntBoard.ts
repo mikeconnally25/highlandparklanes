@@ -830,6 +830,7 @@ export function useBonusHuntBoard() {
     toggleEpic,
     selectedTier,
     selectedRequestId,
+    setSelectedRequestId,
     activeSelectedRequestId,
     selectRequest,
     newBonusId,

@@ -7,7 +7,7 @@ import styles from "./page.module.css";
 
 export const metadata: Metadata = {
   title: "Bonus Hunts | Blakjac21",
-  description: "Track active and past bonus hunts from Blakjac21 streams on Kick.",
+  description: "Live bonus hunt board for Blakjac21 on Kick.",
 };
 
 export default function BonusHuntsPage() {
@@ -17,22 +17,13 @@ export default function BonusHuntsPage() {
         <div className={styles.topBrand}>
           <BrandLogo size="sm" />
           <Link className={styles.backLink} href="/">
-            ← Back home
+            ← Home
           </Link>
         </div>
         <AccountHeader />
       </header>
 
       <main className={styles.main}>
-        <header className={styles.hero}>
-          <p className={styles.eyebrow}>Live board</p>
-          <h1 className={styles.title}>Bonus Hunts</h1>
-          <p className={styles.lead}>
-            Track the active hunt, slot requests, and break-even. End a hunt to
-            archive it under past results.
-          </p>
-        </header>
-
         <BonusHuntsBoard />
       </main>
 
