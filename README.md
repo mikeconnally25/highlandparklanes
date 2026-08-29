@@ -22,50 +22,100 @@ Open [http://localhost:3000](http://localhost:3000).
 
 **Stable production URL:** [https://blakjac21-website.vercel.app](https://blakjac21-website.vercel.app)
 
-Every push to the **`blakjac21-website`** branch should auto-deploy to that URL (same link forever).
+Pushes to **`blakjac21-website`** can deploy two ways:
 
-### One-time Vercel setup (GitHub → auto-deploy)
+1. **GitHub Actions → Vercel** (recommended — reliable; setup below)
+2. **Vercel Git integration** — set **Settings → Git → Production Branch** to `blakjac21-website`
 
-You likely already imported `mikeconnally25/highlandparklanes`. Finish these settings:
+### One-time: enable auto-deploy (recommended)
 
-#### A. Project name & domain
+Do this once so every merge/push goes live automatically via GitHub Actions.
 
-1. [vercel.com](https://vercel.com) → open your Blakjac21 project
-2. **Settings → General → Project Name** → set to **`blakjac21-website`**
-3. **Settings → Domains** → confirm **`blakjac21-website.vercel.app`** is listed for **Production**
-   - If missing, click **Add** → `blakjac21-website.vercel.app`
+#### 1. Create a Vercel token
 
-#### B. Production branch (which git branch auto-deploys)
+1. Open [vercel.com/account/tokens](https://vercel.com/account/tokens)
+2. Create a token (e.g. `blakjac21-github-deploy`)
+3. Copy it
 
-1. **Settings → Git**
-2. **Production Branch** → **`blakjac21-website`** (not `main`)
-3. Save
+#### 2. Link the project and copy IDs
 
-#### C. Build settings (fix the “Next.js default” error)
+On your computer (or any terminal logged into Vercel):
 
-**Settings → General → Build & Development Settings** — leave overrides **empty** or use:
+```bash
+npx vercel login
+npx vercel link
+# pick the blakjac21-website project
+cat .vercel/project.json
+```
 
-| Setting | Value |
+You’ll see something like:
+
+```json
+{ "orgId": "team_…", "projectId": "prj_…" }
+```
+
+#### 3. Add GitHub secrets
+
+Repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Value |
 |--------|--------|
-| Framework Preset | Next.js |
-| Root Directory | *(empty)* |
-| Build Command | *(empty)* or `npm run build` |
-| Output Directory | **empty** — never type “Next.js default” |
-| Install Command | *(empty)* or `npm install` |
+| `VERCEL_TOKEN` | token from step 1 |
+| `VERCEL_ORG_ID` | `orgId` from `.vercel/project.json` |
+| `VERCEL_PROJECT_ID` | `projectId` from `.vercel/project.json` |
 
-#### D. Public access (required for viewers + Kick OAuth)
+#### 4. Confirm Kick / app env vars still live on Vercel
 
-**Settings → Deployment Protection** → for **Production**, turn protection **Off**  
-(or “Standard Protection” only on Preview deployments)
+In the Vercel project → **Settings → Environment Variables** (Production):
 
-#### E. First production deploy
+```
+KICK_CLIENT_ID=…
+KICK_CLIENT_SECRET=…
+SESSION_SECRET=long-random-string
+ADMIN_KICK_USERNAME=Blakjac21
+```
 
-1. **Deployments** tab
-2. Find the latest deploy from branch **`blakjac21-website`**
-3. **⋯ → Promote to Production** (if needed), or **Redeploy**
-4. Open [https://blakjac21-website.vercel.app](https://blakjac21-website.vercel.app) — should load the site (not 404)
+Optional but recommended for Bonus Hunts:
 
-After this, **every git push to `blakjac21-website`** redeploys the same URL automatically.
+```
+UPSTASH_REDIS_REST_URL=…
+UPSTASH_REDIS_REST_TOKEN=…
+```
+
+#### 5. Trigger the first deploy
+
+- Push any commit to `blakjac21-website`, **or**
+- GitHub → **Actions** → **Deploy Blakjac21 to Vercel Production** → **Run workflow**
+
+When it succeeds, [https://blakjac21-website.vercel.app](https://blakjac21-website.vercel.app) updates.
+
+### What happens after setup
+
+| Event | Result |
+|-------|--------|
+| Push / merge to `blakjac21-website` | GitHub Action builds + deploys **Production** (after secrets are set) |
+| Other branches | No production deploy from this workflow |
+
+### Also set Vercel’s production branch (backup)
+
+In Vercel → project → **Settings → Git**:
+
+- **Production Branch** = **`blakjac21-website`** (not `main`)
+
+That way Vercel’s own Git hook can still deploy if Actions isn’t configured yet.
+
+### Quick fix if the site is stuck on an old build
+
+1. Confirm the 3 GitHub secrets above are set
+2. Actions → **Deploy Blakjac21 to Vercel Production** → **Run workflow**
+3. Or Vercel → Deployments → latest `blakjac21-website` → **Promote to Production**
+4. Hard refresh the site (Ctrl+Shift+R)
+
+### Vercel project settings (still useful)
+
+1. **Settings → Domains** → `blakjac21-website.vercel.app` on Production
+2. **Settings → Deployment Protection** → Production **Off** (so Kick OAuth + viewers work)
+3. **Build settings** → Root Directory empty, Output Directory empty
 
 ### One-time setup (stop redeploying + reconfiguring Kick auth)
 
