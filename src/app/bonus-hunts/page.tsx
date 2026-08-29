@@ -24,11 +24,14 @@ export default function BonusHuntsPage() {
       </header>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>Bonus Hunts</h1>
-        <p className={styles.lead}>
-          Run the live board below. End a hunt to archive it under Past hunt
-          results.
-        </p>
+        <header className={styles.hero}>
+          <p className={styles.eyebrow}>Live board</p>
+          <h1 className={styles.title}>Bonus Hunts</h1>
+          <p className={styles.lead}>
+            Track the active hunt, slot requests, and break-even. End a hunt to
+            archive it under past results.
+          </p>
+        </header>
 
         <BonusHuntsBoard />
       </main>
