@@ -25,7 +25,6 @@ import {
 import { useSiteSession } from "@/hooks/useSiteSession";
 import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { ObsOverlayPreview } from "@/components/ObsOverlayPreview";
-import { AllAccountsCard } from "@/components/AllAccountsCard";
 import { useHuntBoard } from "@/components/HuntBoardContext";
 import {
   HUNT_HISTORY_EVENT,
@@ -1468,7 +1467,6 @@ export function ActiveHuntPanel() {
 
           {showAdmin ? (
             <div className={styles.adminPanel}>
-              <AllAccountsCard embedded />
               <div className={styles.adminActions}>
                 <button
                   type="button"

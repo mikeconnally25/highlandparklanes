@@ -53,39 +53,37 @@ function BonusHuntsBoardInner() {
 
   return (
     <>
-      <section className={styles.section} aria-label="Active hunt">
-        <div className={styles.card}>
+      <section className={styles.liveSection} aria-label="Active hunt">
+        <div className={styles.boardShell}>
           <ActiveHuntPanel />
         </div>
       </section>
 
-      <section className={styles.section} aria-labelledby="past-hunts">
+      <section className={styles.pastSection} aria-labelledby="past-hunts">
         <button
           type="button"
           id="past-hunts"
-          className={styles.dropdownToggle}
+          className={styles.pastToggle}
           aria-expanded={pastOpen}
           onClick={() => setPastOpen((open) => !open)}
         >
-          <span className={styles.dropdownTitle}>
+          <span className={styles.pastTitle}>
             Past hunt results
             {pastCount > 0 ? ` · ${pastCount}` : ""}
           </span>
-          <span className={styles.dropdownHint}>
+          <span className={styles.pastHint}>
             Archived boards after you end a hunt
           </span>
           <span
-            className={styles.dropdownChevron}
+            className={styles.pastChevron}
             data-open={pastOpen || undefined}
             aria-hidden
           />
         </button>
 
         {pastOpen ? (
-          <div className={styles.dropdownBody}>
-            <div className={styles.card}>
-              <PastHuntsPanel />
-            </div>
+          <div className={styles.pastBody}>
+            <PastHuntsPanel />
           </div>
         ) : null}
       </section>
