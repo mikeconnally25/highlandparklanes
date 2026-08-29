@@ -44,6 +44,8 @@ export type BonusHuntState = {
   slotRequests: SlotRequest[];
   startedAt: string | null;
   updatedAt: string;
+  /** Increments on End hunt so overlays and serverless merges accept resets. */
+  boardEpoch?: number;
 };
 
 export type PastHuntResult = {
@@ -75,15 +77,25 @@ function createState(): BonusHuntState {
     bonuses: [],
     slotRequests: [],
     startedAt: null,
+    boardEpoch: 0,
     // Epoch so empty cold instances lose to real persisted/mutated state
     updatedAt: new Date(0).toISOString(),
   };
 }
 
+export function huntBoardEpoch(state: BonusHuntState | null | undefined): number {
+  return state?.boardEpoch ?? 0;
+}
+
+export function nextBoardEpoch(state: BonusHuntState | null | undefined): number {
+  return huntBoardEpoch(state) + 1;
+}
+
 /** Empty board after End hunt — stamped so merges and overlays accept the reset. */
-export function createIntentionalResetBoard(): BonusHuntState {
+export function createIntentionalResetBoard(boardEpoch?: number): BonusHuntState {
   const reset = createState();
   reset.updatedAt = new Date().toISOString();
+  reset.boardEpoch = boardEpoch ?? 0;
   return reset;
 }
 
@@ -110,12 +122,14 @@ export function remoteLooksLikeNewHunt(
 
   if (isIntentionalResetBoard(local)) {
     if (isIntentionalResetBoard(remote)) return false;
+    if (huntBoardEpoch(remote) < huntBoardEpoch(local)) return false;
     return (
-      remoteT > localT &&
-      (remote.huntActive ||
-        remote.requestsOpen ||
-        remote.bonuses.length > 0 ||
-        remote.slotRequests.length > 0)
+      remote.huntActive ||
+      remote.requestsOpen ||
+      remote.bonuses.length > 0 ||
+      remote.slotRequests.length > 0 ||
+      remote.startAmount != null ||
+      Boolean(remote.title.trim())
     );
   }
 
@@ -145,6 +159,7 @@ function normalizeState(state: BonusHuntState): BonusHuntState {
     })),
   );
   if (!state.updatedAt) state.updatedAt = new Date(0).toISOString();
+  if (state.boardEpoch == null) state.boardEpoch = 0;
   return state;
 }
 
@@ -236,6 +251,11 @@ export function mergeHuntBoards(
   local: BonusHuntState,
   remote: BonusHuntState,
 ): BonusHuntState {
+  const localEpoch = huntBoardEpoch(local);
+  const remoteEpoch = huntBoardEpoch(remote);
+  if (remoteEpoch > localEpoch) return normalizeState(remote);
+  if (localEpoch > remoteEpoch) return normalizeState(local);
+
   const localT = Date.parse(local.updatedAt) || 0;
   const remoteT = Date.parse(remote.updatedAt) || 0;
 
@@ -537,7 +557,7 @@ export function endAndArchiveHunt(): {
   }
 
   const g = globalThis as StoreGlobal;
-  const reset = createIntentionalResetBoard();
+  const reset = createIntentionalResetBoard(nextBoardEpoch(state));
   g.__bonusHuntState = reset;
   persistState(reset);
   return {

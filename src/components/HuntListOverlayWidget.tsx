@@ -20,24 +20,12 @@ import {
   writeHuntCache,
 } from "@/lib/hunt-client-sync";
 import { SlotThumbnail } from "@/components/SlotThumbnail";
+import {
+  huntOverlayFingerprint,
+  OVERLAY_FAST_POLL_WINDOW_MS,
+  overlayPollIntervalMs,
+} from "@/lib/overlay-hunt-board";
 import styles from "./HuntListOverlayWidget.module.css";
-
-const POLL_MS = 1500;
-
-function huntFingerprint(state: BonusHuntState): string {
-  return [
-    state.updatedAt,
-    state.huntActive ? "1" : "0",
-    state.title,
-    String(state.startAmount ?? ""),
-    state.bonuses
-      .map(
-        (bonus) =>
-          `${bonus.id}:${bonus.name}:${bonus.betSize ?? ""}:${bonus.winAmount ?? ""}:${bonus.tier}:${bonus.requestedBy ?? ""}:${bonus.thumbnailUrl ?? ""}`,
-      )
-      .join("|"),
-  ].join("::");
-}
 
 function huntTitleLabel(title: string): string {
   const trimmed = title.trim();
@@ -100,6 +88,7 @@ export function HuntListOverlayWidget({
   const [shouldScroll, setShouldScroll] = useState(false);
   const fingerprintRef = useRef("");
   const boardRef = useRef<BonusHuntState | null>(null);
+  const fastPollUntilRef = useRef(0);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
 
@@ -108,17 +97,24 @@ export function HuntListOverlayWidget({
       mode === "obs"
         ? resolveOverlayBoard(boardRef.current, next)
         : preferHuntBoard(boardRef.current, next);
-    const fp = huntFingerprint(merged);
-    if (fp === fingerprintRef.current && boardRef.current) return;
+    const fp = huntOverlayFingerprint(merged);
+    const epochChanged =
+      (merged.boardEpoch ?? 0) !== (boardRef.current?.boardEpoch ?? 0);
+    if (!epochChanged && fp === fingerprintRef.current && boardRef.current) {
+      return;
+    }
 
     if (isIntentionalReset(merged)) {
       clearOverlayHash();
+    }
+    if (epochChanged || isIntentionalReset(merged)) {
+      fastPollUntilRef.current = Date.now() + OVERLAY_FAST_POLL_WINDOW_MS;
     }
 
     fingerprintRef.current = fp;
     boardRef.current = merged;
     setBoard(merged);
-    if (opts?.persist && mode !== "preview") writeHuntCache(merged);
+    if (mode === "obs" || opts?.persist) writeHuntCache(merged);
   }
 
   useEffect(() => {
@@ -134,7 +130,6 @@ export function HuntListOverlayWidget({
   }, [mode, boardSeed]);
 
   useEffect(() => {
-    if (mode === "obs") return;
     const seeded = readHuntHashSeed() ?? readHuntCache();
     if (!seeded) return;
     const frame = window.requestAnimationFrame(() => {
@@ -158,11 +153,13 @@ export function HuntListOverlayWidget({
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const pollMs = mode === "preview" ? 4000 : POLL_MS;
 
     async function load() {
       try {
-        const res = await fetch("/api/bonus-hunt", { cache: "no-store" });
+        const res = await fetch("/api/bonus-hunt", {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache, no-store" },
+        });
         if (!res.ok) throw new Error("Failed to load");
         const data = (await res.json()) as BonusHuntState;
         if (cancelled) return;
@@ -170,7 +167,12 @@ export function HuntListOverlayWidget({
       } catch {
         /* ignore */
       } finally {
-        if (!cancelled) timer = setTimeout(load, pollMs);
+        if (!cancelled) {
+          timer = setTimeout(
+            load,
+            overlayPollIntervalMs(mode, fastPollUntilRef.current),
+          );
+        }
       }
     }
 
@@ -238,7 +240,9 @@ export function HuntListOverlayWidget({
             <p className={styles.empty}>
               {readyForNextHunt
                 ? "Hunt ended — ready for the next one"
-                : "Waiting for bonuses…"}
+                : (board?.title ?? "").trim()
+                  ? "New hunt — waiting for bonuses…"
+                  : "Waiting for bonuses…"}
             </p>
           ) : (
             <div

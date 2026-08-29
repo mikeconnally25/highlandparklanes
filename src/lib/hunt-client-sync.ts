@@ -1,5 +1,6 @@
 import type { BonusHuntState, PastHuntResult } from "@/lib/bonus-hunt";
 import {
+  huntBoardEpoch,
   isIntentionalResetBoard,
   mergeHuntBoards,
   mergePastHuntLists,
@@ -33,6 +34,12 @@ export function preferHuntBoard(
   remote: BonusHuntState,
 ): BonusHuntState {
   if (!local) return remote;
+
+  const localEpoch = huntBoardEpoch(local);
+  const remoteEpoch = huntBoardEpoch(remote);
+  if (remoteEpoch > localEpoch) return remote;
+  if (localEpoch > remoteEpoch) return local;
+
   const localT = Date.parse(local.updatedAt) || 0;
   const remoteT = Date.parse(remote.updatedAt) || 0;
 
@@ -51,8 +58,15 @@ export function resolveOverlayBoard(
   local: BonusHuntState | null,
   incoming: BonusHuntState,
 ): BonusHuntState {
+  if (!local) return incoming;
+
+  const localEpoch = huntBoardEpoch(local);
+  const incomingEpoch = huntBoardEpoch(incoming);
+  if (incomingEpoch > localEpoch) return incoming;
+  if (localEpoch > incomingEpoch) return local;
+
   if (isIntentionalReset(incoming)) return incoming;
-  if (local && isIntentionalReset(local)) {
+  if (isIntentionalReset(local)) {
     if (!remoteLooksLikeNewHunt(local, incoming)) return local;
   }
   return preferHuntBoard(local, incoming);
