@@ -13,6 +13,7 @@ import {
   mergeHuntBoards,
   parseMoneyAmount,
   parseSlotRequestMessage,
+  remoteLooksLikeNewHunt,
   sortBonusesForDisplay,
 } from "@/lib/bonus-hunt";
 import {
@@ -129,10 +130,10 @@ function preferState(
 
   const localReset = isIntentionalReset(local);
 
-  // End hunt / clear: keep the empty board during the guard window.
-  if (localReset && guarded) return local;
+  // End hunt / clear: keep empty board until a new hunt actually starts on server.
+  if (localReset && !remoteLooksLikeNewHunt(local, remote)) return local;
 
-  // Intentional end/clear must win when it's newer.
+  // Intentional end/clear from server must win when it's newer.
   if (remoteReset && remoteT >= localT) return remote;
 
   // Union merge so a cold instance that only saw the newest bonus can't wipe older rows.
@@ -245,7 +246,8 @@ export function ActiveHuntPanel() {
     const cached = readHuntCache();
     if (!cached) return;
     fingerprintRef.current = huntFingerprint(cached);
-    guardUntilRef.current = nowMs() + 8_000;
+    guardUntilRef.current =
+      nowMs() + (isIntentionalReset(cached) ? 60_000 : 8_000);
     stateRef.current = cached;
     const frame = window.requestAnimationFrame(() => {
       setState(cached);
@@ -543,7 +545,9 @@ export function ActiveHuntPanel() {
           Boolean((body as { all?: boolean }).all));
 
       const merged = clearing
-        ? next
+        ? isIntentionalReset(next)
+          ? next
+          : createIntentionalResetBoard()
         : preferState(stateRef.current, next, nowMs() + 20_000);
 
       guardUntilRef.current = nowMs() + 20_000;
@@ -827,10 +831,34 @@ export function ActiveHuntPanel() {
     setHuntTitle("");
     setStartAmountInput("");
 
-    await adminRequest("/api/bonus-hunt/admin", {
+    const result = await adminRequest("/api/bonus-hunt/admin", {
       action: "end-hunt",
       board: archiveBoard ?? undefined,
     });
+
+    if (!result && archiveBoard) {
+      fingerprintRef.current = huntFingerprint(archiveBoard);
+      guardUntilRef.current = nowMs() + 20_000;
+      stateRef.current = archiveBoard;
+      setState(archiveBoard);
+      publishBoard(archiveBoard);
+      setHuntTitle(archiveBoard.title);
+      setStartAmountInput(
+        archiveBoard.startAmount != null
+          ? String(archiveBoard.startAmount)
+          : "",
+      );
+      setWinDrafts((current) => {
+        const nextDrafts = { ...current };
+        for (const bonus of archiveBoard.bonuses) {
+          if (nextDrafts[bonus.id] === undefined) {
+            nextDrafts[bonus.id] =
+              bonus.winAmount != null ? String(bonus.winAmount) : "";
+          }
+        }
+        return nextDrafts;
+      });
+    }
   }
 
   return (
@@ -1467,6 +1495,7 @@ export function ActiveHuntPanel() {
                     !(
                       state?.huntActive ||
                       (state?.bonuses.length ?? 0) > 0 ||
+                      (state?.slotRequests.length ?? 0) > 0 ||
                       state?.startAmount != null ||
                       Boolean(state?.title?.trim())
                     )

@@ -1,5 +1,10 @@
 import type { BonusHuntState, PastHuntResult } from "@/lib/bonus-hunt";
-import { mergeHuntBoards, mergePastHuntLists } from "@/lib/bonus-hunt";
+import {
+  isIntentionalResetBoard,
+  mergeHuntBoards,
+  mergePastHuntLists,
+  remoteLooksLikeNewHunt,
+} from "@/lib/bonus-hunt";
 
 export const HUNT_CACHE_KEY = "blakjac21-bonus-hunt-cache-v1";
 export const HUNT_HISTORY_CACHE_KEY = "blakjac21-bonus-hunt-history-v1";
@@ -18,17 +23,7 @@ export function readHuntCache(): BonusHuntState | null {
 }
 
 function isIntentionalReset(state: BonusHuntState): boolean {
-  const remoteT = Date.parse(state.updatedAt) || 0;
-  // createState uses epoch; intentional end/clear always stamps a real time.
-  if (remoteT <= 0) return false;
-  return (
-    !state.huntActive &&
-    !state.requestsOpen &&
-    state.bonuses.length === 0 &&
-    state.slotRequests.length === 0 &&
-    !state.title.trim() &&
-    state.startAmount == null
-  );
+  return isIntentionalResetBoard(state);
 }
 
 export { isIntentionalReset };
@@ -44,6 +39,10 @@ export function preferHuntBoard(
   // End hunt / clear must win even when remote is empty.
   if (isIntentionalReset(remote) && remoteT >= localT) return remote;
 
+  if (isIntentionalReset(local) && !remoteLooksLikeNewHunt(local, remote)) {
+    return local;
+  }
+
   return mergeHuntBoards(local, remote);
 }
 
@@ -54,13 +53,7 @@ export function resolveOverlayBoard(
 ): BonusHuntState {
   if (isIntentionalReset(incoming)) return incoming;
   if (local && isIntentionalReset(local)) {
-    const localT = Date.parse(local.updatedAt) || 0;
-    const incomingT = Date.parse(incoming.updatedAt) || 0;
-    const newHuntStarted =
-      incoming.huntActive ||
-      incoming.requestsOpen ||
-      (incoming.bonuses.length > 0 && incomingT > localT);
-    if (!newHuntStarted) return local;
+    if (!remoteLooksLikeNewHunt(local, incoming)) return local;
   }
   return preferHuntBoard(local, incoming);
 }

@@ -87,6 +87,46 @@ export function createIntentionalResetBoard(): BonusHuntState {
   return reset;
 }
 
+/** End-hunt / clear-board snapshot (non-epoch updatedAt + all hunt fields empty). */
+export function isIntentionalResetBoard(state: BonusHuntState): boolean {
+  const updatedAt = Date.parse(state.updatedAt) || 0;
+  if (updatedAt <= 0) return false;
+  return (
+    !state.huntActive &&
+    !state.requestsOpen &&
+    state.bonuses.length === 0 &&
+    state.slotRequests.length === 0 &&
+    !state.title.trim() &&
+    state.startAmount == null
+  );
+}
+
+export function remoteLooksLikeNewHunt(
+  local: BonusHuntState,
+  remote: BonusHuntState,
+): boolean {
+  const localT = Date.parse(local.updatedAt) || 0;
+  const remoteT = Date.parse(remote.updatedAt) || 0;
+
+  if (isIntentionalResetBoard(local)) {
+    if (isIntentionalResetBoard(remote)) return false;
+    return (
+      remoteT > localT &&
+      (remote.huntActive ||
+        remote.requestsOpen ||
+        remote.bonuses.length > 0 ||
+        remote.slotRequests.length > 0)
+    );
+  }
+
+  return (
+    remote.huntActive ||
+    remote.requestsOpen ||
+    (remote.bonuses.length > 0 && remoteT > localT) ||
+    (remote.slotRequests.length > 0 && remoteT > localT)
+  );
+}
+
 function normalizeState(state: BonusHuntState): BonusHuntState {
   if (state.startAmount === undefined) state.startAmount = null;
   if (state.startedAt === undefined) state.startedAt = null;
@@ -218,6 +258,9 @@ export function mergeHuntBoards(
 
   if (remoteReset && remoteT >= localT) return normalizeState(remote);
   if (localReset && localT >= remoteT) return normalizeState(local);
+  if (localReset && !remoteLooksLikeNewHunt(local, remote)) {
+    return normalizeState(local);
+  }
 
   const newer = remoteT >= localT ? remote : local;
   const older = newer === remote ? local : remote;
@@ -310,7 +353,12 @@ export async function hydrateBonusHuntFromRemote(): Promise<BonusHuntState> {
       require("@/lib/remote-json-store") as typeof import("@/lib/remote-json-store");
     const remote = await readRemoteJson<BonusHuntState>(STATE_FILE);
     if (remote && typeof remote === "object") {
-      g.__bonusHuntState = richerState(g.__bonusHuntState, remote);
+      const normalized = normalizeState(remote);
+      if (isIntentionalResetBoard(normalized)) {
+        g.__bonusHuntState = normalized;
+      } else {
+        g.__bonusHuntState = richerState(g.__bonusHuntState, normalized);
+      }
     }
     const history = await readRemoteJson<PastHuntResult[]>(HISTORY_FILE);
     if (Array.isArray(history)) {

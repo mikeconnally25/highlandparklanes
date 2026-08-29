@@ -83,6 +83,15 @@ GUESS_ADMIN_TOKEN=your-admin-token
 ADMIN_KICK_USERNAME=Blakjac21
 ```
 
+**Recommended for Bonus Hunts + OBS overlays on Vercel** (shared hunt state across serverless instances):
+
+```
+UPSTASH_REDIS_REST_URL=https://….upstash.io
+UPSTASH_REDIS_REST_TOKEN=…
+```
+
+Create a free Redis database at [upstash.com](https://upstash.com), copy the REST URL and token into Vercel env vars, then redeploy. Without this, hunt data can drift between API requests and OBS overlays may not clear reliably after End hunt.
+
 Do **not** set `KICK_REDIRECT_URI` or `NEXT_PUBLIC_SITE_URL` unless you have a special override need. The site derives the OAuth callback from the URL visitors use.
 
 If you previously set those URL vars to an old temporary deploy URL, **delete them** so they do not override the live site.
