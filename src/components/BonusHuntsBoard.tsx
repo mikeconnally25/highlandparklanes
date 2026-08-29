@@ -10,7 +10,7 @@ import {
   preferPastHunts,
   readHuntHistoryCache,
 } from "@/lib/hunt-client-sync";
-import styles from "@/app/bonus-hunts/page.module.css";
+import styles from "./BonusHuntsBoard.module.css";
 
 function BonusHuntsBoardInner() {
   const [pastOpen, setPastOpen] = useState(false);
@@ -52,14 +52,10 @@ function BonusHuntsBoardInner() {
   }, []);
 
   return (
-    <>
-      <section className={styles.liveSection} aria-label="Active hunt">
-        <div className={styles.boardShell}>
-          <ActiveHuntPanel />
-        </div>
-      </section>
+    <div className={styles.wrap}>
+      <ActiveHuntPanel />
 
-      <section className={styles.pastSection} aria-labelledby="past-hunts">
+      <section className={styles.past} aria-labelledby="past-hunts">
         <button
           type="button"
           id="past-hunts"
@@ -68,26 +64,22 @@ function BonusHuntsBoardInner() {
           onClick={() => setPastOpen((open) => !open)}
         >
           <span className={styles.pastTitle}>
-            Past hunt results
-            {pastCount > 0 ? ` · ${pastCount}` : ""}
+            Past hunts{pastCount > 0 ? ` · ${pastCount}` : ""}
           </span>
-          <span className={styles.pastHint}>
-            Archived boards after you end a hunt
-          </span>
+          <span className={styles.pastHint}>Archived after End hunt</span>
           <span
             className={styles.pastChevron}
             data-open={pastOpen || undefined}
             aria-hidden
           />
         </button>
-
         {pastOpen ? (
           <div className={styles.pastBody}>
             <PastHuntsPanel />
           </div>
         ) : null}
       </section>
-    </>
+    </div>
   );
 }
 
