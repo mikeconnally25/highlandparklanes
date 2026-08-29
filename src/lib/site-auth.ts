@@ -53,9 +53,15 @@ function sessionSecret() {
   );
 }
 
+function normalizeEnvCredential(value: string | undefined): string {
+  if (!value) return "";
+  // Vercel copy/paste sometimes duplicates the value on a second line.
+  return value.trim().split(/[\r\n]+/)[0]?.trim() ?? "";
+}
+
 export function getKickOAuthConfig() {
-  const clientId = process.env.KICK_CLIENT_ID?.trim() ?? "";
-  const clientSecret = process.env.KICK_CLIENT_SECRET?.trim() ?? "";
+  const clientId = normalizeEnvCredential(process.env.KICK_CLIENT_ID);
+  const clientSecret = normalizeEnvCredential(process.env.KICK_CLIENT_SECRET);
   const redirectUri = getConfiguredKickCallbackUrl();
 
   const missing: string[] = [];
