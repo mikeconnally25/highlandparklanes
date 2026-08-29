@@ -35,7 +35,21 @@ Temporary `vercel deploy --temporary` URLs change every run (~60 min expiry). Th
 5. Copy your **Production URL** (e.g. `https://blakjac21-website.vercel.app`) — it stays the same across redeploys
 6. Optional: add a custom domain under **Settings → Domains**
 
-Every push to `main` redeploys automatically. You do **not** need to run manual deploys or update URL env vars.
+Every push to `blakjac21-website` redeploys automatically. You do **not** need to run manual deploys or update URL env vars.
+
+#### Vercel build error: `output directory "Next.js default" was not found`
+
+In **Settings → General → Build & Development Settings**, clear these overrides (leave **empty** so Vercel auto-detects):
+
+| Setting | Correct value |
+|--------|----------------|
+| Framework Preset | Next.js |
+| Root Directory | *(empty)* |
+| Build Command | *(empty)* or `npm run build` |
+| Output Directory | **empty — do not type "Next.js default"** |
+| Install Command | *(empty)* or `npm install` |
+
+Turn off **Override** toggles if you are not sure. Then redeploy.
 
 #### 2. Vercel environment variables (set once)
 

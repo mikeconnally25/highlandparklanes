@@ -5,7 +5,8 @@ import { fileURLToPath } from "url";
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Standalone is for Docker/Railway; Vercel uses its own Next.js builder.
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Bake admin allowlist into the server runtime for temporary/prebuilt deploys
   env: {
     ADMIN_KICK_USERNAME:
