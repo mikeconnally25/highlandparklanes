@@ -752,6 +752,7 @@ export function ActiveHuntPanel() {
       action: "set-win-amount",
       id,
       winAmount: winDrafts[id] ?? "",
+      board: stateRef.current ?? undefined,
     });
     if (next) {
       const bonus = next.bonuses.find((item) => item.id === id);
@@ -895,6 +896,7 @@ export function ActiveHuntPanel() {
               void adminRequest("/api/bonus-hunt/admin", {
                 action: "set-title",
                 title: next,
+                board: stateRef.current ?? undefined,
               });
             }}
             onChange={(e) => setHuntTitle(e.target.value)}
@@ -1078,6 +1080,7 @@ export function ActiveHuntPanel() {
                           void adminRequest("/api/bonus-hunt/admin", {
                             action: "remove-request",
                             id: req.id,
+                            board: stateRef.current ?? undefined,
                           });
                         }}
                         aria-label={`Dismiss ${req.slotName}`}
