@@ -11,6 +11,7 @@ import {
   buildPastHuntArchive,
   createIntentionalResetBoard,
   mergeHuntBoards,
+  nextBoardEpoch,
   parseMoneyAmount,
   parseSlotRequestMessage,
   remoteLooksLikeNewHunt,
@@ -547,7 +548,7 @@ export function ActiveHuntPanel() {
       const merged = clearing
         ? isIntentionalReset(next)
           ? next
-          : createIntentionalResetBoard()
+          : createIntentionalResetBoard(nextBoardEpoch(preEndBoard))
         : preferState(stateRef.current, next, nowMs() + 20_000);
 
       guardUntilRef.current = nowMs() + 20_000;
@@ -816,7 +817,7 @@ export function ActiveHuntPanel() {
 
   async function endHunt() {
     const archiveBoard = stateRef.current;
-    const optimistic = createIntentionalResetBoard();
+    const optimistic = createIntentionalResetBoard(nextBoardEpoch(archiveBoard));
 
     fingerprintRef.current = huntFingerprint(optimistic);
     guardUntilRef.current = nowMs() + 60_000;
@@ -836,7 +837,9 @@ export function ActiveHuntPanel() {
       board: archiveBoard ?? undefined,
     });
 
-    if (!result && archiveBoard) {
+    if (result) {
+      void pushHuntSync(result);
+    } else if (archiveBoard) {
       fingerprintRef.current = huntFingerprint(archiveBoard);
       guardUntilRef.current = nowMs() + 20_000;
       stateRef.current = archiveBoard;
