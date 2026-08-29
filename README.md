@@ -20,38 +20,58 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy (public URL for viewers)
 
-This is a standalone Next.js app in the **blakjac21 website** repo. Deploy the repo root — no monorepo subfolder needed.
+**Stable production URL:** [https://blakjac21-website.vercel.app](https://blakjac21-website.vercel.app)
 
-### One-time setup (stop redeploying + reconfiguring Kick auth)
+Every push to the **`blakjac21-website`** branch should auto-deploy to that URL (same link forever).
 
-Temporary `vercel deploy --temporary` URLs change every run (~60 min expiry). That forces you to update Kick redirect URLs and env vars constantly. **Use a permanent Vercel project instead** — same URL forever, auto-deploy on every git push.
+### One-time Vercel setup (GitHub → auto-deploy)
 
-#### 1. Connect GitHub → Vercel (do this once)
+You likely already imported `mikeconnally25/highlandparklanes`. Finish these settings:
 
-1. Go to [vercel.com](https://vercel.com) → **Add New Project**
-2. Import `mikeconnally25/highlandparklanes` and set **Production Branch** to `blakjac21-website`, **or** create a dedicated repo from that branch and import it
-3. Leave **Root Directory** empty (repo root is the app)
-4. Framework: Next.js (auto-detected). Deploy
-5. Copy your **Production URL** (e.g. `https://blakjac21-website.vercel.app`) — it stays the same across redeploys
-6. Optional: add a custom domain under **Settings → Domains**
+#### A. Project name & domain
 
-Every push to `blakjac21-website` redeploys automatically. You do **not** need to run manual deploys or update URL env vars.
+1. [vercel.com](https://vercel.com) → open your Blakjac21 project
+2. **Settings → General → Project Name** → set to **`blakjac21-website`**
+3. **Settings → Domains** → confirm **`blakjac21-website.vercel.app`** is listed for **Production**
+   - If missing, click **Add** → `blakjac21-website.vercel.app`
 
-#### Vercel build error: `output directory "Next.js default" was not found`
+#### B. Production branch (which git branch auto-deploys)
 
-In **Settings → General → Build & Development Settings**, clear these overrides (leave **empty** so Vercel auto-detects):
+1. **Settings → Git**
+2. **Production Branch** → **`blakjac21-website`** (not `main`)
+3. Save
 
-| Setting | Correct value |
-|--------|----------------|
+#### C. Build settings (fix the “Next.js default” error)
+
+**Settings → General → Build & Development Settings** — leave overrides **empty** or use:
+
+| Setting | Value |
+|--------|--------|
 | Framework Preset | Next.js |
 | Root Directory | *(empty)* |
 | Build Command | *(empty)* or `npm run build` |
-| Output Directory | **empty — do not type "Next.js default"** |
+| Output Directory | **empty** — never type “Next.js default” |
 | Install Command | *(empty)* or `npm install` |
 
-Turn off **Override** toggles if you are not sure. Then redeploy.
+#### D. Public access (required for viewers + Kick OAuth)
 
-#### 2. Vercel environment variables (set once)
+**Settings → Deployment Protection** → for **Production**, turn protection **Off**  
+(or “Standard Protection” only on Preview deployments)
+
+#### E. First production deploy
+
+1. **Deployments** tab
+2. Find the latest deploy from branch **`blakjac21-website`**
+3. **⋯ → Promote to Production** (if needed), or **Redeploy**
+4. Open [https://blakjac21-website.vercel.app](https://blakjac21-website.vercel.app) — should load the site (not 404)
+
+After this, **every git push to `blakjac21-website`** redeploys the same URL automatically.
+
+### One-time setup (stop redeploying + reconfiguring Kick auth)
+
+Temporary `vercel deploy --temporary` URLs change every run (~60 min expiry). **Use the stable project above instead.**
+
+#### Environment variables (set once in Vercel)
 
 In **Settings → Environment Variables**, add only secrets — **no URL variables required**:
 
@@ -67,12 +87,12 @@ Do **not** set `KICK_REDIRECT_URI` or `NEXT_PUBLIC_SITE_URL` unless you have a s
 
 If you previously set those URL vars to an old temporary deploy URL, **delete them** so they do not override the live site.
 
-#### 3. Kick developer app (register URLs once)
+#### Kick developer app (register URLs once)
 
 In [Kick Developer settings](https://kick.com/settings/developer), add **both** redirect URLs to the same app (you can list multiple):
 
 - Local dev: `http://localhost:3000/api/account/kick/callback`
-- Production: `https://YOUR-STABLE-VERCEL-URL/api/account/kick/callback`
+- Production: `https://blakjac21-website.vercel.app/api/account/kick/callback`
 
 Use `localhost` (not `127.0.0.1`) for local. After this one-time step, code changes and redeploys do **not** require updating Kick auth — as long as your public URL stays the same.
 
