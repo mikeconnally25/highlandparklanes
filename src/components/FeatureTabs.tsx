@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { KICK_CHANNEL_URL } from "@/lib/kick";
+import type { AdminSiteUser } from "@/lib/site-auth";
+import { useSiteSession } from "@/hooks/useSiteSession";
 import styles from "./FeatureTabs.module.css";
 
-type PanelTabId = "social";
+type PanelTabId = "social" | "accounts";
 
 type SocialLink = {
   label: string;
@@ -36,6 +38,7 @@ type TabConfig =
       description: string;
       kind: "panel";
       accent: "cyan" | "gold" | "live";
+      adminOnly?: boolean;
     };
 
 const STAKE_URL = "https://stake.com/?offer=blakjac21&c=c52feb0e28";
@@ -96,10 +99,18 @@ const TABS: TabConfig[] = [
     kind: "panel",
     accent: "cyan",
   },
+  {
+    id: "accounts",
+    label: "Kick Accounts",
+    description: "Admin: Kick-verified accounts signed in on this site.",
+    kind: "panel",
+    accent: "gold",
+    adminOnly: true,
+  },
 ];
 
 const PANEL_COPY: Record<
-  PanelTabId,
+  Exclude<PanelTabId, "accounts">,
   { title: string; body: string; links?: SocialLink[] }
 > = {
   social: {
@@ -125,8 +136,152 @@ const PANEL_COPY: Record<
   },
 };
 
+function formatWhen(value: string): string {
+  const parsed = Date.parse(value);
+  if (!Number.isFinite(parsed)) return "—";
+  return new Date(parsed).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function initials(username: string): string {
+  const parts = username.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
+function KickAccountsPanel() {
+  const [users, setUsers] = useState<AdminSiteUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/account/users", {
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+      const data = (await res.json()) as {
+        users?: AdminSiteUser[];
+        error?: string;
+      };
+      if (!res.ok) {
+        setError(
+          data.error === "Unauthorized"
+            ? "Sign in with the admin Kick account to view linked accounts"
+            : (data.error ?? "Could not load accounts"),
+        );
+        setUsers([]);
+        return;
+      }
+      setUsers(Array.isArray(data.users) ? data.users : []);
+    } catch {
+      setError("Could not reach server");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
+
+  return (
+    <div className={styles.accountsPanel}>
+      <p className={styles.panelTitle}>Kick-verified accounts</p>
+      <p className={styles.panelBody}>
+        Accounts that signed in and linked through Kick OAuth on this site.
+        Admin only.
+      </p>
+
+      {loading ? (
+        <p className={styles.accountsStatus}>Loading accounts…</p>
+      ) : null}
+
+      {error ? (
+        <p className={styles.accountsError} role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      {!loading && !error ? (
+        <p className={styles.accountsStatus}>
+          {users.length.toLocaleString()} Kick-verified account
+          {users.length === 1 ? "" : "s"}
+        </p>
+      ) : null}
+
+      {!loading && !error && users.length === 0 ? (
+        <p className={styles.accountsEmpty}>
+          No Kick accounts have signed in yet.
+        </p>
+      ) : null}
+
+      {!error && users.length > 0 ? (
+        <ul className={styles.accountsList}>
+          {users.map((user) => (
+            <li key={user.id} className={styles.accountRow}>
+              {user.profilePicture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  className={styles.accountAvatar}
+                  src={user.profilePicture}
+                  alt=""
+                  width={36}
+                  height={36}
+                />
+              ) : (
+                <span className={styles.accountAvatarFallback}>
+                  {initials(user.username)}
+                </span>
+              )}
+              <span className={styles.accountMeta}>
+                <span className={styles.accountName}>
+                  @{user.username}
+                  {user.isAdmin ? (
+                    <span className={styles.accountAdminBadge}>Admin</span>
+                  ) : null}
+                  <span className={styles.accountVerified}>Kick verified</span>
+                </span>
+                <span className={styles.accountDetails}>
+                  Kick ID {user.kickUserId} · Joined {formatWhen(user.createdAt)}{" "}
+                  · Last login {formatWhen(user.lastLoginAt)}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function FeatureTabs() {
+  const { isAdmin, ready } = useSiteSession();
   const [openTab, setOpenTab] = useState<PanelTabId | null>(null);
+
+  const visibleTabs = useMemo(
+    () =>
+      TABS.filter((tab) => {
+        if (tab.kind !== "panel" || !tab.adminOnly) return true;
+        return ready && isAdmin;
+      }),
+    [ready, isAdmin],
+  );
+
+  useEffect(() => {
+    if (openTab === "accounts" && !(ready && isAdmin)) {
+      setOpenTab(null);
+    }
+  }, [openTab, ready, isAdmin]);
 
   function toggleTab(id: PanelTabId) {
     setOpenTab((current) => (current === id ? null : id));
@@ -147,7 +302,7 @@ export function FeatureTabs() {
 
       <nav aria-label="Site features">
         <ul className={styles.grid}>
-          {TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             if (tab.kind === "link") {
               return (
                 <li key={tab.id}>
@@ -209,7 +364,18 @@ export function FeatureTabs() {
         </ul>
       </nav>
 
-      {openTab ? (
+      {openTab === "accounts" ? (
+        <div
+          id="panel-accounts"
+          className={styles.panel}
+          role="region"
+          aria-labelledby="tab-accounts"
+        >
+          <KickAccountsPanel />
+        </div>
+      ) : null}
+
+      {openTab && openTab !== "accounts" ? (
         <div
           id={`panel-${openTab}`}
           className={styles.panel}
