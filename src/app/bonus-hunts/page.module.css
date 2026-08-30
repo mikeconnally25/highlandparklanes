@@ -6,7 +6,7 @@
   flex-direction: column;
 }
 
-.top {
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -20,14 +20,14 @@
   box-shadow: var(--shadow-soft);
 }
 
-.topBrand {
+.headerLeft {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
 }
 
-.backLink {
+.homeLink {
   display: inline-flex;
   align-items: center;
   min-height: 2.35rem;
@@ -45,8 +45,8 @@
     background 0.2s ease;
 }
 
-.backLink:hover,
-.backLink:focus-visible {
+.homeLink:hover,
+.homeLink:focus-visible {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   background: color-mix(in srgb, var(--accent) 8%, transparent);
@@ -54,10 +54,48 @@
 
 .main {
   flex: 1;
-  max-width: 68rem;
+  max-width: 72rem;
   width: 100%;
   margin-inline: auto;
   padding: clamp(1.25rem, 3vw, 2rem) clamp(1rem, 3vw, 2rem) 2rem;
+}
+
+.intro {
+  margin-bottom: 1.35rem;
+}
+
+.kicker {
+  display: inline-flex;
+  margin: 0 0 0.5rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 22%, transparent);
+  background: color-mix(in srgb, var(--gold) 8%, transparent);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  letter-spacing: -0.03em;
+  background: linear-gradient(180deg, #fff 0%, #c8f7ff 50%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.lead {
+  margin: 0.55rem 0 0;
+  max-width: 36rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-muted);
 }
 
 .footer {
@@ -72,15 +110,12 @@
 }
 
 .footerBrand {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.footerBrandRow {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .disclaimer {
