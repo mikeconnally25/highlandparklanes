@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ActiveHuntPanel } from "@/components/ActiveHuntPanel";
+import { HuntLiveBoard } from "@/components/bonus-hunt/HuntLiveBoard";
 import { HuntBoardProvider } from "@/components/HuntBoardContext";
 import type { PastHuntResult } from "@/lib/bonus-hunt";
 import { PastHuntsPanel } from "@/components/PastHuntsPanel";
@@ -52,29 +52,31 @@ function BonusHuntsBoardInner() {
   }, []);
 
   return (
-    <div className={styles.wrap}>
-      <ActiveHuntPanel />
+    <div className={styles.shell}>
+      <HuntLiveBoard />
 
-      <section className={styles.past} aria-labelledby="past-hunts">
+      <section className={styles.archive} aria-labelledby="past-hunts-heading">
         <button
           type="button"
-          id="past-hunts"
-          className={styles.pastToggle}
+          id="past-hunts-heading"
+          className={styles.archiveToggle}
           aria-expanded={pastOpen}
           onClick={() => setPastOpen((open) => !open)}
         >
-          <span className={styles.pastTitle}>
+          <span className={styles.archiveTitle}>
             Past hunts{pastCount > 0 ? ` · ${pastCount}` : ""}
           </span>
-          <span className={styles.pastHint}>Archived after End hunt</span>
+          <span className={styles.archiveHint}>
+            Saved when you press End hunt
+          </span>
           <span
-            className={styles.pastChevron}
+            className={styles.archiveChevron}
             data-open={pastOpen || undefined}
             aria-hidden
           />
         </button>
         {pastOpen ? (
-          <div className={styles.pastBody}>
+          <div className={styles.archiveBody}>
             <PastHuntsPanel />
           </div>
         ) : null}

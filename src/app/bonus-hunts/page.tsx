@@ -13,10 +13,10 @@ export const metadata: Metadata = {
 export default function BonusHuntsPage() {
   return (
     <div className={styles.page}>
-      <header className={styles.top}>
-        <div className={styles.topBrand}>
+      <header className={styles.header}>
+        <div className={styles.headerLeft}>
           <BrandLogo size="sm" />
-          <Link className={styles.backLink} href="/">
+          <Link className={styles.homeLink} href="/">
             ← Home
           </Link>
         </div>
@@ -24,13 +24,22 @@ export default function BonusHuntsPage() {
       </header>
 
       <main className={styles.main}>
+        <div className={styles.intro}>
+          <p className={styles.kicker}>Live board</p>
+          <h1 className={styles.heading}>Bonus Hunts</h1>
+          <p className={styles.lead}>
+            Run the hunt from here — slot requests, bonus list, break-even, and
+            OBS overlays stay in sync.
+          </p>
+        </div>
+
         <BonusHuntsBoard />
       </main>
 
       <footer className={styles.footer}>
-        <div className={styles.footerBrandRow}>
+        <div className={styles.footerBrand}>
           <BrandLogo href={null} size="sm" />
-          <p className={styles.footerBrand}>Blakjac21</p>
+          <span>Blakjac21</span>
         </div>
         <p className={styles.disclaimer}>
           For entertainment only. Gambling involves risk. Please play

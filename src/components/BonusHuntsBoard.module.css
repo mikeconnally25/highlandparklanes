@@ -1,9 +1,9 @@
-.wrap {
+.shell {
   display: grid;
   gap: 1.25rem;
 }
 
-.pastToggle {
+.archiveToggle {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
@@ -20,14 +20,15 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+  transition: border-color 0.2s ease;
 }
 
-.pastToggle:hover,
-.pastToggle:focus-visible {
+.archiveToggle:hover,
+.archiveToggle:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.pastTitle {
+.archiveTitle {
   grid-area: title;
   font-family: var(--font-display);
   font-weight: 700;
@@ -36,13 +37,13 @@
   text-transform: uppercase;
 }
 
-.pastHint {
+.archiveHint {
   grid-area: hint;
   font-size: 0.78rem;
   color: var(--text-dim);
 }
 
-.pastChevron {
+.archiveChevron {
   grid-area: chevron;
   align-self: center;
   width: 0.55rem;
@@ -53,11 +54,11 @@
   transition: transform 0.2s ease;
 }
 
-.pastChevron[data-open] {
+.archiveChevron[data-open] {
   transform: rotate(-135deg);
 }
 
-.pastBody {
+.archiveBody {
   margin-top: 0.75rem;
   padding: 1rem;
   border-radius: var(--radius-lg);

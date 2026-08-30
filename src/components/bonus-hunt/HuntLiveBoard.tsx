@@ -10,9 +10,9 @@ import { ObsOverlayLink } from "@/components/ObsOverlayLink";
 import { ObsOverlayPreview } from "@/components/ObsOverlayPreview";
 import { SlotThumbnail } from "@/components/SlotThumbnail";
 import { useBonusHuntBoard } from "@/hooks/useBonusHuntBoard";
-import styles from "./ActiveHuntPanel.module.css";
+import styles from "./hunt-board.module.css";
 
-export function ActiveHuntPanel() {
+export function HuntLiveBoard() {
   const board = useBonusHuntBoard();
   const {
     canManage,
@@ -69,13 +69,12 @@ export function ActiveHuntPanel() {
   );
 
   return (
-    <div className={styles.board}>
-      <header className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Bonus Hunts</p>
+    <article className={styles.board} aria-label="Live bonus hunt">
+      <header className={styles.topBar}>
+        <div className={styles.titleBlock}>
           {canManage ? (
             <input
-              className={styles.huntTitleInput}
+              className={styles.titleInput}
               type="text"
               value={huntTitle}
               onFocus={() => {
@@ -99,25 +98,26 @@ export function ActiveHuntPanel() {
               autoComplete="off"
               spellCheck={false}
               disabled={busy}
-              aria-label="Hunt number"
+              aria-label="Hunt title"
             />
           ) : (
-            <h1 className={styles.huntTitle}>
+            <h1 className={styles.title}>
               {state?.title?.trim() || "Live hunt board"}
             </h1>
           )}
-          <p className={styles.heroLead}>
-            Slot requests, hunt list, and break-even — ready for stream.
+          <p className={styles.subtitle}>
+            Track slot requests, bonuses, and break-even live on stream.
           </p>
         </div>
 
-        <div className={styles.statusCluster}>
+        <div className={styles.liveFlags}>
           {canManage ? (
             <>
-              <div className={styles.toggleGroup} role="group" aria-label="Hunt">
+              <fieldset className={styles.flagGroup}>
+                <legend className={styles.flagLegend}>Hunt</legend>
                 <button
                   type="button"
-                  className={styles.toggle}
+                  className={styles.flagBtn}
                   data-active={!huntActive || undefined}
                   aria-pressed={!huntActive}
                   disabled={busy}
@@ -127,24 +127,21 @@ export function ActiveHuntPanel() {
                 </button>
                 <button
                   type="button"
-                  className={styles.toggle}
-                  data-on={huntActive || undefined}
+                  className={styles.flagBtn}
+                  data-live={huntActive || undefined}
                   data-active={huntActive || undefined}
                   aria-pressed={huntActive}
                   disabled={busy}
                   onClick={() => void setHuntLive(true)}
                 >
-                  Active
+                  Live
                 </button>
-              </div>
-              <div
-                className={styles.toggleGroup}
-                role="group"
-                aria-label="Requests"
-              >
+              </fieldset>
+              <fieldset className={styles.flagGroup}>
+                <legend className={styles.flagLegend}>Chat</legend>
                 <button
                   type="button"
-                  className={styles.toggle}
+                  className={styles.flagBtn}
                   data-active={!requestsOpen || undefined}
                   aria-pressed={!requestsOpen}
                   disabled={busy}
@@ -154,28 +151,25 @@ export function ActiveHuntPanel() {
                 </button>
                 <button
                   type="button"
-                  className={styles.toggle}
-                  data-on={requestsOpen || undefined}
+                  className={styles.flagBtn}
+                  data-live={requestsOpen || undefined}
                   data-active={requestsOpen || undefined}
                   aria-pressed={requestsOpen}
                   disabled={busy}
                   onClick={() => void setHuntLive(true)}
                 >
-                  Requests open
+                  Open
                 </button>
-              </div>
+              </fieldset>
             </>
           ) : (
             <>
-              <span
-                className={styles.badge}
-                data-on={huntActive || undefined}
-              >
-                {huntActive ? "Hunt active" : "Hunt idle"}
+              <span className={styles.chip} data-live={huntActive || undefined}>
+                {huntActive ? "Hunt live" : "Hunt idle"}
               </span>
               <span
-                className={styles.badge}
-                data-on={requestsOpen || undefined}
+                className={styles.chip}
+                data-live={requestsOpen || undefined}
               >
                 {requestsOpen ? "Requests open" : "Requests closed"}
               </span>
@@ -185,18 +179,18 @@ export function ActiveHuntPanel() {
       </header>
 
       {canManage && lastChatError ? (
-        <p className={styles.alert} role="status">
+        <p className={styles.notice} role="status">
           {lastChatError}
         </p>
       ) : null}
 
-      <section className={styles.stats} aria-label="Hunt stats">
-        <div className={styles.stat}>
-          <p className={styles.statLabel}>Started with</p>
+      <section className={styles.metrics} aria-label="Hunt metrics">
+        <div className={styles.metric}>
+          <span className={styles.metricLabel}>Started with</span>
           {canManage ? (
-            <div className={styles.startRow}>
+            <div className={styles.metricEdit}>
               <input
-                className={styles.input}
+                className={styles.field}
                 type="text"
                 inputMode="decimal"
                 value={startAmountInput}
@@ -209,24 +203,23 @@ export function ActiveHuntPanel() {
                   const parsed = parseMoneyAmount(nextValue);
                   const base = stateRef.current;
                   if (!base) return;
-                  const next = {
+                  stateRef.current = {
                     ...base,
                     startAmount: parsed,
                     updatedAt: new Date().toISOString(),
                   };
-                  stateRef.current = next;
                 }}
                 onBlur={() => {
                   formFocusedRef.current = false;
                   void saveStartAmount();
                 }}
-                placeholder="e.g. 500"
+                placeholder="500"
                 autoComplete="off"
                 spellCheck={false}
               />
               <button
                 type="button"
-                className={styles.primaryBtn}
+                className={styles.btnPrimary}
                 disabled={busy}
                 onClick={() => void saveStartAmount()}
               >
@@ -234,92 +227,95 @@ export function ActiveHuntPanel() {
               </button>
             </div>
           ) : (
-            <p className={styles.statValue}>
+            <strong className={styles.metricValue}>
               {formatBetSize(stats?.startAmount ?? null)}
-            </p>
+            </strong>
           )}
         </div>
-        <div className={styles.stat}>
-          <p className={styles.statLabel}>Avg x opened</p>
-          <p className={styles.statValue}>
+
+        <div className={styles.metric}>
+          <span className={styles.metricLabel}>Avg multiplier</span>
+          <strong className={styles.metricValue}>
             {formatMultiplier(stats?.avgXOpened ?? null)}
-          </p>
-          <p className={styles.statHint}>
+          </strong>
+          <span className={styles.metricNote}>
             {stats?.openedCount
               ? `${stats.openedCount} opened`
-              : "Log wins below"}
-          </p>
+              : "Log wins to track"}
+          </span>
         </div>
-        <div className={styles.stat}>
-          <p className={styles.statLabel}>Break even</p>
-          <p className={styles.statValue}>{breakEvenLabel}</p>
-          <p className={styles.statHint}>
+
+        <div className={styles.metric}>
+          <span className={styles.metricLabel}>Break even</span>
+          <strong className={styles.metricValue}>{breakEvenLabel}</strong>
+          <span className={styles.metricNote}>
             {stats?.breakEvenReached
-              ? "Recovered"
+              ? "Recovered start"
               : stats?.startAmount != null && stats.totalBet > 0
                 ? `${formatBetSize(stats.startAmount)} ÷ ${formatBetSize(stats.totalBet)}`
-                : "Needs start + bets"}
-          </p>
+                : "Set start + bets"}
+          </span>
         </div>
       </section>
 
-      <div className={styles.columns}>
-        <section className={styles.panel} aria-labelledby="queue-heading">
-          <div className={styles.panelHead}>
-            <h2 id="queue-heading" className={styles.panelTitle}>
-              Chat requests
+      <div className={styles.workspace}>
+        <section className={styles.queue} aria-labelledby="queue-label">
+          <div className={styles.sectionHead}>
+            <h2 id="queue-label" className={styles.sectionTitle}>
+              Slot requests
             </h2>
-            <span className={styles.count}>{slotRequests.length}</span>
+            <span className={styles.sectionCount}>{slotRequests.length}</span>
           </div>
-          <p className={styles.help}>
-            Viewers type <code>!s Slot Name</code> when requests are open.
+          <p className={styles.sectionHint}>
+            Viewers send <code>!s Slot Name</code> when chat is open.
           </p>
+
           {slotRequests.length === 0 ? (
-            <p className={styles.empty}>No requests yet.</p>
+            <p className={styles.emptyState}>Waiting for requests…</p>
           ) : (
-            <ul className={styles.requestList}>
+            <ul className={styles.queueList}>
               {slotRequests.map((req, index) => {
                 const selected = activeSelectedRequestId === req.id;
                 return (
-                  <li key={req.id} className={styles.requestItem}>
+                  <li key={req.id} className={styles.queueItem}>
                     {canManage ? (
                       <button
                         type="button"
-                        className={styles.requestBtn}
+                        className={styles.queueRow}
                         data-selected={selected || undefined}
                         disabled={busy}
                         onClick={() => selectRequest(req.id, req.slotName)}
                         aria-pressed={selected}
                       >
-                        <span className={styles.index}>{index + 1}</span>
+                        <span className={styles.queueIndex}>{index + 1}</span>
                         <SlotThumbnail
                           name={req.slotName}
                           thumbnailUrl={req.thumbnailUrl}
                         />
-                        <span className={styles.requestMeta}>
-                          <span className={styles.requestUser}>
+                        <span className={styles.queueMeta}>
+                          <span className={styles.queueUser}>
                             @{req.username}
                           </span>
-                          <span className={styles.requestSlot}>
+                          <span className={styles.queueSlot}>
                             {req.slotName}
                           </span>
                         </span>
-                        <span className={styles.selectHint}>
-                          {selected ? "Selected" : "Select"}
+                        <span className={styles.queuePick}>
+                          {selected ? "Selected" : "Pick"}
                         </span>
                       </button>
                     ) : (
-                      <div className={styles.requestBtn}>
-                        <span className={styles.index}>{index + 1}</span>
+                      <div className={styles.queueRow}>
+                        <span className={styles.queueIndex}>{index + 1}</span>
                         <SlotThumbnail
                           name={req.slotName}
                           thumbnailUrl={req.thumbnailUrl}
                         />
-                        <span className={styles.requestMeta}>
-                          <span className={styles.requestUser}>
+                        <span className={styles.queueMeta}>
+                          <span className={styles.queueUser}>
                             @{req.username}
                           </span>
-                          <span className={styles.requestSlot}>
+                          <span className={styles.queueSlot}>
                             {req.slotName}
                           </span>
                         </span>
@@ -328,7 +324,7 @@ export function ActiveHuntPanel() {
                     {canManage ? (
                       <button
                         type="button"
-                        className={styles.iconBtn}
+                        className={styles.dismissBtn}
                         disabled={busy}
                         onClick={() => {
                           if (activeSelectedRequestId === req.id) {
@@ -353,17 +349,17 @@ export function ActiveHuntPanel() {
           )}
         </section>
 
-        <section className={styles.panel} aria-labelledby="list-heading">
-          <div className={styles.panelHead}>
-            <h2 id="list-heading" className={styles.panelTitle}>
+        <section className={styles.list} aria-labelledby="list-label">
+          <div className={styles.sectionHead}>
+            <h2 id="list-label" className={styles.sectionTitle}>
               Hunt list
             </h2>
-            <span className={styles.count}>{bonuses.length}</span>
+            <span className={styles.sectionCount}>{bonuses.length}</span>
           </div>
 
           {canManage ? (
             <form
-              className={styles.addForm}
+              className={styles.addBonus}
               onSubmit={(event: FormEvent) => void handleAddBonus(event)}
               onFocusCapture={() => {
                 formFocusedRef.current = true;
@@ -378,26 +374,26 @@ export function ActiveHuntPanel() {
                 }
               }}
             >
-              <div className={styles.formGrid}>
-                <label className={styles.label}>
+              <div className={styles.addGrid}>
+                <label className={styles.fieldLabel}>
                   Slot
                   <input
-                    className={styles.input}
+                    className={styles.field}
                     type="text"
                     value={bonusName}
                     onChange={(e) => {
                       setBonusName(e.target.value);
                       setSelectedRequestId(null);
                     }}
-                    placeholder="Select request or type name"
+                    placeholder="Pick a request or type a name"
                     autoComplete="off"
                     spellCheck={false}
                   />
                 </label>
-                <label className={styles.label}>
+                <label className={styles.fieldLabel}>
                   Bet
                   <input
-                    className={styles.input}
+                    className={styles.field}
                     type="text"
                     inputMode="decimal"
                     value={betSize}
@@ -407,10 +403,10 @@ export function ActiveHuntPanel() {
                     spellCheck={false}
                   />
                 </label>
-                <label className={styles.label}>
+                <label className={styles.fieldLabel}>
                   Win
                   <input
-                    className={styles.input}
+                    className={styles.field}
                     type="text"
                     inputMode="decimal"
                     value={winAmount}
@@ -421,8 +417,8 @@ export function ActiveHuntPanel() {
                   />
                 </label>
               </div>
-              <div className={styles.formActions}>
-                <div className={styles.tierRow} role="group" aria-label="Tier">
+              <div className={styles.addActions}>
+                <div className={styles.tiers} role="group" aria-label="Tier">
                   <button
                     type="button"
                     className={styles.tierBtn}
@@ -445,128 +441,113 @@ export function ActiveHuntPanel() {
                 </div>
                 <button
                   type="submit"
-                  className={styles.primaryBtn}
+                  className={styles.btnPrimary}
                   disabled={busy || !bonusName.trim()}
                 >
-                  {activeSelectedRequestId ? "Add selected" : "Add to list"}
+                  {activeSelectedRequestId ? "Add selected" : "Add bonus"}
                 </button>
               </div>
             </form>
           ) : null}
 
           {bonuses.length === 0 ? (
-            <p className={styles.empty}>No bonuses on the list yet.</p>
+            <p className={styles.emptyState}>No bonuses yet — add one above.</p>
           ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Break even</th>
-                    <th scope="col">Slot</th>
-                    <th scope="col">Bet</th>
-                    <th scope="col">Win</th>
-                    {canManage ? <th scope="col" /> : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {bonuses.map((bonus, index) => (
-                    <tr
-                      key={bonus.id}
-                      data-tier={
-                        bonus.tier !== "normal" ? bonus.tier : undefined
+            <ul className={styles.bonusCards}>
+              {bonuses.map((bonus, index) => (
+                <li
+                  key={bonus.id}
+                  className={styles.bonusCard}
+                  data-tier={bonus.tier !== "normal" ? bonus.tier : undefined}
+                  data-new={bonus.id === newBonusId || undefined}
+                >
+                  <div className={styles.bonusIndex}>{index + 1}</div>
+                  <div className={styles.bonusMain}>
+                    <p className={styles.bonusName}>{bonus.name}</p>
+                    {bonus.requestedBy ? (
+                      <p className={styles.bonusBy}>@{bonus.requestedBy}</p>
+                    ) : null}
+                    <p className={styles.bonusBe}>BE {breakEvenLabel}</p>
+                  </div>
+                  <div className={styles.bonusNums}>
+                    <span className={styles.bonusBet}>
+                      Bet {formatBetSize(bonus.betSize)}
+                    </span>
+                    {canManage ? (
+                      <div className={styles.winRow}>
+                        <input
+                          className={styles.winField}
+                          type="text"
+                          inputMode="decimal"
+                          value={winDrafts[bonus.id] ?? ""}
+                          onChange={(e) =>
+                            setWinDrafts((current) => ({
+                              ...current,
+                              [bonus.id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Win"
+                          aria-label={`Win for ${bonus.name}`}
+                        />
+                        <button
+                          type="button"
+                          className={styles.btnSmall}
+                          disabled={busy}
+                          onClick={() => void saveWinAmount(bonus.id)}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={styles.bonusWin}>
+                        Win {formatBetSize(bonus.winAmount)}
+                      </span>
+                    )}
+                  </div>
+                  {canManage ? (
+                    <button
+                      type="button"
+                      className={styles.dismissBtn}
+                      disabled={busy}
+                      onClick={() =>
+                        void adminRequest("/api/bonus-hunt/bonus/remove", {
+                          id: bonus.id,
+                          board: stateRef.current ?? undefined,
+                        })
                       }
-                      data-new={bonus.id === newBonusId || undefined}
+                      aria-label={`Remove ${bonus.name}`}
                     >
-                      <td>{index + 1}</td>
-                      <td>{breakEvenLabel}</td>
-                      <td>
-                        <span className={styles.slotName}>{bonus.name}</span>
-                        {bonus.requestedBy ? (
-                          <span className={styles.requester}>
-                            @{bonus.requestedBy}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td>{formatBetSize(bonus.betSize)}</td>
-                      <td>
-                        {canManage ? (
-                          <div className={styles.winEditor}>
-                            <input
-                              className={styles.winInput}
-                              type="text"
-                              inputMode="decimal"
-                              value={winDrafts[bonus.id] ?? ""}
-                              onChange={(e) =>
-                                setWinDrafts((current) => ({
-                                  ...current,
-                                  [bonus.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="0"
-                              aria-label={`Win for ${bonus.name}`}
-                            />
-                            <button
-                              type="button"
-                              className={styles.winSave}
-                              disabled={busy}
-                              onClick={() => void saveWinAmount(bonus.id)}
-                            >
-                              Save
-                            </button>
-                          </div>
-                        ) : (
-                          formatBetSize(bonus.winAmount)
-                        )}
-                      </td>
-                      {canManage ? (
-                        <td>
-                          <button
-                            type="button"
-                            className={styles.iconBtn}
-                            disabled={busy}
-                            onClick={() =>
-                              void adminRequest("/api/bonus-hunt/bonus/remove", {
-                                id: bonus.id,
-                                board: stateRef.current ?? undefined,
-                              })
-                            }
-                            aria-label={`Remove ${bonus.name}`}
-                          >
-                            ×
-                          </button>
-                        </td>
-                      ) : null}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      ×
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>
 
       {canManage ? (
-        <section className={styles.controls} aria-label="Streamer controls">
+        <section className={styles.admin} aria-label="Streamer controls">
           <button
             type="button"
-            className={styles.controlsToggle}
+            className={styles.adminToggle}
             aria-expanded={showAdmin}
             onClick={() => setShowAdmin((value) => !value)}
           >
             Streamer controls
             <span
-              className={styles.chevron}
+              className={styles.adminChevron}
               data-open={showAdmin || undefined}
             />
           </button>
 
           {showAdmin ? (
-            <div className={styles.controlsBody}>
-              <div className={styles.controlActions}>
+            <div className={styles.adminBody}>
+              <div className={styles.adminActions}>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  className={styles.btnGhost}
                   disabled={busy}
                   onClick={() =>
                     void adminRequest("/api/bonus-hunt/bonus/remove", {
@@ -574,11 +555,11 @@ export function ActiveHuntPanel() {
                     })
                   }
                 >
-                  Clear bonuses
+                  Clear list
                 </button>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  className={styles.btnGhost}
                   disabled={busy}
                   onClick={() =>
                     void adminRequest("/api/bonus-hunt/admin", {
@@ -590,7 +571,7 @@ export function ActiveHuntPanel() {
                 </button>
                 <button
                   type="button"
-                  className={styles.dangerBtn}
+                  className={styles.btnDanger}
                   disabled={busy || !canEndHunt}
                   onClick={() => void endHunt()}
                 >
@@ -598,7 +579,7 @@ export function ActiveHuntPanel() {
                 </button>
                 <button
                   type="button"
-                  className={styles.secondaryBtn}
+                  className={styles.btnGhost}
                   disabled={busy || Boolean(slotCatalog?.refreshing)}
                   onClick={() => void refreshSlotCatalog()}
                 >
@@ -609,26 +590,25 @@ export function ActiveHuntPanel() {
               </div>
 
               {slotCatalog ? (
-                <p className={styles.hint}>
-                  Slot catalog: {slotCatalog.counts.total.toLocaleString()}{" "}
-                  cached
+                <p className={styles.adminHint}>
+                  Slot catalog: {slotCatalog.counts.total.toLocaleString()} cached
                   {slotCatalog.updatedAt
-                    ? ` · last ${new Date(slotCatalog.updatedAt).toLocaleString()}`
+                    ? ` · ${new Date(slotCatalog.updatedAt).toLocaleString()}`
                     : ""}
                   {slotCatalog.lastError
-                    ? ` · error: ${slotCatalog.lastError}`
+                    ? ` · ${slotCatalog.lastError}`
                     : ""}
                 </p>
               ) : null}
 
               {adminError ? (
-                <p className={styles.alert} role="alert">
+                <p className={styles.notice} role="alert">
                   {adminError}
                 </p>
               ) : null}
 
-              <div className={styles.obs}>
-                <p className={styles.hint}>OBS overlays</p>
+              <div className={styles.obsBlock}>
+                <p className={styles.adminHint}>OBS browser sources</p>
                 <ObsOverlayPreview board={state} />
                 <ObsOverlayLink />
               </div>
@@ -636,6 +616,6 @@ export function ActiveHuntPanel() {
           ) : null}
         </section>
       ) : null}
-    </div>
+    </article>
   );
 }
