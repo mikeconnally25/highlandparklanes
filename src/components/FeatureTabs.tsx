@@ -53,14 +53,6 @@ const TABS: TabConfig[] = [
     accent: "gold",
   },
   {
-    id: "bonusHunts",
-    label: "Bonus Hunts",
-    description: "Track slots, wins, and break-even in real time.",
-    kind: "link",
-    href: "/bonus-hunts",
-    accent: "cyan",
-  },
-  {
     id: "giveaways",
     label: "Giveaways",
     description: "Enter with a chat keyword and spin the winner wheel.",
@@ -296,7 +288,7 @@ export function FeatureTabs() {
       <div className={styles.intro}>
         <p className={styles.eyebrow}>Menu</p>
         <p className={styles.lead}>
-          Pick a card to jump into hunts, giveaways, guesses, and more.
+          Pick a card to jump into giveaways, guesses, and more.
         </p>
       </div>
 
