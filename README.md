@@ -75,7 +75,7 @@ SESSION_SECRET=long-random-string
 ADMIN_KICK_USERNAME=Blakjac21
 ```
 
-Optional but recommended for Bonus Hunts:
+Optional (Kick account persistence across Vercel serverless instances):
 
 ```
 UPSTASH_REDIS_REST_URL=…
@@ -133,14 +133,14 @@ GUESS_ADMIN_TOKEN=your-admin-token
 ADMIN_KICK_USERNAME=Blakjac21
 ```
 
-**Recommended for Bonus Hunts + OBS overlays on Vercel** (shared hunt state across serverless instances):
+**Optional on Vercel** (shared Kick account list across serverless instances):
 
 ```
 UPSTASH_REDIS_REST_URL=https://….upstash.io
 UPSTASH_REDIS_REST_TOKEN=…
 ```
 
-Create a free Redis database at [upstash.com](https://upstash.com), copy the REST URL and token into Vercel env vars, then redeploy. Without this, hunt data can drift between API requests and OBS overlays may not clear reliably after End hunt.
+Create a free Redis database at [upstash.com](https://upstash.com), copy the REST URL and token into Vercel env vars, then redeploy. Without this, linked Kick accounts may not persist reliably between API requests.
 
 Do **not** set `KICK_REDIRECT_URI` or `NEXT_PUBLIC_SITE_URL` unless you have a special override need. The site derives the OAuth callback from the URL visitors use.
 
@@ -195,7 +195,7 @@ Create account / Sign in is **Kick OAuth only** (`user:read`). No email/password
 
 ### Streamer admin (your Kick account only)
 
-Streamer controls (Guess the Balance, Bonus Hunts, Giveaways) are **hidden** unless you are signed in with the admin Kick account.
+Streamer controls (Guess the Balance, Giveaways) are **hidden** unless you are signed in with the admin Kick account.
 
 Set in `.env.local` / production:
 
